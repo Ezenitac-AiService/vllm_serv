@@ -66,15 +66,42 @@ class LlamaManager:
         self._error_msg = ""
         self._notify_listeners()
         
-        # Determine actual model path based on logic. For now assuming model_id is HuggingFace repo
+        # Map model_id aliases to actual local file paths
+        model_paths = {
+            "gemma4-e2b": {
+                "model": "models/gemma4-2b/gemma-4-E2B_q4_0-it.gguf",
+                "clip": "models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf"
+            },
+            "gemma4-e4b": {
+                "model": "models/gemma4-4b/gemma-4-E4B_q4_0-it.gguf",
+                "clip": "models/gemma4-4b/gemma-4-E4B-it-mmproj.gguf"
+            },
+            "gemma4-12b": {
+                "model": "models/gemma4-12b/gemma-4-12b-it-qat-q4_0.gguf",
+                "clip": "models/gemma4-12b/mmproj-gemma-4-12b-it-qat-q4_0.gguf"
+            }
+        }
+        
+        target_paths = model_paths.get(model_id)
+        if not target_paths:
+            self.state = ServerState.ERROR
+            self.error_message = f"Unknown model_id: {model_id}"
+            self._notify_listeners()
+            return
+            
+        import os
+        base_dir = "/home/dev/vllm_serv"
+        model_file = os.path.join(base_dir, target_paths["model"])
+        clip_file = os.path.join(base_dir, target_paths["clip"])
+
         cmd = [
             "python3", "-m", "llama_cpp.server",
-            "--model", model_id,
+            "--model", model_file,
             "--n_ctx", str(n_ctx),
             "--host", "127.0.0.1",
             "--port", str(self.port),
             "--n_gpu_layers", "-1",
-            "--parallel", "4"
+            "--clip_model_path", clip_file
         ]
         
         try:
@@ -124,11 +151,16 @@ class LlamaManager:
     async def _unload_model_internal(self):
         # Internal call without grabbing the lock
         if self.process:
-            self.process.terminate()
             try:
-                await asyncio.wait_for(self.process.wait(), timeout=5.0)
-            except asyncio.TimeoutError:
-                self.process.kill()
+                if self.process.returncode is None:
+                    self.process.terminate()
+                try:
+                    await asyncio.wait_for(self.process.wait(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    if self.process.returncode is None:
+                        self.process.kill()
+            except ProcessLookupError:
+                pass
             self.process = None
         self.state = ServerState.UNLOADED
         self._notify_listeners()

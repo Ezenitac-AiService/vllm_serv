@@ -19,17 +19,17 @@
             <section class="glass-panel presets-section">
                 <h2>Quick Presets</h2>
                 <div class="presets-grid">
-                    <button class="preset-btn" data-model="gemma-4-E2B-it-qat-q4_0-gguf" data-ctx="35000">
+                    <button class="preset-btn" data-model="gemma4-e2b" data-ctx="35000">
                         <h3>대용량 문서 요약 및 RAG</h3>
                         <p>Gemma-4 E2B | 35k Context</p>
                     </button>
-                    <button class="preset-btn" data-model="gemma4-12b" data-ctx="9500">
-                        <h3>가벼운 챗봇</h3>
-                        <p>Gemma-4 12B | 9.5k Context</p>
+                    <button class="preset-btn" data-model="gemma4-e4b" data-ctx="16000">
+                        <h3>일반 목적 챗봇</h3>
+                        <p>Gemma-4 E4B | 16k Context</p>
                     </button>
-                    <button class="preset-btn" data-model="google/gemma-4-E2B-it-qat-q4_0-gguf" data-ctx="35000">
-                        <h3>최고급 성능</h3>
-                        <p>Gemma-4 E2B (Google) | 35k Context</p>
+                    <button class="preset-btn" data-model="gemma4-12b" data-ctx="8192">
+                        <h3>고성능 추론</h3>
+                        <p>Gemma-4 12B | 8k Context</p>
                     </button>
                 </div>
             </section>
@@ -40,9 +40,9 @@
                     <div class="form-group">
                         <label for="model-select">Model ID</label>
                         <select id="model-select" required>
-                            <option value="gemma-4-E2B-it-qat-q4_0-gguf">gemma-4-E2B-it-qat-q4_0-gguf</option>
-                            <option value="gemma4-12b">gemma4-12b</option>
-                            <option value="google/gemma-4-E2B-it-qat-q4_0-gguf">google/gemma-4-E2B-it-qat-q4_0-gguf</option>
+                            <option value="gemma4-e2b">Gemma-4 E2B</option>
+                            <option value="gemma4-e4b">Gemma-4 E4B</option>
+                            <option value="gemma4-12b">Gemma-4 12B</option>
                         </select>
                     </div>
                     <div class="form-group">
