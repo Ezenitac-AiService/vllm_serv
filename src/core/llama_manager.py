@@ -25,9 +25,9 @@ class LlamaManager:
         # Load the default limits or fetch them
         self.vram_total = 24000
         self.hardware_limits = {
-            "gemma-4-E2B-it-qat-q4_0-gguf": 35000,
-            "google/gemma-4-E2B-it-qat-q4_0-gguf": 35000,
-            "gemma4-12b": 9500
+            "gemma4-e2b": 35000,
+            "gemma4-e4b": 16000,
+            "gemma4-12b": 8192
         }
         self._lock = asyncio.Lock()
 
@@ -111,18 +111,6 @@ class LlamaManager:
                 stderr=asyncio.subprocess.STDOUT
             )
             
-            # Wait for server to be ready
-            while True:
-                line = await self.process.stdout.readline()
-                if not line:
-                    break
-                line_str = line.decode('utf-8')
-                print(f"[llama-server] {line_str.strip()}")
-                if "Uvicorn running on" in line_str or "Application startup complete" in line_str:
-                    self.state = ServerState.READY
-                    self._notify_listeners()
-                    break
-            
             asyncio.create_task(self._monitor_process())
             
         except Exception as e:
@@ -131,7 +119,22 @@ class LlamaManager:
             self._notify_listeners()
 
     async def _monitor_process(self):
-        if not self.process: return
+        if not self.process or not self.process.stdout: return
+        
+        try:
+            while True:
+                line = await self.process.stdout.readline()
+                if not line:
+                    break
+                decoded_line = line.decode('utf-8', errors='replace').strip()
+                print(f"[llama-server] {decoded_line}")
+                
+                if self.state == ServerState.LOADING and "Application startup complete." in decoded_line:
+                    self.state = ServerState.READY
+                    self._notify_listeners()
+        except Exception:
+            pass
+
         await self.process.wait()
         if self.state != ServerState.UNLOADED:
             self.state = ServerState.ERROR
