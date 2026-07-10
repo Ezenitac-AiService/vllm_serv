@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vLLM Control Center</title>
+    <link rel="stylesheet" href="/dashboard/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-mesh"></div>
+    <div class="container">
+        <header>
+            <h1>vLLM Control Center</h1>
+            <div id="status-badge" class="status-badge loading">Connecting...</div>
+        </header>
+
+        <main>
+            <section class="glass-panel presets-section">
+                <h2>Quick Presets</h2>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-model="gemma-4-E2B-it-qat-q4_0-gguf" data-ctx="35000">
+                        <h3>대용량 문서 요약 및 RAG</h3>
+                        <p>Gemma-4 E2B | 35k Context</p>
+                    </button>
+                    <button class="preset-btn" data-model="gemma4-12b" data-ctx="9500">
+                        <h3>가벼운 챗봇</h3>
+                        <p>Gemma-4 12B | 9.5k Context</p>
+                    </button>
+                    <button class="preset-btn" data-model="google/gemma-4-E2B-it-qat-q4_0-gguf" data-ctx="35000">
+                        <h3>최고급 성능</h3>
+                        <p>Gemma-4 E2B (Google) | 35k Context</p>
+                    </button>
+                </div>
+            </section>
+
+            <section class="glass-panel manual-section">
+                <h2>Manual Configuration</h2>
+                <form id="manual-form">
+                    <div class="form-group">
+                        <label for="model-select">Model ID</label>
+                        <select id="model-select" required>
+                            <option value="gemma-4-E2B-it-qat-q4_0-gguf">gemma-4-E2B-it-qat-q4_0-gguf</option>
+                            <option value="gemma4-12b">gemma4-12b</option>
+                            <option value="google/gemma-4-E2B-it-qat-q4_0-gguf">google/gemma-4-E2B-it-qat-q4_0-gguf</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ctx-input">Context Length (n_ctx)</label>
+                        <div class="slider-container">
+                            <input type="range" id="ctx-slider" min="512" max="128000" step="512" value="4096">
+                            <input type="number" id="ctx-input" value="4096" min="512" max="128000">
+                        </div>
+                        <div id="oom-warning" class="warning-text hidden">⚠️ VRAM 부족 위험! (하드웨어 한도 초과)</div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">Apply Configuration</button>
+                        <button type="button" id="unload-btn" class="danger-btn">Unload Model</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="glass-panel status-section">
+                <h2>System Status</h2>
+                <div class="status-grid">
+                    <div class="stat-card">
+                        <h4>Current Model</h4>
+                        <p id="stat-model">None</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Context Length</h4>
+                        <p id="stat-ctx">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>VRAM Usage</h4>
+                        <p id="stat-vram">0 / 0 MB</p>
+                        <div class="progress-bar">
+                            <div id="vram-fill" class="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="error-message" class="error-banner hidden"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="overlay hidden">
+        <div class="spinner"></div>
+        <h2>Applying Configuration...</h2>
+        <p>This may take a few moments</p>
+    </div>
+
+    <script src="/dashboard/app.js"></script>
+</body>
+</html>

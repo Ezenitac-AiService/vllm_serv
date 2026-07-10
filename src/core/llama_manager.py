@@ -1,84 +1,138 @@
+import asyncio
+import subprocess
 import os
 import time
-from typing import Optional, Dict, Any
-from llama_cpp import Llama
-from src.core.config import SUPPORTED_MODELS, MODELS_DIR
+import json
+from typing import AsyncGenerator
+from enum import Enum
+from src.core.config_manager import ConfigManager
+
+class ServerState(str, Enum):
+    LOADING = "LOADING"
+    READY = "READY"
+    UNLOADED = "UNLOADED"
+    ERROR = "ERROR"
 
 class LlamaManager:
-    def __init__(self):
-        self.active_model_id: Optional[str] = None
-        self.llama: Optional[Llama] = None
-
-    def load_model(self, model_id: str) -> Dict[str, Any]:
-        """
-        Loads the specified model into memory, unloading the previous one if necessary.
-        """
-        if model_id not in SUPPORTED_MODELS:
-            raise ValueError(f"Model ID '{model_id}' is not supported.")
-            
-        if self.active_model_id == model_id and self.llama is not None:
-            return {
-                "status": "success",
-                "message": f"Model {model_id} is already loaded.",
-                "load_time_sec": 0.0
-            }
-
-        config = SUPPORTED_MODELS[model_id]
+    def __init__(self, config_manager: ConfigManager, port: int = 8081):
+        self.config_manager = config_manager
+        self.port = port
+        self.state = ServerState.UNLOADED
+        self.process: subprocess.Popen | None = None
+        self._listeners = []
+        self._error_msg = ""
         
-        # Find the .gguf file dynamically since we used snapshot_download
-        model_dir = os.path.join(MODELS_DIR, model_id)
-        if not os.path.exists(model_dir):
-            raise FileNotFoundError(f"Model directory not found at {model_dir}. Please run download script first.")
-            
-        gguf_files = [f for f in os.listdir(model_dir) if f.endswith(".gguf") and "mmproj" not in f.lower()]
-        if not gguf_files:
-            raise FileNotFoundError(f"No .gguf model file found in {model_dir} (mmproj files are excluded)")
-            
-        model_path = os.path.join(model_dir, gguf_files[0])
+        # Load the default limits or fetch them
+        self.vram_total = 24000
+        self.hardware_limits = {
+            "gemma-4-E2B-it-qat-q4_0-gguf": 35000,
+            "google/gemma-4-E2B-it-qat-q4_0-gguf": 35000,
+            "gemma4-12b": 9500
+        }
+        self._lock = asyncio.Lock()
 
-        # Unload previous model explicitly
-        if self.llama is not None:
-            print(f"Unloading active model: {self.active_model_id}")
-            del self.llama
-            self.llama = None
-            self.active_model_id = None
+    def is_ready(self):
+        return self.state == ServerState.READY
 
-        print(f"Loading model: {model_id} from {model_path}")
-        start_time = time.time()
+    def subscribe(self):
+        q = asyncio.Queue()
+        self._listeners.append(q)
+        q.put_nowait(self.get_status_event())
+        return q
+
+    def unsubscribe(self, q: asyncio.Queue):
+        if q in self._listeners:
+            self._listeners.remove(q)
+
+    def _notify_listeners(self):
+        event = self.get_status_event()
+        for q in self._listeners:
+            q.put_nowait(event)
+
+    def get_status_event(self) -> dict:
+        cfg = self.config_manager.get_config()
+        data = {
+            "state": self.state,
+            "current_model": cfg.get("current_model"),
+            "current_n_ctx": cfg.get("current_n_ctx"),
+            "vram_total": self.vram_total,
+            "vram_used": 0 if self.state == ServerState.UNLOADED else 8000,
+            "error_msg": self._error_msg
+        }
+        return {"event": "status", "data": json.dumps(data)}
+
+    async def _start_server_subprocess(self, model_id: str, n_ctx: int):
+        self.state = ServerState.LOADING
+        self._error_msg = ""
+        self._notify_listeners()
+        
+        # Determine actual model path based on logic. For now assuming model_id is HuggingFace repo
+        cmd = [
+            "python3", "-m", "llama_cpp.server",
+            "--model", model_id,
+            "--n_ctx", str(n_ctx),
+            "--host", "127.0.0.1",
+            "--port", str(self.port),
+            "--n_gpu_layers", "-1",
+            "--parallel", "4"
+        ]
         
         try:
-            self.llama = Llama(
-                model_path=model_path,
-                n_ctx=config.n_ctx,
-                n_gpu_layers=-1, # Offload entirely to GPU
-                verbose=False
+            self.process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT
             )
+            
+            # Wait for server to be ready
+            while True:
+                line = await self.process.stdout.readline()
+                if not line:
+                    break
+                line_str = line.decode('utf-8')
+                print(f"[llama-server] {line_str.strip()}")
+                if "Uvicorn running on" in line_str or "Application startup complete" in line_str:
+                    self.state = ServerState.READY
+                    self._notify_listeners()
+                    break
+            
+            asyncio.create_task(self._monitor_process())
+            
         except Exception as e:
-            self.llama = None
-            self.active_model_id = None
-            raise RuntimeError(f"Failed to load model {model_id}: {e}")
-            
-        load_time = time.time() - start_time
-        self.active_model_id = model_id
-        
-        return {
-            "status": "success",
-            "message": f"Model switched to {model_id}",
-            "load_time_sec": round(load_time, 2)
-        }
+            self.state = ServerState.ERROR
+            self._error_msg = str(e)
+            self._notify_listeners()
 
-    def generate(self, messages: list, max_tokens: int = 100, temperature: float = 0.7):
-        """
-        Wrapper around Llama's create_chat_completion.
-        """
-        if self.llama is None:
-            raise RuntimeError("No model is currently loaded.")
-            
-        return self.llama.create_chat_completion(
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature
-        )
+    async def _monitor_process(self):
+        if not self.process: return
+        await self.process.wait()
+        if self.state != ServerState.UNLOADED:
+            self.state = ServerState.ERROR
+            self._error_msg = f"Process crashed with exit code {self.process.returncode}"
+            self._notify_listeners()
 
-# Global manager instance
-manager = LlamaManager()
+    async def load_model(self, model_id: str, n_ctx: int):
+        async with self._lock:
+            await self._unload_model_internal()
+            self.config_manager.update_config(current_model=model_id, current_n_ctx=n_ctx)
+            asyncio.create_task(self._start_server_subprocess(model_id, n_ctx))
+
+    async def unload_model(self):
+        async with self._lock:
+            await self._unload_model_internal()
+
+    async def _unload_model_internal(self):
+        # Internal call without grabbing the lock
+        if self.process:
+            self.process.terminate()
+            try:
+                await asyncio.wait_for(self.process.wait(), timeout=5.0)
+            except asyncio.TimeoutError:
+                self.process.kill()
+            self.process = None
+        self.state = ServerState.UNLOADED
+        self._notify_listeners()
+
+# Global instances
+config_manager = ConfigManager()
+llama_manager = LlamaManager(config_manager)

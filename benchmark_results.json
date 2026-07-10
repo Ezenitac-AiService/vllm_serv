@@ -2,9 +2,9 @@
   {
     "model_id": "gemma4-2b",
     "prompt_type": "short",
-    "load_time_sec": 1.53,
-    "tpot_ms": 206.27,
-    "peak_vram_mb": 2.0,
+    "load_time_sec": 1.5,
+    "tpot_ms": 39.43,
+    "peak_vram_mb": 7182.0,
     "completion_tokens": 3,
     "status": "SUCCESS",
     "error_message": ""
@@ -12,9 +12,9 @@
   {
     "model_id": "gemma4-2b",
     "prompt_type": "medium",
-    "load_time_sec": 1.53,
-    "tpot_ms": 92.34,
-    "peak_vram_mb": 2.0,
+    "load_time_sec": 1.5,
+    "tpot_ms": 10.14,
+    "peak_vram_mb": 7182.0,
     "completion_tokens": 100,
     "status": "SUCCESS",
     "error_message": ""
@@ -22,9 +22,9 @@
   {
     "model_id": "gemma4-2b",
     "prompt_type": "long",
-    "load_time_sec": 1.53,
-    "tpot_ms": 177.19,
-    "peak_vram_mb": 2.0,
+    "load_time_sec": 1.5,
+    "tpot_ms": 13.29,
+    "peak_vram_mb": 7184.0,
     "completion_tokens": 100,
     "status": "SUCCESS",
     "error_message": ""
@@ -32,61 +32,61 @@
   {
     "model_id": "gemma4-4b",
     "prompt_type": "short",
-    "load_time_sec": 2.24,
-    "tpot_ms": 220.74,
-    "peak_vram_mb": 2.0,
-    "completion_tokens": 10,
-    "status": "SUCCESS",
-    "error_message": ""
+    "load_time_sec": 0.0,
+    "tpot_ms": 0.0,
+    "peak_vram_mb": 0.0,
+    "completion_tokens": 0,
+    "status": "LOAD_FAILED",
+    "error_message": "Failed to load model gemma4-4b: Failed to create llama_context"
   },
   {
     "model_id": "gemma4-4b",
     "prompt_type": "medium",
-    "load_time_sec": 2.24,
-    "tpot_ms": 174.48,
-    "peak_vram_mb": 2.0,
-    "completion_tokens": 100,
-    "status": "SUCCESS",
-    "error_message": ""
+    "load_time_sec": 0.0,
+    "tpot_ms": 0.0,
+    "peak_vram_mb": 0.0,
+    "completion_tokens": 0,
+    "status": "LOAD_FAILED",
+    "error_message": "Failed to load model gemma4-4b: Failed to create llama_context"
   },
   {
     "model_id": "gemma4-4b",
     "prompt_type": "long",
-    "load_time_sec": 2.24,
-    "tpot_ms": 340.35,
-    "peak_vram_mb": 2.0,
-    "completion_tokens": 100,
-    "status": "SUCCESS",
-    "error_message": ""
+    "load_time_sec": 0.0,
+    "tpot_ms": 0.0,
+    "peak_vram_mb": 0.0,
+    "completion_tokens": 0,
+    "status": "LOAD_FAILED",
+    "error_message": "Failed to load model gemma4-4b: Failed to create llama_context"
   },
   {
     "model_id": "gemma4-12b",
     "prompt_type": "short",
-    "load_time_sec": 4.74,
-    "tpot_ms": 1163.37,
-    "peak_vram_mb": 2.0,
-    "completion_tokens": 3,
-    "status": "SUCCESS",
-    "error_message": ""
+    "load_time_sec": 0.0,
+    "tpot_ms": 0.0,
+    "peak_vram_mb": 0.0,
+    "completion_tokens": 0,
+    "status": "LOAD_FAILED",
+    "error_message": "Failed to load model gemma4-12b: Failed to create llama_context"
   },
   {
     "model_id": "gemma4-12b",
     "prompt_type": "medium",
-    "load_time_sec": 4.74,
-    "tpot_ms": 424.43,
-    "peak_vram_mb": 2.0,
-    "completion_tokens": 100,
-    "status": "SUCCESS",
-    "error_message": ""
+    "load_time_sec": 0.0,
+    "tpot_ms": 0.0,
+    "peak_vram_mb": 0.0,
+    "completion_tokens": 0,
+    "status": "LOAD_FAILED",
+    "error_message": "Failed to load model gemma4-12b: Failed to create llama_context"
   },
   {
     "model_id": "gemma4-12b",
     "prompt_type": "long",
-    "load_time_sec": 4.74,
-    "tpot_ms": 883.06,
-    "peak_vram_mb": 2.0,
-    "completion_tokens": 100,
-    "status": "SUCCESS",
-    "error_message": ""
+    "load_time_sec": 0.0,
+    "tpot_ms": 0.0,
+    "peak_vram_mb": 0.0,
+    "completion_tokens": 0,
+    "status": "LOAD_FAILED",
+    "error_message": "Failed to load model gemma4-12b: Failed to create llama_context"
   }
 ]

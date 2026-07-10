@@ -12,7 +12,7 @@ class ModelConfig(BaseModel):
     model_id: str
     repo_id: str
     filename: str
-    n_ctx: int = 4096
+    n_ctx: int = 8192
 
 
 def get_hf_token() -> str:
@@ -31,17 +31,20 @@ SUPPORTED_MODELS = {
     "gemma4-2b": ModelConfig(
         model_id="gemma4-2b",
         repo_id="google/gemma-4-E2B-it-qat-q4_0-gguf",
-        filename=""  # Will be automatically resolved
+        filename="",
+        n_ctx=128000
     ),
     "gemma4-4b": ModelConfig(
         model_id="gemma4-4b",
         repo_id="google/gemma-4-E4B-it-qat-q4_0-gguf",
-        filename=""  # Will be automatically resolved
+        filename="",
+        n_ctx=128000
     ),
     "gemma4-12b": ModelConfig(
         model_id="gemma4-12b",
         repo_id="google/gemma-4-12B-it-qat-q4_0-gguf",
-        filename=""  # Will be automatically resolved
+        filename="",
+        n_ctx=256000
     )
 }
 
