@@ -1,0 +1,92 @@
+[
+  {
+    "model_id": "gemma4-2b",
+    "prompt_type": "short",
+    "load_time_sec": 1.53,
+    "tpot_ms": 206.27,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 3,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-2b",
+    "prompt_type": "medium",
+    "load_time_sec": 1.53,
+    "tpot_ms": 92.34,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 100,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-2b",
+    "prompt_type": "long",
+    "load_time_sec": 1.53,
+    "tpot_ms": 177.19,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 100,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-4b",
+    "prompt_type": "short",
+    "load_time_sec": 2.24,
+    "tpot_ms": 220.74,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 10,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-4b",
+    "prompt_type": "medium",
+    "load_time_sec": 2.24,
+    "tpot_ms": 174.48,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 100,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-4b",
+    "prompt_type": "long",
+    "load_time_sec": 2.24,
+    "tpot_ms": 340.35,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 100,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-12b",
+    "prompt_type": "short",
+    "load_time_sec": 4.74,
+    "tpot_ms": 1163.37,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 3,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-12b",
+    "prompt_type": "medium",
+    "load_time_sec": 4.74,
+    "tpot_ms": 424.43,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 100,
+    "status": "SUCCESS",
+    "error_message": ""
+  },
+  {
+    "model_id": "gemma4-12b",
+    "prompt_type": "long",
+    "load_time_sec": 4.74,
+    "tpot_ms": 883.06,
+    "peak_vram_mb": 2.0,
+    "completion_tokens": 100,
+    "status": "SUCCESS",
+    "error_message": ""
+  }
+]
