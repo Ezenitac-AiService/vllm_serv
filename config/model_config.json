@@ -1,4 +1,4 @@
 {
-    "current_model": "test-model",
-    "current_n_ctx": 1024
+    "current_model": "gemma4-e2b",
+    "current_n_ctx": 35000
 }
