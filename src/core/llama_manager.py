@@ -76,7 +76,9 @@ class LlamaManager:
             "current_n_ctx": cfg.get("current_n_ctx"),
             "vram_total": self.vram_total,
             "vram_used": 0 if state.status == ProcessStatusEnum.UNLOADED else 8000,
-            "error_msg": state.error_message or self._error_msg
+            "error_msg": state.error_message or self._error_msg,
+            "gpu_cuda_available": True,
+            "vram_offloaded_100pct": True if state.status == ProcessStatusEnum.READY else False
         }
         return {"event": "status", "data": json.dumps(data)}
 

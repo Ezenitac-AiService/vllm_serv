@@ -1,9 +1,19 @@
 import asyncio
 import os
 import shutil
+import socket
+import sys
 from enum import Enum
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
+
+from src.core.gpu_detector import (
+    check_gpu_availability,
+    GpuDeviceInfo,
+    VramOffloadStatus,
+    GpuAccelerationError,
+    VramOverflowError
+)
 
 class ProcessStatusEnum(str, Enum):
     UNLOADED = "UNLOADED"
@@ -134,6 +144,28 @@ class ProcessManager:
             )
             return self.state
 
+        # FR-001 & FR-002: GPU & CUDA Backend auto-detection and CPU fallback blocking
+        if os.environ.get("MOCK_CPU_ONLY") == "1":
+            self.state = ProcessState(
+                status=ProcessStatusEnum.ERROR,
+                model_id=model_id,
+                port=self.port,
+                error_message="GpuAccelerationError: CPU-only execution is strictly blocked. NVIDIA GPU with CUDA acceleration is required."
+            )
+            return self.state
+
+        if not os.environ.get("MOCK_LLAMA_SERVER"):
+            try:
+                gpu_info = check_gpu_availability()
+            except GpuAccelerationError as e:
+                self.state = ProcessState(
+                    status=ProcessStatusEnum.ERROR,
+                    model_id=model_id,
+                    port=self.port,
+                    error_message=f"GpuAccelerationError: {str(e)}"
+                )
+                return self.state
+
         # Search for llama-server binary or fallback to python module
         binary_executable = (
             shutil.which("llama-server")
@@ -144,6 +176,10 @@ class ProcessManager:
         if target_preset.get("clip"):
             clip_file = os.path.join(base_dir, target_preset["clip"])
 
+        # Force 100% GPU VRAM Offloading environment variables
+        env = dict(os.environ)
+        env["CUDA_VISIBLE_DEVICES"] = "0"
+
         if binary_executable:
             cmd = [
                 binary_executable,
@@ -151,10 +187,12 @@ class ProcessManager:
                 "-c", str(n_ctx),
                 "--host", "127.0.0.1",
                 "--port", str(self.port),
-                "-ngl", "99"
+                "-ngl", "999",
+                "--split-mode", "none",
+                "--main-gpu", "0"
             ]
             if clip_file:
-                cmd.extend(["--mmproj", clip_file])
+                cmd.extend(["--mmproj", clip_file, "--mmproj-offload"])
         else:
             cmd = [
                 "python3", "-m", "llama_cpp.server",
@@ -162,7 +200,7 @@ class ProcessManager:
                 "--n_ctx", str(n_ctx),
                 "--host", "127.0.0.1",
                 "--port", str(self.port),
-                "--n_gpu_layers", "-1"
+                "--n_gpu_layers", "999"
             ]
             if clip_file:
                 cmd.extend(["--clip_model_path", clip_file])
@@ -190,7 +228,8 @@ class ProcessManager:
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT
+                stderr=asyncio.subprocess.STDOUT,
+                env=env
             )
             self.state = ProcessState(
                 status=ProcessStatusEnum.LOADING,
