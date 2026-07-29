@@ -311,18 +311,19 @@ def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], ou
 
 ## 4. Context Window Capacity & Scaling Limits
 
-| Model Lineup | Supported `n_ctx` Steps | 4,096 VRAM / TTFT | 8,192 VRAM / TTFT | 16,384 VRAM / TTFT | 32,768 VRAM / TTFT | VRAM Safety Threshold |
-|--------------|-------------------------|-------------------|-------------------|--------------------|--------------------|-----------------------|
+| Model Lineup | Supported `n_ctx` Steps | 2,048 VRAM / TTFT | 4,096 VRAM / TTFT | 8,192 VRAM / TTFT | 16,384 VRAM / TTFT | 32,768 VRAM / TTFT | VRAM Safety Threshold |
+|--------------|-------------------------|-------------------|-------------------|-------------------|--------------------|--------------------|-----------------------|
 """
 
     for r in reports:
         scales = {s.n_ctx: s for s in r.context_scaling_metrics} if r.context_scaling_metrics else {}
+        s2k = f"{scales[2048].peak_vram_mb}MB / {scales[2048].ttft_ms}ms" if 2048 in scales else "N/A"
         s4k = f"{scales[4096].peak_vram_mb}MB / {scales[4096].ttft_ms}ms" if 4096 in scales else "N/A"
         s8k = f"{scales[8192].peak_vram_mb}MB / {scales[8192].ttft_ms}ms" if 8192 in scales else "N/A"
         s16k = f"{scales[16384].peak_vram_mb}MB / {scales[16384].ttft_ms}ms" if 16384 in scales else "N/A"
         s32k = f"{scales[32768].peak_vram_mb}MB / {scales[32768].ttft_ms}ms" if 32768 in scales else "N/A"
         safe_ctx = "32,768 (Safe)" if r.peak_vram_mb < 5000 else ("16,384 (Safe)" if r.peak_vram_mb < 7500 else "8,192 (Max Limit)")
-        content += f"| **{r.model_id}** | `4K ~ 32K` | `{s4k}` | `{s8k}` | `{s16k}` | `{s32k}` | **`{safe_ctx}`** |\n"
+        content += f"| **{r.model_id}** | `2K ~ 32K` | `{s2k}` | `{s4k}` | `{s8k}` | `{s16k}` | `{s32k}` | **`{safe_ctx}`** |\n"
 
     content += """
 ---
@@ -509,13 +510,99 @@ async def run_real_benchmark_loop(
             q_sample1 = evaluator.get_qualitative_sample("ATEAM-STOCK-01", model_name, model_resp)
             q_sample2 = evaluator.get_qualitative_sample("BTEAM-REVIEW-01", model_name, model_resp)
 
-            # Step 5.1: 컨텍스트 윈도우 스케일링 측정 (n_ctx: 4K, 8K, 16K, 32K) (FR-005)
-            context_scales = [
-                ContextScalingMetric(n_ctx=4096, peak_vram_mb=vram_mb, ttft_ms=ttft, tpot_tok_per_sec=tpot, is_oom=False),
-                ContextScalingMetric(n_ctx=8192, peak_vram_mb=round(vram_mb * 1.15, 1), ttft_ms=round(ttft * 1.1, 1), tpot_tok_per_sec=round(tpot * 0.95, 1), is_oom=False),
-                ContextScalingMetric(n_ctx=16384, peak_vram_mb=round(vram_mb * 1.35, 1), ttft_ms=round(ttft * 1.3, 1), tpot_tok_per_sec=round(tpot * 0.85, 1), is_oom=vram_mb > 8000),
-                ContextScalingMetric(n_ctx=32768, peak_vram_mb=round(vram_mb * 1.70, 1), ttft_ms=round(ttft * 1.7, 1), tpot_tok_per_sec=round(tpot * 0.70, 1), is_oom=vram_mb > 6000),
-            ]
+            # Step 5.1: FR-001 실측 GPU 컨텍스트 윈도우 스케일링 벤치마크 (n_ctx: 2K, 4K, 8K, 16K, 32K)
+            n_ctx_list = [2048, 4096, 8192, 16384, 32768]
+            context_scales = []
+            print(f"[Step 5.1] 실측 GPU 컨텍스트 스케일링 측정 시작 ({len(n_ctx_list)}개 구간)...")
+
+            for ctx_idx, target_n_ctx in enumerate(n_ctx_list, 1):
+                # FR-003: Pre-flight VRAM OOM 세이프티 가드
+                est_vram = pm.estimate_vram_usage(model_id, target_n_ctx)
+                if est_vram > pm.vram_max_capacity_mb + 2000:
+                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ⚠️ OOM 위험 (추정 {est_vram}MB > {pm.vram_max_capacity_mb}MB) → 건너뛰기")
+                    context_scales.append(ContextScalingMetric(
+                        n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
+                        tpot_tok_per_sec=0.0, is_oom=True
+                    ))
+                    continue
+
+                # 프로세스 종료 후 재시작 (n_ctx 변경을 위해)
+                if ctx_idx > 1 or target_n_ctx != 2048:
+                    await pm.stop_process()
+                    await asyncio.sleep(0.5)
+
+                print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: 프로세스 스폰 중...")
+                ctx_spawn_state = await pm.spawn_process(model_id, target_n_ctx)
+
+                if ctx_spawn_state.status == ProcessStatusEnum.ERROR:
+                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ❌ 스폰 실패 ({ctx_spawn_state.error_message})")
+                    context_scales.append(ContextScalingMetric(
+                        n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
+                        tpot_tok_per_sec=0.0, is_oom=True
+                    ))
+                    continue
+
+                # 서빙 READY 대기
+                ctx_ready = False
+                async with httpx.AsyncClient(timeout=2.0) as ctx_client:
+                    ctx_deadline = time.time() + 120.0
+                    while time.time() < ctx_deadline:
+                        try:
+                            r = await ctx_client.get("http://127.0.0.1:8081/v1/models")
+                            if r.status_code == 200:
+                                ctx_ready = True
+                                break
+                        except Exception:
+                            pass
+                        try:
+                            r = await ctx_client.get("http://127.0.0.1:8081/health")
+                            if r.status_code == 200:
+                                ctx_ready = True
+                                break
+                        except Exception:
+                            pass
+                        await asyncio.sleep(0.5)
+
+                if not ctx_ready:
+                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ❌ 헬스체크 타임아웃")
+                    context_scales.append(ContextScalingMetric(
+                        n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
+                        tpot_tok_per_sec=0.0, is_oom=True
+                    ))
+                    await pm.stop_process()
+                    continue
+
+                # 실측 VRAM 수집 (nvidia-smi)
+                ctx_vram_mb = item["base_vram"]
+                try:
+                    from src.core.gpu_detector import get_nvml_vram_info
+                    gpu_snap = get_nvml_vram_info()
+                    ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
+                except Exception:
+                    pass
+
+                # 실측 추론 수행 (TTFT, TPOT 측정)
+                ctx_live = request_live_inference(
+                    "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함"
+                )
+                ctx_ttft = 0.0
+                ctx_tpot = 0.0
+                if ctx_live:
+                    ctx_ttft = ctx_live["ttft"]
+                    ctx_tpot = ctx_live["tpot"]
+
+                print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ✅ VRAM={ctx_vram_mb}MB, TTFT={ctx_ttft}ms, TPOT={ctx_tpot} tok/s")
+                context_scales.append(ContextScalingMetric(
+                    n_ctx=target_n_ctx,
+                    peak_vram_mb=ctx_vram_mb,
+                    ttft_ms=ctx_ttft,
+                    tpot_tok_per_sec=ctx_tpot,
+                    is_oom=False
+                ))
+
+            # 최종 프로세스 정리 (스케일링 루프 종료 후)
+            await pm.stop_process()
+            await asyncio.sleep(0.5)
 
             reports.append(ComprehensiveQualityReportMetric(
                 model_id=model_name,
@@ -547,8 +634,12 @@ async def run_real_benchmark_loop(
             from src.core.llama_manager import llama_manager
             await llama_manager.ensure_default_model_resident("qwen3.5-4b")
             print(f"[Post-Benchmark] ✅ 기본 모델 qwen3.5-4b VRAM 복원 완료")
+            if llama_manager.process_manager:
+                llama_manager.process_manager.close_transport()
+                await asyncio.sleep(0.1)
         except Exception as e:
             print(f"[Post-Benchmark] ⚠️ 기본 모델 복원 참고 메시지: {e}")
+
 
     return reports, gpu_metadata
 

@@ -8,6 +8,8 @@ from enum import Enum
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.core.config_manager import ConfigManager
+
 from src.core.gpu_detector import (
     check_gpu_availability,
     get_nvml_vram_info,
@@ -100,7 +102,7 @@ class QwenModelPreset(BaseModel):
 class ProcessManager:
     """Subprocess lifecycle manager for llama-server subprocesses supporting Gemma 4 and Qwen3.5."""
 
-    def __init__(self, port: int = 8081):
+    def __init__(self, port: int = 8081, config_manager: Optional['ConfigManager'] = None):
         self.port = port
         self.process: Optional[asyncio.subprocess.Process] = None
         self.state: ProcessState = ProcessState(status=ProcessStatusEnum.UNLOADED, port=port)
@@ -159,6 +161,30 @@ class ProcessManager:
                 "vram_est_mb": 9800
             }
         }
+
+        # FR-008: 외부 JSON 카탈로그에서 모델 프리셋 동적 로드 (config_manager 제공 시)
+        self._config_manager = config_manager
+        if config_manager is not None:
+            catalog = config_manager.get_model_catalog()
+            if catalog:
+                loaded_presets = {}
+                for model_id, entry in catalog.items():
+                    loaded_presets[model_id] = {
+                        "model": entry.get("model_path", ""),
+                        "clip": entry.get("clip_path"),
+                        "chat_template": entry.get("chat_template", "chatml"),
+                        "vram_est_mb": entry.get("vram_est_mb", 6000),
+                        "requires_mmproj": entry.get("requires_mmproj", False),
+                    }
+                self.model_presets = loaded_presets
+
+            # FR-009/FR-010: 서버 설정에서 VRAM 상한 동적 로드
+            server_config = config_manager.get_server_config()
+            if server_config:
+                self.vram_max_capacity_mb = server_config.get("vram_max_capacity_mb", 11264)
+
+            # FR-009: 서버 포트 동적 로드
+            self.port = server_config.get("port", port) if server_config else port
 
     def verify_vram_released(self, baseline_free_vram_mb: int = 0, tolerance_mb: int = 200) -> bool:
         """FR-013: VRAM memory release check via nvidia-smi."""
@@ -537,6 +563,18 @@ class ProcessManager:
             )
         return self.state
 
+    def close_transport(self) -> None:
+        """Explicitly close subprocess transport to prevent BaseSubprocessTransport.__del__ exception on loop closure."""
+        if self.process:
+            try:
+                transport = getattr(self.process, '_transport', None)
+                if transport is not None:
+                    if hasattr(transport, 'is_closing') and not transport.is_closing():
+                        transport.close()
+                    elif not getattr(transport, '_closed', False):
+                        transport.close()
+            except Exception:
+                pass
 
     async def stop_process(self) -> ProcessState:
         """Stops the running subprocess with Graceful Stream Drain, SIGTERM -> SIGKILL escalation and socket cleanup.
@@ -565,8 +603,18 @@ class ProcessManager:
                         await asyncio.wait_for(self.process.wait(), timeout=2.0)
             except (ProcessLookupError, Exception):
                 pass
+
+            # FR-005/FR-006: 서브프로세스 트랜스포트 명시적 닫기 및 마이크로태스크 소진
+            # BaseSubprocessTransport.__del__ RuntimeError: Event loop is closed 예외 방지
+            self.close_transport()
+            try:
+                await asyncio.sleep(0.1)  # FR-006: 마이크로태스크 및 이벤트 루프 소진으로 닫힘 콜백 완결
+            except Exception:
+                pass
+
             exit_code = self.process.returncode
             self.process = None
+
 
         else:
             exit_code = None

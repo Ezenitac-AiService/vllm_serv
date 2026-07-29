@@ -2,21 +2,50 @@ import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
+from src.core.llama_manager import llama_manager
 
 router = APIRouter()
 
-LLAMA_SERVER_PORT = 8081
-LLAMA_SERVER_URL = f"http://127.0.0.1:{LLAMA_SERVER_PORT}"
+from src.core.config_manager import ConfigManager
+
+def _get_llama_server_config():
+    """FR-009: 서버 포트 및 호스트를 config/server_config.json 또는 환경변수에서 동적 로드."""
+    try:
+        cm = ConfigManager()
+        server_cfg = cm.get_server_config()
+        port = server_cfg.get("port", 8081)
+        host = server_cfg.get("host", "127.0.0.1")
+        return port, host
+    except Exception:
+        return 8081, "127.0.0.1"
+
+_port, _host = _get_llama_server_config()
+LLAMA_SERVER_PORT = _port
+LLAMA_SERVER_URL = f"http://{_host}:{LLAMA_SERVER_PORT}"
 
 # Fallback client for direct testing if app.state.http_client is not set
-_default_client = httpx.AsyncClient(
-    base_url=LLAMA_SERVER_URL,
-    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
-    timeout=None
-)
+def _build_default_client():
+    """FR-010: 커넥션 풀 설정을 config/server_config.json에서 동적 로드."""
+    try:
+        cm = ConfigManager()
+        server_cfg = cm.get_server_config()
+        pool_cfg = server_cfg.get("connection_pool", {})
+        max_keepalive = pool_cfg.get("max_keepalive_connections", 20)
+        max_conn = pool_cfg.get("max_connections", 100)
+    except Exception:
+        max_keepalive = 20
+        max_conn = 100
+
+    return httpx.AsyncClient(
+        base_url=LLAMA_SERVER_URL,
+        limits=httpx.Limits(max_keepalive_connections=max_keepalive, max_connections=max_conn),
+        timeout=None
+    )
+
+_default_client = _build_default_client()
 
 async def check_llama_status():
-    from src.core.llama_manager import llama_manager
+    # from src.core.llama_manager import llama_manager
     return llama_manager.is_ready()
 
 def _get_http_client(request: Request) -> httpx.AsyncClient:
@@ -24,6 +53,52 @@ def _get_http_client(request: Request) -> httpx.AsyncClient:
     if hasattr(request.app.state, "http_client") and request.app.state.http_client:
         return request.app.state.http_client
     return _default_client
+
+@router.get("/v1/models")
+async def list_models(request: Request):
+    """FR-007: OpenAI API 표준 GET /v1/models 동적 모델 카탈로그 엔드포인트.
+    
+    PRESET_CATALOG 기반 전체 모델 6종의 정보, 다운로드 상태, 현재 활성화 여부를
+    OpenAI 규격 JSON ({"object": "list", "data": [...]})으로 동적 반환합니다.
+    """
+    import time
+    from src.core.config_manager import ConfigManager
+    from src.core.model_downloader import ModelDownloader, MODEL_DOWNLOAD_CATALOG
+
+    # FR-008: 외부 JSON 카탈로그 또는 하드코딩 카탈로그에서 모델 목록 조회
+    try:
+        cm = ConfigManager()
+        catalog = cm.get_model_catalog()
+        if not catalog:
+            catalog = MODEL_DOWNLOAD_CATALOG
+    except Exception:
+        catalog = MODEL_DOWNLOAD_CATALOG
+
+    downloader = ModelDownloader()
+    current_model = None
+    try:
+        cfg = llama_manager.config_manager.get_config()
+        current_model = cfg.get("current_model")
+    except Exception:
+        pass
+
+    created_ts = int(time.time())
+    models_data = []
+    for model_id, entry in catalog.items():
+        is_available = downloader.is_model_available(model_id)
+        is_active = (current_model == model_id and llama_manager.is_ready())
+        models_data.append({
+            "id": model_id,
+            "object": "model",
+            "created": created_ts,
+            "owned_by": "llm-server",
+            "permission": [],
+            "is_available": is_available,
+            "is_active": is_active,
+        })
+
+    return {"object": "list", "data": models_data}
+
 
 @router.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
 async def reverse_proxy(request: Request, path: str):

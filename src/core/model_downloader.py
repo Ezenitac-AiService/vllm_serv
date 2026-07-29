@@ -102,7 +102,7 @@ class ModelDownloader:
     FR-003: 모델 로드 요청 시 로컬 가중치 미존재를 탐지하고 자동 다운로드 수행.
     """
 
-    def __init__(self, base_dir: Optional[str] = None):
+    def __init__(self, base_dir: Optional[str] = None, config_manager=None):
         """초기화.
 
         Args:
@@ -117,9 +117,29 @@ class ModelDownloader:
 
         self._tasks: Dict[str, ModelDownloadTask] = {}
 
+        # FR-008: 외부 JSON 카탈로그에서 다운로드 카탈로그 동적 로드
+        self._config_manager = config_manager
+        if config_manager is not None:
+            ext_catalog = config_manager.get_model_catalog()
+            if ext_catalog:
+                self._external_catalog = {}
+                for model_id, entry in ext_catalog.items():
+                    self._external_catalog[model_id] = {
+                        "repo_id": entry.get("repo_id", ""),
+                        "filename": entry.get("filename", ""),
+                        "clip_filename": entry.get("clip_filename"),
+                        "target_dir": entry.get("target_dir", ""),
+                    }
+            else:
+                self._external_catalog = None
+        else:
+            self._external_catalog = None
+
     @property
     def catalog(self) -> Dict[str, Dict]:
         """다운로드 가능 모델 카탈로그 반환."""
+        if self._external_catalog is not None:
+            return self._external_catalog
         return MODEL_DOWNLOAD_CATALOG
 
     def get_task(self, model_id: str) -> Optional[ModelDownloadTask]:
@@ -132,7 +152,7 @@ class ModelDownloader:
 
     def is_model_available(self, model_id: str) -> bool:
         """로컬에 해당 모델의 GGUF 가중치 및 MMProj CLIP 프로젝터 파일이 모두 존재하는지 확인."""
-        catalog_entry = MODEL_DOWNLOAD_CATALOG.get(model_id)
+        catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             return False
         target_path = os.path.join(
@@ -150,7 +170,7 @@ class ModelDownloader:
 
     def get_model_path(self, model_id: str) -> Optional[str]:
         """모델의 로컬 GGUF 파일 절대 경로 반환. 미존재 시 None."""
-        catalog_entry = MODEL_DOWNLOAD_CATALOG.get(model_id)
+        catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             return None
         target_path = os.path.join(
@@ -176,7 +196,7 @@ class ModelDownloader:
         Returns:
             ModelDownloadTask: 다운로드 결과 상태
         """
-        catalog_entry = MODEL_DOWNLOAD_CATALOG.get(model_id)
+        catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             task = ModelDownloadTask(
                 model_id=model_id,
@@ -294,7 +314,7 @@ class ModelDownloader:
         Returns:
             모델별 다운로드 결과 맵.
         """
-        targets = model_ids or list(MODEL_DOWNLOAD_CATALOG.keys())
+        targets = model_ids or list(self.catalog.keys())
         results: Dict[str, ModelDownloadTask] = {}
 
         for i, mid in enumerate(targets, 1):
@@ -323,7 +343,7 @@ class ModelDownloader:
             FileNotFoundError: 다운로드 실패 시
             ValueError: 알 수 없는 model_id
         """
-        catalog_entry = MODEL_DOWNLOAD_CATALOG.get(model_id)
+        catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             raise ValueError(f"Unknown model_id: {model_id}")
 

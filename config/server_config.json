@@ -1,0 +1,11 @@
+{
+    "port": 8081,
+    "host": "127.0.0.1",
+    "healthcheck_timeout_s": 120,
+    "connection_pool": {
+        "max_keepalive_connections": 20,
+        "max_connections": 100
+    },
+    "vram_max_capacity_mb": 11264,
+    "graceful_drain_timeout_s": 5.0
+}

@@ -19,7 +19,11 @@ class LlamaManager:
     def __init__(self, config_manager: ConfigManager, port: int = 8081):
         self.config_manager = config_manager
         self.port = port
-        self.process_manager = ProcessManager(port=port)
+        # FR-009: 서버 포트 동적 로드 (기본값 8081을 server_config.json 또는 환경변수로 오버라이드)
+        server_cfg = config_manager.get_server_config()
+        if server_cfg and port == 8081:  # 명시적 포트 지정이 없으면 설정에서 로드
+            self.port = server_cfg.get("port", 8081)
+        self.process_manager = ProcessManager(port=self.port)
         self.broadcaster = EventBroadcaster(queue_maxsize=100)
         self.model_downloader = ModelDownloader()
         self._error_msg = ""
