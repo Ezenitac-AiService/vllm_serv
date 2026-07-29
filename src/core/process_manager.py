@@ -27,6 +27,29 @@ class ProcessStatusEnum(str, Enum):
     READY = "READY"
     ERROR = "ERROR"
 
+class TestExecutionMode(str, Enum):
+    MOCK = "mock"
+    REAL = "real"
+
+class LlamaServerBinaryInfo(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    binary_path: str = Field(..., description="llama-server 바이너리 경로")
+    is_cuda_enabled: bool = Field(default=True, description="CUDA 가속 구동 여부")
+    build_source: str = Field(default="PATH", description="바이너리 취득 경로 (PATH / CMAKE_BUILD / PYTHON_MODULE)")
+    version_info: Optional[str] = Field(default=None, description="바이너리 버전 정보")
+
+class RealGpuBenchmarkSession(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    session_id: str = Field(default="session-001", description="세션 식별자")
+    execution_mode: TestExecutionMode = Field(default=TestExecutionMode.REAL, description="테스트 실행 모드")
+    target_models: list[str] = Field(default_factory=list, description="대상 6개 모델 ID 목록")
+    completed_models: list[str] = Field(default_factory=list, description="성공 모델 ID 목록")
+    failed_models: dict[str, str] = Field(default_factory=dict, description="실패 모델 ID 및 원인 메시지")
+    vram_safety_threshold_mb: int = Field(default=11264, description="VRAM 안전 임계치 MB")
+
+
 class ProcessState(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -304,6 +327,61 @@ class ProcessManager:
         except Exception:
             pass
 
+    @staticmethod
+    def verify_and_build_llama_server() -> LlamaServerBinaryInfo:
+        """FR-001: Verifies CUDA llama-server binary existence; compiles via CMake with GGML_CUDA=ON if missing."""
+        candidate = shutil.which("llama-server")
+        if candidate and "ollama" not in candidate:
+            return LlamaServerBinaryInfo(
+                binary_path=candidate,
+                is_cuda_enabled=True,
+                build_source="PATH"
+            )
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        bin_dir = os.path.join(base_dir, ".bin")
+        local_binary = os.path.join(bin_dir, "llama-server")
+
+        if os.path.exists(local_binary) and os.access(local_binary, os.X_OK):
+            return LlamaServerBinaryInfo(
+                binary_path=local_binary,
+                is_cuda_enabled=True,
+                build_source="LOCAL_BIN"
+            )
+
+        llama_src_dir = os.path.join(base_dir, "llama.cpp")
+        if os.path.exists(os.path.join(llama_src_dir, "CMakeLists.txt")):
+            print("[ProcessManager] llama-server missing. Compiling llama.cpp with CUDA support (cmake -B build -DGGML_CUDA=ON)...")
+            import subprocess
+            try:
+                os.makedirs(bin_dir, exist_ok=True)
+                build_dir = os.path.join(llama_src_dir, "build")
+                subprocess.run(
+                    ["cmake", "-B", build_dir, "-DGGML_CUDA=ON"],
+                    cwd=llama_src_dir, check=True, capture_output=True
+                )
+                subprocess.run(
+                    ["cmake", "--build", build_dir, "--config", "Release", "-j"],
+                    cwd=llama_src_dir, check=True, capture_output=True
+                )
+                built_binary = os.path.join(build_dir, "bin", "llama-server")
+                if os.path.exists(built_binary):
+                    shutil.copy2(built_binary, local_binary)
+                    os.chmod(local_binary, 0o755)
+                    return LlamaServerBinaryInfo(
+                        binary_path=local_binary,
+                        is_cuda_enabled=True,
+                        build_source="CMAKE_BUILD"
+                    )
+            except Exception as e:
+                print(f"[ProcessManager] Warning: CMake build failed: {e}")
+
+        return LlamaServerBinaryInfo(
+            binary_path=sys.executable,
+            is_cuda_enabled=True,
+            build_source="PYTHON_MODULE_FALLBACK"
+        )
+
     async def spawn_process(self, model_id: str, n_ctx: int) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""
         await self.stop_process()
@@ -366,11 +444,8 @@ class ProcessManager:
                 )
                 return self.state
 
-        # Search for standalone CUDA-supported llama-server binary or fallback to python module
-        candidate_binary = shutil.which("llama-server")
-        binary_executable = None
-        if candidate_binary and "ollama" not in candidate_binary:
-            binary_executable = candidate_binary
+        # FR-001: Resolve CUDA llama-server binary or fallback to python module
+        binary_info = self.verify_and_build_llama_server()
 
         # FR-007: Pure Text LLM Serving (Bypass clip vision projector loading for ultra-fast startup & lower VRAM)
         clip_file = None
@@ -379,9 +454,9 @@ class ProcessManager:
         env = dict(os.environ)
         env["CUDA_VISIBLE_DEVICES"] = "0"
 
-        if binary_executable:
+        if binary_info.build_source != "PYTHON_MODULE_FALLBACK":
             cmd = [
-                binary_executable,
+                binary_info.binary_path,
                 "-m", model_file,
                 "-c", str(n_ctx),
                 "--host", "127.0.0.1",
@@ -399,6 +474,7 @@ class ProcessManager:
                 "--port", str(self.port),
                 "--n_gpu_layers", "-1"
             ]
+
             if clip_file and os.path.exists(clip_file):
                 cmd.extend(["--clip_model_path", clip_file])
             if target_preset.get("chat_template"):

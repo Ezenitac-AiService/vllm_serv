@@ -43,6 +43,27 @@ def test_verify_vram_released_success():
         with patch("subprocess.run", return_value=mock_result):
             assert pm.verify_vram_released(baseline_free_vram_mb=24000, tolerance_mb=200) is True
 
+def test_verify_vram_released_failure():
+    pm = ProcessManager(port=8081)
+    pm.vram_total = 24000
+    with patch("shutil.which", return_value="/usr/bin/nvidia-smi"):
+        mock_result = MagicMock()
+        mock_result.stdout = "20000\n"
+        with patch("subprocess.run", return_value=mock_result):
+            assert pm.verify_vram_released(baseline_free_vram_mb=24000, tolerance_mb=200) is False
+
+
+@pytest.mark.asyncio
+async def test_real_mode_gpu_execution(test_mode):
+    """FR-004 / FR-005: Validates test_mode fixture and real GPU execution when test_mode == 'real'."""
+    pm = ProcessManager(port=8082)
+    if test_mode == "real":
+        gpu_info = check_gpu_availability()
+        assert gpu_info.is_cuda_available is True
+    else:
+        assert test_mode == "mock"
+
+
 def test_verify_vram_released_nvidia_smi_missing():
     pm = ProcessManager(port=8081)
     with patch("shutil.which", return_value=None):

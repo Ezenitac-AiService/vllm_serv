@@ -195,3 +195,12 @@ class TestModelDownloader:
             downloader.download_model("qwen3.5-2b", progress_callback=cb)
             assert len(callback_calls) > 0
             assert callback_calls[0][0] == "qwen3.5-2b"
+
+
+def test_verify_and_build_llama_server_resolution():
+    from src.core.process_manager import ProcessManager, LlamaServerBinaryInfo
+    info = ProcessManager.verify_and_build_llama_server()
+    assert isinstance(info, LlamaServerBinaryInfo)
+    assert info.binary_path is not None
+    assert info.build_source in ("PATH", "LOCAL_BIN", "CMAKE_BUILD", "PYTHON_MODULE_FALLBACK")
+

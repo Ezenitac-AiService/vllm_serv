@@ -217,6 +217,25 @@ def test_check_vram_runtime_overflow_no_nvidia_smi():
 # T005 / US1: Unit tests for get_nvml_vram_info, estimate_kv_cache_vram, PortCollisionError
 from src.core.gpu_detector import get_nvml_vram_info, estimate_kv_cache_vram, PortCollisionError
 
+
+def test_dual_mode_contract_schema():
+    import json
+    import os
+
+    contract_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "specs", "014-real-gpu-benchmark-testing", "contracts", "dual-mode-test-schema.json"
+    )
+    assert os.path.exists(contract_path), f"Contract file not found at {contract_path}"
+
+    with open(contract_path, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+
+    assert schema["title"] == "DualModeTestExecutionContract"
+    assert "execution_mode" in schema["properties"]
+    assert "strict_mock_prohibited" in schema["properties"]
+
+
 def test_estimate_kv_cache_vram_calculation():
     """T005: KV Cache VRAM estimator calculation test."""
     # 2 * 36 layers * 32 heads * 128 dim * 4096 ctx * 2 bytes = 2,415,919,104 bytes = ~2304 MB
