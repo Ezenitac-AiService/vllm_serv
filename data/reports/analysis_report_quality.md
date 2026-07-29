@@ -1,7 +1,7 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `013-enhance-benchmark-report`
-**Generated Date**: 2026-07-29 05:29:34
+**Generated Date**: 2026-07-29 05:54:23
 **Execution Mode**: `LIVE REAL INFERENCE (Local Server Active)`
 **Golden Reference Ground Truth**: `data/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 
@@ -22,8 +22,8 @@
 
 | Evaluation Aspect | Recommended Model Preset | Metric Value | Rationale |
 |-------------------|--------------------------|--------------|-----------|
-| **최고 품질 (Best Quality)** | `Qwen 3.5 2B` | `Quality Score: 3.3 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
-| **최고 속도 가성비 (Quality/Speed)** | `Qwen 3.5 4B` | `Index: 0.7` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
+| **최고 품질 (Best Quality)** | `Gemma 4 12B` | `Quality Score: 3.3 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
+| **최고 속도 가성비 (Quality/Speed)** | `Gemma 4 12B` | `Index: 0.49` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
 | **최고 메모리 가성비 (Quality/VRAM)** | `Qwen 3.5 2B` | `Index: 1.38` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
 
 ---
@@ -34,10 +34,10 @@
 |--------------|-------|-----------|--------------|----------------|---------------------|---------------------|--------------------|--------|
 | **Gemma 4 E2B** | `q4_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
 | **Gemma 4 E4B** | `q4_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
-| **Gemma 4 12B** | `qat_q4_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
-| **Qwen 3.5 2B** | `q4_k_m` | `184.8` | `71.44` | `2450` | **`3.3`** | `0.46` | `1.38` | `✅ SUCCESS` |
-| **Qwen 3.5 4B** | `q4_k_m` | `337.0` | `46.88` | `3950` | **`3.3`** | `0.7` | `0.86` | `✅ SUCCESS` |
-| **Qwen 3.5 9B** | `q4_k_m` | `2949.4` | `34.72` | `7120` | **`1.2`** | `0.35` | `0.17` | `✅ SUCCESS` |
+| **Gemma 4 12B** | `qat_q4_0` | `370.2` | `66.99` | `8900` | **`3.3`** | `0.49` | `0.38` | `✅ SUCCESS` |
+| **Qwen 3.5 2B** | `q4_k_m` | `182.8` | `72.2` | `2450` | **`3.3`** | `0.46` | `1.38` | `✅ SUCCESS` |
+| **Qwen 3.5 4B** | `q4_k_m` | `102.1` | `43.08` | `3950` | **`1.2`** | `0.28` | `0.31` | `✅ SUCCESS` |
+| **Qwen 3.5 9B** | `q4_k_m` | `2956.5` | `34.64` | `7120` | **`1.2`** | `0.35` | `0.17` | `✅ SUCCESS` |
 
 ---
 
@@ -66,10 +66,86 @@
 <details>
 <summary>🔍 <b>[Gemma 4 12B] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `Gemma 4 12B` (Quant: `qat_q4_0`, Quality: `5.0/5.0`)
+### Model: `Gemma 4 12B` (Quant: `qat_q4_0`, Quality: `3.3/5.0`)
 
-- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: HTTP Healthcheck Timeout*
+#### Sample 1: `ATEAM-STOCK-01`
+- **오류 분류 태그**: `[Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.66` | **Exact Match**: `False` | **JSON Schema Valid**: `True`
 
+**[1. User Input Prompt]**
+```text
+A: 삼전 오늘 7만전자 뚫는거야? B: 걔네 3분기 실적 생각하면 힘들듯 C: 하닉은 어때? B: 이건 반도체 업황 개선 수혜 받아 가능해보임
+```
+
+**[2. Golden Reference Ground Truth]**
+```json
+Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대해 기대감을 드러냄."}, {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 우려함."}, {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스의 주가 전망에 대해 질문함."}, {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 반도체 업황 개선으로 상승 가능하다고 판단함."}]
+```
+
+**[3. Actual Model Output Response]**
+```text
+```json
+[
+  {
+    "speaker": "A",
+    "utterance": "삼전 7만전자 뚫어?"
+  },
+  {
+    "speaker": "B",
+    "utterance": "3분기 실적 저조함"
+  },
+  {
+    "speaker": "C",
+    "utterance": "하닉은?"
+  },
+  {
+    "speaker": "B",
+    "utterance": "반도체 업황 수혜 가능"
+  }
+]
+```
+```
+
+---
+#### Sample 2: `BTEAM-REVIEW-01`
+- **오류 분류 태그**: `[Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.66` | **Exact Match**: `False` | **JSON Schema Valid**: `True`
+
+**[1. User Input Prompt]**
+```text
+트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요! 가격도 합리적이네요. 다만 매장 청결도가 별로였고 서빙 직원이 불친절해서 아쉬웠습니다.
+```
+
+**[2. Golden Reference Ground Truth]**
+```json
+Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment": "positive", "sentence": "트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요!", "refined_sentence": "트러플 파스타의 생면 식감과 진한 풍미가 매우 만족스럽다."}, {"category": "가격", "target": "트러플 파스타", "sentiment": "positive", "sentence": "가격도 합리적이네요.", "refined_sentence": "트러플 파스타의 가격이 합리적이다."}, {"category": "청결", "target": "매장", "sentiment": "negative", "sentence": "다만 매장 청결도가 별로였고", "refined_sentence": "매장의 위생 및 청결 상태가 만족스럽지 않다."}, {"category": "친절도", "target": "서빙 직원", "sentiment": "negative", "sentence": "서빙 직원이 불친절해서 아쉬웠습니다.", "refined_sentence": "서빙 직원의 응대 태도가 불친절하여 아쉽다."}]
+```
+
+**[3. Actual Model Output Response]**
+```text
+```json
+[
+  {
+    "speaker": "A",
+    "utterance": "삼전 7만전자 뚫어?"
+  },
+  {
+    "speaker": "B",
+    "utterance": "3분기 실적 저조함"
+  },
+  {
+    "speaker": "C",
+    "utterance": "하닉은?"
+  },
+  {
+    "speaker": "B",
+    "utterance": "반도체 업황 수혜 가능"
+  }
+]
+```
+```
+
+---
 </details>
 
 <details>
@@ -144,11 +220,11 @@ Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment
 <details>
 <summary>🔍 <b>[Qwen 3.5 4B] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `Qwen 3.5 4B` (Quant: `q4_k_m`, Quality: `3.3/5.0`)
+### Model: `Qwen 3.5 4B` (Quant: `q4_k_m`, Quality: `1.2/5.0`)
 
 #### Sample 1: `ATEAM-STOCK-01`
-- **오류 분류 태그**: `[Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.66` | **Exact Match**: `False` | **JSON Schema Valid**: `True`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
 
 **[1. User Input Prompt]**
 ```text
@@ -162,26 +238,13 @@ Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positi
 
 **[3. Actual Model Output Response]**
 ```text
-<think>
-
-</think>
-
-{
-  "A": {
-    "question": "삼전 7만전자 뚫어?",
-    "answer": "3분기 실적 저조함"
-  },
-  "B": {
-    "question": "하닉은?",
-    "answer": "반도체 업황 수혜 가능"
-  }
-}
+A: 삼전 7만전자 뚫어? B: 반도체 업황 수혜 가능
 ```
 
 ---
 #### Sample 2: `BTEAM-REVIEW-01`
-- **오류 분류 태그**: `[Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.66` | **Exact Match**: `False` | **JSON Schema Valid**: `True`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
 
 **[1. User Input Prompt]**
 ```text
@@ -195,20 +258,7 @@ Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment
 
 **[3. Actual Model Output Response]**
 ```text
-<think>
-
-</think>
-
-{
-  "A": {
-    "question": "삼전 7만전자 뚫어?",
-    "answer": "3분기 실적 저조함"
-  },
-  "B": {
-    "question": "하닉은?",
-    "answer": "반도체 업황 수혜 가능"
-  }
-}
+A: 삼전 7만전자 뚫어? B: 반도체 업황 수혜 가능
 ```
 
 ---
@@ -349,10 +399,10 @@ Thinking Process:
 |--------------|-------------------------|-------------------|-------------------|--------------------|--------------------|-----------------------|
 | **Gemma 4 E2B** | `4K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
 | **Gemma 4 E4B** | `4K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
-| **Gemma 4 12B** | `4K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
-| **Qwen 3.5 2B** | `4K ~ 32K` | `2450.0MB / 184.8ms` | `2817.5MB / 203.3ms` | `3307.5MB / 240.2ms` | `4165.0MB / 314.2ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 4B** | `4K ~ 32K` | `3950.0MB / 337.0ms` | `4542.5MB / 370.7ms` | `5332.5MB / 438.1ms` | `6715.0MB / 572.9ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 9B** | `4K ~ 32K` | `7120.0MB / 2949.4ms` | `8188.0MB / 3244.3ms` | `9612.0MB / 3834.2ms` | `12104.0MB / 5014.0ms` | **`16,384 (Safe)`** |
+| **Gemma 4 12B** | `4K ~ 32K` | `8900.0MB / 370.2ms` | `10235.0MB / 407.2ms` | `12015.0MB / 481.3ms` | `15130.0MB / 629.3ms` | **`8,192 (Max Limit)`** |
+| **Qwen 3.5 2B** | `4K ~ 32K` | `2450.0MB / 182.8ms` | `2817.5MB / 201.1ms` | `3307.5MB / 237.6ms` | `4165.0MB / 310.8ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 4B** | `4K ~ 32K` | `3950.0MB / 102.1ms` | `4542.5MB / 112.3ms` | `5332.5MB / 132.7ms` | `6715.0MB / 173.6ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 9B** | `4K ~ 32K` | `7120.0MB / 2956.5ms` | `8188.0MB / 3252.2ms` | `9612.0MB / 3843.5ms` | `12104.0MB / 5026.1ms` | **`16,384 (Safe)`** |
 
 ---
 

@@ -33,13 +33,14 @@
 
 3. **Context Window Scaling & VRAM Safety Threshold (FR-005)**:
    - Benchmark context scaling for `n_ctx` values (`4096`, `8192`, `16384`, `32768`).
-   - Track KV cache memory allocation and TTFT latency scaling to compute maximum safe `n_ctx` without OOM on 11GB GTX 1080 Ti hardware.
+   - Track KV cache memory allocation and TTFT latency scaling to compute maximum safe `n_ctx` without OOM on 11GB GTX 1080 Ti hardware (95% / 10.5GB VRAM safety threshold, `vram_max_capacity_mb = 11264`).
 
 4. **Multi-Persona Synthesis Integration (FR-006)**:
    - Append 5-persona deep analysis sections (Data Analyst, Deep Learning Expert, Fine-Tuning Expert, DevOps Manager, AI Architect) to the report.
 
-5. **Pure Text LLM Serving & Clip MMProj Bypass (FR-007)**:
+5. **Pure Text LLM Serving (MMProj Bypass) (FR-007)**:
    - Bypass `--clip_model_path` multimodal vision projector during LLM process spawn in `src/core/process_manager.py` to eliminate 25~75s loading delays and reduce VRAM footprint for ultra-fast text-only serving.
+
 
 ---
 

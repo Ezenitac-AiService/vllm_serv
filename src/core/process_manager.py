@@ -82,6 +82,7 @@ class ProcessManager:
         self.process: Optional[asyncio.subprocess.Process] = None
         self.state: ProcessState = ProcessState(status=ProcessStatusEnum.UNLOADED, port=port)
         self.vram_offload_status: Optional[VramOffloadStatus] = None
+        self._log_drain_task: Optional[asyncio.Task] = None
         self.hardware_limits = {
             "gemma4-e2b": 35000,
             "gemma4-e4b": 16000,
@@ -292,6 +293,17 @@ class ProcessManager:
     def is_ready(self) -> bool:
         return self.state.status == ProcessStatusEnum.READY
 
+    @staticmethod
+    async def _drain_stdout(stream: asyncio.StreamReader) -> None:
+        """Drains stdout stream asynchronously to prevent process deadlock when pipe buffer fills."""
+        try:
+            while not stream.at_eof():
+                line = await stream.readline()
+                if not line:
+                    break
+        except Exception:
+            pass
+
     async def spawn_process(self, model_id: str, n_ctx: int) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""
         await self.stop_process()
@@ -416,6 +428,9 @@ class ProcessManager:
                 stderr=asyncio.subprocess.STDOUT,
                 env=env
             )
+            if self.process and self.process.stdout:
+                self._log_drain_task = asyncio.create_task(self._drain_stdout(self.process.stdout))
+
             self.state = ProcessState(
                 status=ProcessStatusEnum.LOADING,
                 model_id=model_id,
@@ -431,6 +446,7 @@ class ProcessManager:
             )
         return self.state
 
+
     async def stop_process(self) -> ProcessState:
         """Stops the running subprocess with Graceful Stream Drain, SIGTERM -> SIGKILL escalation and socket cleanup.
 
@@ -441,6 +457,10 @@ class ProcessManager:
         drain_start = asyncio.get_event_loop().time()
         while getattr(self.state, "active_requests", 0) > 0 and (asyncio.get_event_loop().time() - drain_start) < 5.0:
             await asyncio.sleep(0.2)
+
+        if self._log_drain_task and not self._log_drain_task.done():
+            self._log_drain_task.cancel()
+            self._log_drain_task = None
 
         if self.process:
             try:
@@ -456,6 +476,7 @@ class ProcessManager:
                 pass
             exit_code = self.process.returncode
             self.process = None
+
         else:
             exit_code = None
 

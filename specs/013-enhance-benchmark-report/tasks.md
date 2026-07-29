@@ -129,3 +129,12 @@
 ### Parallel Opportunities
 
 - T003, T005, T007, T010, T012, T014 marked [P] can run in parallel.
+
+---
+
+## Phase 8: Convergence
+
+- [x] T016 Fix ProcessManager subprocess stdout pipe unread deadlock in src/core/process_manager.py per FR-001, FR-007 (partial)
+- [x] T017 Implement dynamic benchmark_context_scaling loop across n_ctx (4096~32768) with CUDA OOM safety catching in scripts/benchmark_quality.py per FR-005, US3 (partial)
+
+
