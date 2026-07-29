@@ -14,7 +14,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const unloadBtn = document.getElementById('unload-btn');
     const oomWarning = document.getElementById('oom-warning');
 
-    let capabilities = null;
+    // Token authentication helper
+    const urlParams = new URLSearchParams(window.location.search);
+    let token = urlParams.get('token');
+    if (token) {
+        sessionStorage.setItem('DASHBOARD_TOKEN', token);
+    } else {
+        token = sessionStorage.getItem('DASHBOARD_TOKEN') || '';
+    }
+
+    function getAuthHeaders(extraHeaders = {}) {
+        const headers = { ...extraHeaders };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
+    function getAuthUrl(url) {
+        if (!token) return url;
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}token=${encodeURIComponent(token)}`;
+    }
 
     // Sync slider and input
     ctxSlider.addEventListener('input', (e) => {
@@ -29,7 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchCapabilities() {
         try {
-            const res = await fetch('/dashboard/api/capabilities');
+            const res = await fetch(getAuthUrl('/dashboard/api/capabilities'), {
+                headers: getAuthHeaders()
+            });
             capabilities = await res.json();
             checkOOM();
         } catch (e) {
@@ -82,9 +105,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function applyModel(model_id, n_ctx) {
         try {
-            const res = await fetch('/dashboard/api/apply', {
+            const res = await fetch(getAuthUrl('/dashboard/api/apply'), {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: getAuthHeaders({'Content-Type': 'application/json'}),
                 body: JSON.stringify({ model_id, n_ctx: parseInt(n_ctx) })
             });
             if (!res.ok) throw new Error("Apply failed");
@@ -96,7 +119,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function unloadModel() {
         try {
-            await fetch('/dashboard/api/unload', { method: 'POST' });
+            await fetch(getAuthUrl('/dashboard/api/unload'), {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
         } catch(e) {
             console.error(e);
         }
@@ -104,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Connect SSE
     function connectSSE() {
-        const es = new EventSource('/dashboard/api/stream');
+        const es = new EventSource(getAuthUrl('/dashboard/api/stream'));
         
         es.addEventListener('status', (e) => {
             const data = JSON.parse(e.data);

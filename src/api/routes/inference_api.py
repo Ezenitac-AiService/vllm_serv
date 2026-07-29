@@ -26,7 +26,8 @@ async def reverse_proxy(request: Request, path: str):
     Reverse proxy for /v1 requests. Forwards to the llama-server subprocess.
     Returns 503 if the server is not ready (loading, unloaded).
     """
-    if not await check_llama_status():
+    # Scope 503 check to inference endpoints (chat/completions, completions) per plan constraints
+    if path in ("chat/completions", "completions") and not await check_llama_status():
         raise HTTPException(
             status_code=503,
             detail="Model is currently loading or unloaded. Please try again later.",

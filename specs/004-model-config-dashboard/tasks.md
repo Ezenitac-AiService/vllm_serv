@@ -49,3 +49,11 @@
 
 - [x] T019 Implement FastAPI lifespan in `src/api/main.py` to automatically load the last configured model on startup per FR-008 (missing)
 - [x] T020 Add `asyncio.Lock` to `LlamaManager.load_model` in `src/core/llama_manager.py` to prevent race conditions on rapid concurrent preset requests per Edge Cases (partial)
+
+## Phase 9: Convergence
+
+- [x] T021 Fix hardware limits in `src/core/llama_manager.py` and pass `test_hardware_limits` per FR-004, US2 (contradicts)
+- [x] T022 Update preset configuration buttons in `src/api/static/index.html` to match FR-002 and US1 acceptance criteria per FR-002, US1/AC1 (partial)
+- [x] T023 Support `DASHBOARD_TOKEN` authentication in `src/api/static/app.js` for API requests and SSE stream per FR-007, plan: constraints (partial)
+- [x] T024 Restrict 503 Maintenance Mode check in `src/api/routes/inference_api.py` to `/v1/chat/completions` and `/v1/completions` per plan: constraints (contradicts)
+

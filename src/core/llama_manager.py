@@ -27,7 +27,7 @@ class LlamaManager:
         self.hardware_limits = {
             "gemma4-e2b": 35000,
             "gemma4-e4b": 16000,
-            "gemma4-12b": 8192
+            "gemma4-12b": 9500
         }
         self._lock = asyncio.Lock()
 
