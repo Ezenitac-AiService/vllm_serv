@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QualityEvaluationResponseSchema",
+  "type": "object",
+  "required": ["results"],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "target", "sentence", "refined_sentence"],
+        "properties": {
+          "speaker": { "type": "string" },
+          "category": { "type": "string" },
+          "sentiment": { "type": "string" },
+          "target": { "type": "string" },
+          "sentence": { "type": "string" },
+          "refined_sentence": { "type": "string" }
+        }
+      }
+    }
+  }
+}

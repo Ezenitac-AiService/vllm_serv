@@ -1,12 +1,9 @@
 <!--
 Sync Impact Report:
-- Version Change: 0.0.0 -> 1.0.0 (initial constitution)
+- Version Change: 1.0.0 -> 1.1.0 (added Principle IV: Non-Destructive Documentation Edit)
 - Modified Principles:
-  - 언어 정책: 한국어 출력 및 영어 추론 (New)
-  - 테스트 주도 개발 및 품질 보증 (New)
-  - 작업 종료 조건 명확화 (New)
-- Added Sections: 
-  - Core Principles, Governance
+  - IV. 비파괴적 문서 수정 원칙 (New)
+- Added Sections: None
 - Removed Sections: None
 - Templates Requiring Updates:
   - .specify/templates/plan-template.md (✅ updated)
@@ -28,10 +25,13 @@ Sync Impact Report:
 ### III. 작업 종료 조건 명확화
 작업의 세부 내용 계획을 세우기 전, 반드시 작업의 종료(Done)에 대한 구체적이고 측정 가능한 정의를 먼저 확립해야 합니다.
 
+### IV. 비파괴적 문서 수정 원칙 (Non-Destructive Documentation Edit)
+모든 기존 문서(명세서, 계획서, 헌장, 과제 목록 등)의 수정 작업 시에는 명시적인 수정 대상 항목만을 선택적으로 개정해야 하며, 기존 내용이나 문맥을 무단으로 요약, 축소, 생략, 누락, 삭제하는 파괴적 편집(Destructive Edit)을 엄격히 금지합니다.
+
 ## Governance
 
 본 헌장(Constitution)은 프로젝트 내 모든 작업의 기반이 되는 최상위 규칙입니다.
 - 모든 기능 제안, 명세, 계획, 구현 과정에서 위 원칙들을 검토하고 준수해야 합니다.
 - 헌장 업데이트 시에는 문서 내의 버전 규칙을 따르며, 연관된 템플릿의 정합성을 보장해야 합니다.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-09
+**Version**: 1.1.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-29
