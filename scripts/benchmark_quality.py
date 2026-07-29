@@ -14,7 +14,12 @@ import sys
 import time
 from typing import Dict, List, Optional, Any
 import httpx
-from src.eval.quality_evaluator import QualityEvaluator, ComprehensiveQualityReportMetric
+from src.eval.quality_evaluator import (
+    QualityEvaluator,
+    ComprehensiveQualityReportMetric,
+    QualitativeSampleComparison,
+    ContextScalingMetric,
+)
 from src.core.model_downloader import ModelDownloader, DownloadStatusEnum
 from src.core.gpu_detector import check_gpu_availability, GpuAccelerationError
 

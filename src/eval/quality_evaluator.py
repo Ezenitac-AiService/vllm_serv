@@ -266,7 +266,7 @@ class QualityEvaluator:
     ) -> QualitativeSampleComparison:
         """Extracts side-by-side prompt-answer comparison entity between Golden Ground Truth and model output."""
         eval_metric = self.evaluate_response(prompt_id, model_id, response_text)
-        target_prompt = self.get_prompt_by_id(prompt_id)
+        target_prompt = next((p for p in self.prompts if p.prompt_id == prompt_id), None)
 
         prompt_text = target_prompt.input_text if target_prompt else f"Prompt {prompt_id}"
         golden_gt = "Golden Reference Ground Truth Answer Text"
