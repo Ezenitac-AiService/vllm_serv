@@ -1,4 +1,4 @@
 {
-    "current_model": "test-model",
-    "current_n_ctx": 1024
+    "current_model": "qwen3.5-4b",
+    "current_n_ctx": 4096
 }
