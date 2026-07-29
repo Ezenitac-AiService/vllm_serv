@@ -95,3 +95,42 @@ async def test_graceful_stream_drain_and_port_release():
     finally:
         os.environ.pop("MOCK_LLAMA_SERVER", None)
 
+
+# T011 / US3: Integration test for VRAM offload and process PID detection (FR-004)
+
+def test_validate_cuda_build_environment_integration():
+    """T011: validate_cuda_build_environment()가 현재 환경에서 GPU를 정상 감지해야 한다."""
+    from src.core.gpu_detector import validate_cuda_build_environment
+    # Should succeed on NVIDIA GPU systems (this is an integration test)
+    assert validate_cuda_build_environment() is True
+
+
+def test_nvidia_smi_vram_and_pid_detection():
+    """T011: nvidia-smi로 GPU VRAM 사용량 및 프로세스 PID를 조회할 수 있어야 한다."""
+    import shutil
+    import subprocess
+
+    nvidia_smi = shutil.which("nvidia-smi")
+    if not nvidia_smi:
+        pytest.skip("nvidia-smi not available")
+
+    # Test GPU memory query
+    result = subprocess.run(
+        [nvidia_smi, "--query-gpu=name,memory.used,memory.total", "--format=csv,noheader,nounits"],
+        capture_output=True, text=True, check=True
+    )
+    parts = [p.strip() for p in result.stdout.strip().split(",")]
+    assert len(parts) >= 3, f"Expected 3 fields from nvidia-smi, got: {parts}"
+    gpu_name = parts[0]
+    used_mb = int(parts[1])
+    total_mb = int(parts[2])
+    assert total_mb > 0, "GPU total VRAM must be positive"
+    assert gpu_name, "GPU name must not be empty"
+
+    # Test GPU process query (just verify the command works)
+    proc_result = subprocess.run(
+        [nvidia_smi, "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
+        capture_output=True, text=True
+    )
+    # Command may return empty if no GPU processes running, but should not fail
+    assert proc_result.returncode == 0, f"nvidia-smi process query failed: {proc_result.stderr}"

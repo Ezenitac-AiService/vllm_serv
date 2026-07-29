@@ -16,15 +16,15 @@ router = APIRouter()
 
 
 def _get_llama_server_config() -> tuple[int, str]:
-    """FR-009: 서버 포트 및 호스트를 config/server_config.json 또는 환경변수에서 동적 로드."""
+    """FR-009: 백엔드 LLM 엔진 포트 및 호스트를 config/server_config.json 또는 환경변수에서 동적 로드."""
     try:
         cm = ConfigManager()
         server_cfg = cm.get_server_config()
-        port = server_cfg.get("port", 8081)
+        port = server_cfg.get("backend_port", 8089)
         host = server_cfg.get("host", "127.0.0.1")
         return port, host
     except Exception:
-        return 8081, "127.0.0.1"
+        return 8089, "127.0.0.1"
 
 
 _port, _host = _get_llama_server_config()

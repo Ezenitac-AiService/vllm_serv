@@ -24,12 +24,12 @@ async def lifespan(app: FastAPI):
     server_cfg = cm.get_server_config()
     default_model = server_cfg.get("default_model", "qwen3.5-4b")
     host = server_cfg.get("host", "127.0.0.1")
-    port = server_cfg.get("port", 8081)
+    backend_port = server_cfg.get("backend_port", 8089)
 
     # Initialize singleton httpx.AsyncClient with connection limits & dynamic base_url
     limits = httpx.Limits(max_keepalive_connections=20, max_connections=100)
     app.state.http_client = httpx.AsyncClient(
-        base_url=f"http://{host}:{port}",
+        base_url=f"http://{host}:{backend_port}",
         limits=limits,
         timeout=None
     )

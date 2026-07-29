@@ -108,11 +108,13 @@ def check_gpu_availability() -> GpuDeviceInfo:
             except (subprocess.CalledProcessError, OSError):
                 pass
 
-        # Check llama_cpp CUDA support
+        # Check llama_cpp CUDA support (compatible with both old and new API)
         is_cuda_supported = True
         try:
             import llama_cpp
-            if hasattr(llama_cpp, 'llama_supports_gpu'):
+            if hasattr(llama_cpp, 'llama_supports_gpu_offload'):
+                is_cuda_supported = llama_cpp.llama_supports_gpu_offload()
+            elif hasattr(llama_cpp, 'llama_supports_gpu'):
                 is_cuda_supported = llama_cpp.llama_supports_gpu()
         except ImportError:
             pass
@@ -189,4 +191,52 @@ def estimate_kv_cache_vram(
     # 2 for Key and Value matrices
     total_bytes = 2 * n_layers * n_heads * head_dim * n_ctx * bytes_per_element
     return max(1, int(total_bytes / (1024 * 1024)))
+
+
+def validate_cuda_build_environment() -> bool:
+    """FR-005: Fail-fast CUDA build environment validation.
+
+    Validates that both nvcc (CUDA Toolkit compiler) and nvidia-smi (GPU driver)
+    are present on the system. Raises GpuAccelerationError if either is missing,
+    strictly blocking CPU-only fallback.
+
+    Returns:
+        True if both nvcc and nvidia-smi are available.
+
+    Raises:
+        GpuAccelerationError: If nvcc or nvidia-smi is not found.
+    """
+    nvidia_smi_path = shutil.which("nvidia-smi")
+    if not nvidia_smi_path:
+        raise GpuAccelerationError(
+            "NVIDIA GPU 드라이버(nvidia-smi)가 감지되지 않았습니다.\n"
+            "NVIDIA GPU 가속 서빙을 위해 GPU 드라이버 설치가 필수입니다.\n"
+            "CPU 전용 폴백은 허용되지 않습니다."
+        )
+
+    nvcc_path = shutil.which("nvcc")
+    if not nvcc_path:
+        raise GpuAccelerationError(
+            "NVIDIA CUDA Toolkit (nvcc)가 감지되지 않았습니다.\n"
+            "llama-cpp-python CUDA 가속 빌드를 위해 nvcc 설치가 필수입니다.\n"
+            "설치: sudo apt install nvidia-cuda-toolkit 또는 https://developer.nvidia.com/cuda-downloads\n"
+            "CPU 전용 폴백은 허용되지 않습니다."
+        )
+
+    # Verify llama_cpp GPU support if available
+    try:
+        import llama_cpp
+        # Compatible with both old (llama_supports_gpu) and new (llama_supports_gpu_offload) API
+        gpu_check_fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+        if gpu_check_fn is not None:
+            if not gpu_check_fn():
+                raise GpuAccelerationError(
+                    "llama-cpp-python이 CPU 전용 모드로 설치되어 있습니다.\n"
+                    "CUDA 가속 빌드로 재설치가 필요합니다:\n"
+                    '  CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --no-binary llama-cpp-python --force-reinstall'
+                )
+    except ImportError:
+        pass  # llama_cpp not yet installed; will be built with CUDA
+
+    return True
 

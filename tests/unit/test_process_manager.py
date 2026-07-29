@@ -85,3 +85,37 @@ async def test_spawn_process_injects_clip_model_path_cli_arg_python_fallback():
         assert "--clip_model_path" in cmd
         clip_idx = cmd.index("--clip_model_path")
         assert cmd[clip_idx + 1].endswith("models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf")
+
+
+# T009 / US2: CMake -DGGML_CUDA=ON flag injection verification
+
+@patch("shutil.which", return_value=None)  # No llama-server in PATH
+@patch("os.path.exists")
+@patch("subprocess.run")
+def test_verify_and_build_llama_server_cmake_cuda_flag(mock_run, mock_exists, mock_which):
+    """T009: verify_and_build_llama_server()는 CMake 빌드 시 -DGGML_CUDA=ON 플래그를 주입해야 한다."""
+    def exists_side_effect(path):
+        if path.endswith("llama-server") and ".bin" in path:
+            return False  # local binary doesn't exist
+        if path.endswith("CMakeLists.txt"):
+            return True  # llama.cpp source exists
+        if "build/bin/llama-server" in path:
+            return True  # built binary exists
+        return False
+
+    mock_exists.side_effect = exists_side_effect
+
+    # mock subprocess.run calls for cmake
+    mock_run.return_value = MagicMock(returncode=0)
+
+    with patch("shutil.copy2"), patch("os.chmod"), patch("os.makedirs"):
+        result = ProcessManager.verify_and_build_llama_server()
+
+    # Verify cmake -B build -DGGML_CUDA=ON was called
+    cmake_calls = [c for c in mock_run.call_args_list if "cmake" in str(c)]
+    assert len(cmake_calls) >= 1, "CMake should have been invoked"
+
+    # Check the first cmake call includes -DGGML_CUDA=ON
+    first_cmake_args = cmake_calls[0][0][0]  # positional args
+    assert "-DGGML_CUDA=ON" in first_cmake_args, \
+        f"CMake build must include -DGGML_CUDA=ON flag, got: {first_cmake_args}"

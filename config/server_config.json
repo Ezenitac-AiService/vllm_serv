@@ -1,5 +1,6 @@
 {
     "port": 8081,
+    "backend_port": 8089,
     "host": "127.0.0.1",
     "healthcheck_timeout_s": 120,
     "connection_pool": {

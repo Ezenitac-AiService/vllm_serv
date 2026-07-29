@@ -12,6 +12,7 @@ class ServerConfig(BaseModel):
     """FR-002 & FR-008: Pydantic v2 기반 서버 설정 규격."""
     host: str = "127.0.0.1"
     port: int = 8081
+    backend_port: int = 8089
     allowed_subnets: List[str] = Field(default_factory=lambda: ["127.0.0.1", "192.168.0.0/24"])
     vram_limit_mb: int = 11264
     vram_max_capacity_mb: int = 11264
@@ -19,7 +20,7 @@ class ServerConfig(BaseModel):
     graceful_drain_timeout_s: float = 5.0
     connection_pool: ConnectionPoolConfig = Field(default_factory=ConnectionPoolConfig)
 
-    @field_validator("port")
+    @field_validator("port", "backend_port")
     @classmethod
     def validate_port(cls, v: int) -> int:
         if not (1024 <= v <= 65535):

@@ -71,14 +71,54 @@ log_info "uv 버전: $(uv --version)"
 log_info "가상환경 패키지 동기화 중 (uv sync)..."
 uv sync
 
-log_info "NVIDIA GPU 가속 드라이버 및 nvidia-smi 검증 중..."
-if command -v nvidia-smi &> /dev/null; then
-    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
-    VRAM_TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader | head -n 1)
-    log_info "✓ NVIDIA GPU 감지 완료: $GPU_NAME (총 VRAM: $VRAM_TOTAL)"
-else
-    log_warn "nvidia-smi 명령어를 찾을 수 없습니다. (CPU 테스트 모드 또는 타 하드웨어 환경)"
+# FR-005 / T006: CUDA Toolkit (nvcc) 존재 여부 fail-fast 검증
+log_info "NVIDIA CUDA Toolkit (nvcc) 빌드 환경 검증 중..."
+if ! command -v nvcc &> /dev/null; then
+    log_err "NVIDIA CUDA Toolkit (nvcc)가 감지되지 않았습니다."
+    log_err "llama-cpp-python CUDA 가속 빌드를 위해 nvcc 설치가 필수입니다."
+    log_err "설치: sudo apt install nvidia-cuda-toolkit 또는 https://developer.nvidia.com/cuda-downloads"
+    log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+    exit 1
 fi
+log_info "✓ nvcc 감지 완료: $(nvcc --version | grep release | head -n 1)"
+
+# FR-005 / T006: nvidia-smi GPU 드라이버 fail-fast 검증
+log_info "NVIDIA GPU 가속 드라이버 및 nvidia-smi 검증 중..."
+if ! command -v nvidia-smi &> /dev/null; then
+    log_err "nvidia-smi 명령어를 찾을 수 없습니다."
+    log_err "NVIDIA GPU 가속 서빙을 위해 GPU 드라이버 설치가 필수입니다."
+    log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+    exit 1
+fi
+
+GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
+VRAM_TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader | head -n 1)
+log_info "✓ NVIDIA GPU 감지 완료: $GPU_NAME (총 VRAM: $VRAM_TOTAL)"
+
+# FR-001 / T007: CUDA 가속 llama-cpp-python 소스 컴파일 및 설치
+log_info "CUDA 가속 llama-cpp-python 소스 컴파일 및 설치 중 (CMAKE_ARGS=\"-DGGML_CUDA=on\")..."
+log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
+CMAKE_ARGS="-DGGML_CUDA=on" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python --force-reinstall --no-cache-dir
+if [ $? -ne 0 ]; then
+    log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
+    log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+    exit 1
+fi
+log_info "✓ llama-cpp-python CUDA 빌드 설치 완료"
+
+# T008: 설치 후 llama_supports_gpu_offload() GPU 지원 검증 (post-install assertion)
+log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
+if ! uv run python -c "
+import llama_cpp
+fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+assert fn is not None, 'No GPU check function found'
+assert fn(), 'GPU offload not supported'
+"; then
+    log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
+    log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+    exit 1
+fi
+log_info "✓ CUDA GPU 가속 활성화 확인 완료"
 
 log_step "3. 서버 포트 조회 및 네트워크 방화벽 등록"
 
@@ -318,6 +358,36 @@ fi
 if command -v nvidia-smi &> /dev/null; then
     echo -e "\n[NVIDIA GPU VRAM 실시간 현황]"
     nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu --format=csv,noheader
+
+    # T012: GPU 컴퓨트 프로세스 PID 리스트
+    echo -e "\n[GPU 컴퓨트 프로세스 목록]"
+    GPU_PROCS=$(nvidia-smi --query-compute-apps=pid,used_memory,name --format=csv,noheader 2>/dev/null)
+    if [ -n "$GPU_PROCS" ]; then
+        echo -e "PID, VRAM(MiB), Process"
+        echo "$GPU_PROCS"
+    else
+        echo -e "${COLOR_YELLOW}GPU 컴퓨트 프로세스 없음${COLOR_NC}"
+    fi
+fi
+
+# T012: llama-cpp-python CUDA 빌드 상태
+echo -e "\n[CUDA 빌드 상태]"
+if command -v nvcc &> /dev/null; then
+    echo -e "nvcc: ${COLOR_GREEN}✓ $(nvcc --version 2>/dev/null | grep release | head -n 1)${COLOR_NC}"
+else
+    echo -e "nvcc: ${COLOR_RED}✗ 미감지${COLOR_NC}"
+fi
+
+CUDA_STATUS=$(uv run python -c "
+import llama_cpp
+fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+print('True' if fn and fn() else 'False')
+" 2>/dev/null || echo "Error")
+
+if [ "$CUDA_STATUS" = "True" ]; then
+    echo -e "llama-cpp-python GPU: ${COLOR_GREEN}✓ CUDA 가속 활성${COLOR_NC}"
+else
+    echo -e "llama-cpp-python GPU: ${COLOR_RED}✗ CPU 전용 모드${COLOR_NC}"
 fi
 EOF
 

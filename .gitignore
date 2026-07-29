@@ -27,3 +27,7 @@ Thumbs.db
 logs/
 *.pid
 
+# CUDA build artifacts (T013)
+.bin/
+llama.cpp/build/
+

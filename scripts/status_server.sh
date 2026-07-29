@@ -51,4 +51,34 @@ fi
 if command -v nvidia-smi &> /dev/null; then
     echo -e "\n[NVIDIA GPU VRAM 실시간 현황]"
     nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu --format=csv,noheader
+
+    # T012: GPU 컴퓨트 프로세스 PID 리스트
+    echo -e "\n[GPU 컴퓨트 프로세스 목록]"
+    GPU_PROCS=$(nvidia-smi --query-compute-apps=pid,used_memory,name --format=csv,noheader 2>/dev/null)
+    if [ -n "$GPU_PROCS" ]; then
+        echo -e "PID, VRAM(MiB), Process"
+        echo "$GPU_PROCS"
+    else
+        echo -e "${COLOR_YELLOW}GPU 컴퓨트 프로세스 없음${COLOR_NC}"
+    fi
+fi
+
+# T012: llama-cpp-python CUDA 빌드 상태
+echo -e "\n[CUDA 빌드 상태]"
+if command -v nvcc &> /dev/null; then
+    echo -e "nvcc: ${COLOR_GREEN}✓ $(nvcc --version 2>/dev/null | grep release | head -n 1)${COLOR_NC}"
+else
+    echo -e "nvcc: ${COLOR_RED}✗ 미감지${COLOR_NC}"
+fi
+
+CUDA_STATUS=$(uv run python -c "
+import llama_cpp
+fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+print('True' if fn and fn() else 'False')
+" 2>/dev/null || echo "Error")
+
+if [ "$CUDA_STATUS" = "True" ]; then
+    echo -e "llama-cpp-python GPU: ${COLOR_GREEN}✓ CUDA 가속 활성${COLOR_NC}"
+else
+    echo -e "llama-cpp-python GPU: ${COLOR_RED}✗ CPU 전용 모드${COLOR_NC}"
 fi

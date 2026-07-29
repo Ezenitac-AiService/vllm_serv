@@ -42,9 +42,10 @@ graph TD
 **`./setup.sh` 자동 처리 항목**:
 1. **필수 프로젝트 파일 검증**: `pyproject.toml`, `config/*.json`, `src/api/server.py` 등 필수 파일 유무 검사
 2. **`uv` 패키지 매니저 및 가상환경 구성**: `uv` 설치 여부 확인 및 패키지 자동 동기화 (`uv sync`)
-3. **NVIDIA GPU 및 드라이버 검증**: `nvidia-smi`를 통해 GPU 명칭 및 VRAM 타겟 검증
-4. **네트워크 방화벽 자동 등록**: `config/server_config.json` 포트(`8081/tcp`)를 읽어 `ufw` / `firewalld` 허용 규칙 추가
-5. **서버 제어 쉘 스크립트 생성 및 심볼릭 링크 연결**: `./start_server.sh`, `./stop_server.sh`, `./status_server.sh` 자동 생성 및 실행 권한 부여
+3. **NVIDIA CUDA Toolkit (`nvcc`) & GPU 드라이버 검증**: `nvcc` 및 `nvidia-smi` 검증 (미설치 시 CPU 전용 폴백 없이 즉각 Fail-Fast 종료)
+4. **CUDA 가속 `llama-cpp-python` 자동 소스 컴파일**: `CMAKE_ARGS="-DGGML_CUDA=on"`으로 CUDA 가속 바이너리 설치 및 `llama_supports_gpu_offload()` 보장
+5. **네트워크 방화벽 자동 등록**: `config/server_config.json` 포트(`8081/tcp`)를 읽어 `ufw` / `firewalld` 허용 규칙 추가
+6. **서버 제어 쉘 스크립트 생성 및 심볼릭 링크 연결**: `./start_server.sh`, `./stop_server.sh`, `./status_server.sh` 자동 생성 및 실행 권한 부여
 
 ---
 

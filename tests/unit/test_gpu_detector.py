@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from src.core.gpu_detector import (
     check_gpu_availability,
+    validate_cuda_build_environment,
     GpuDeviceInfo,
     VramOffloadStatus,
     GpuAccelerationError,
@@ -257,3 +258,70 @@ def test_port_collision_error_exception():
     with pytest.raises(PortCollisionError):
         raise PortCollisionError("Port 8081 occupied")
 
+
+# T004: validate_cuda_build_environment fail-fast tests (FR-005)
+
+@patch("src.core.gpu_detector.shutil.which")
+def test_validate_cuda_build_env_no_nvidia_smi(mock_which):
+    """T004: nvidia-smi 미존재 시 GpuAccelerationError 즉시 발생."""
+    mock_which.return_value = None
+    with pytest.raises(GpuAccelerationError, match="nvidia-smi"):
+        validate_cuda_build_environment()
+
+
+@patch("src.core.gpu_detector.shutil.which")
+def test_validate_cuda_build_env_no_nvcc(mock_which):
+    """T004: nvcc 미존재 시 GpuAccelerationError 즉시 발생."""
+    def which_side_effect(cmd):
+        if cmd == "nvidia-smi":
+            return "/usr/bin/nvidia-smi"
+        return None  # nvcc not found
+    mock_which.side_effect = which_side_effect
+    with pytest.raises(GpuAccelerationError, match="nvcc"):
+        validate_cuda_build_environment()
+
+
+@patch("src.core.gpu_detector.shutil.which")
+def test_validate_cuda_build_env_success(mock_which):
+    """T004: nvidia-smi와 nvcc 모두 존재할 때 True 반환."""
+    def which_side_effect(cmd):
+        if cmd == "nvidia-smi":
+            return "/usr/bin/nvidia-smi"
+        if cmd == "nvcc":
+            return "/usr/bin/nvcc"
+        return None
+    mock_which.side_effect = which_side_effect
+    assert validate_cuda_build_environment() is True
+
+
+# T005 / US1: llama_supports_gpu() CUDA verification test
+
+@patch("src.core.gpu_detector.shutil.which")
+def test_validate_cuda_build_env_cpu_only_llama(mock_which):
+    """T005: llama_supports_gpu_offload()가 False 반환 시 GpuAccelerationError 발생."""
+    import sys
+
+    def which_side_effect(cmd):
+        if cmd == "nvidia-smi":
+            return "/usr/bin/nvidia-smi"
+        if cmd == "nvcc":
+            return "/usr/bin/nvcc"
+        return None
+    mock_which.side_effect = which_side_effect
+
+    mock_llama = MagicMock()
+    mock_llama.llama_supports_gpu_offload = MagicMock(return_value=False)
+    mock_llama.llama_supports_gpu = MagicMock(return_value=False)
+
+    # Save original module and replace with mock
+    original_module = sys.modules.get("llama_cpp")
+    sys.modules["llama_cpp"] = mock_llama
+    try:
+        with pytest.raises(GpuAccelerationError, match="CPU 전용 모드"):
+            validate_cuda_build_environment()
+    finally:
+        # Restore original module
+        if original_module is not None:
+            sys.modules["llama_cpp"] = original_module
+        else:
+            sys.modules.pop("llama_cpp", None)

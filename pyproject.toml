@@ -11,6 +11,9 @@ dependencies = [
     "pydantic>=2.13.4",
     "sse-starlette>=3.4.6",
     "uvicorn>=0.51.0",
+    "llama-cpp-python[server]>=0.3.0",
+    "cmake>=3.28",
+    "ninja>=1.11",
 ]
 
 [build-system]
