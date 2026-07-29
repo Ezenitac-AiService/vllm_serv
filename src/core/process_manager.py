@@ -123,19 +123,22 @@ class ProcessManager:
                 "model": "models/gemma4-2b/gemma-4-E2B_q4_0-it.gguf",
                 "clip": "models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf",
                 "chat_template": "gemma",
-                "vram_est_mb": 3500
+                "vram_est_mb": 3500,
+                "requires_mmproj": True
             },
             "gemma4-e4b": {
                 "model": "models/gemma4-4b/gemma-4-E4B_q4_0-it.gguf",
                 "clip": "models/gemma4-4b/gemma-4-E4B-it-mmproj.gguf",
                 "chat_template": "gemma",
-                "vram_est_mb": 6500
+                "vram_est_mb": 6500,
+                "requires_mmproj": True
             },
             "gemma4-12b": {
                 "model": "models/gemma4-12b/gemma-4-12b-it-qat-q4_0.gguf",
                 "clip": "models/gemma4-12b/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
                 "chat_template": "gemma",
-                "vram_est_mb": 9500
+                "vram_est_mb": 9500,
+                "requires_mmproj": True
             },
             "qwen3.5-2b": {
                 "model": "models/qwen3.5-2b/Qwen3.5-2B-Q4_K_M.gguf",
@@ -316,14 +319,17 @@ class ProcessManager:
     def is_ready(self) -> bool:
         return self.state.status == ProcessStatusEnum.READY
 
-    @staticmethod
-    async def _drain_stdout(stream: asyncio.StreamReader) -> None:
-        """Drains stdout stream asynchronously to prevent process deadlock when pipe buffer fills."""
+    async def _drain_stdout(self, stream: asyncio.StreamReader) -> None:
+        """Drains stdout stream asynchronously and parses VRAM offload log lines."""
         try:
             while not stream.at_eof():
-                line = await stream.readline()
-                if not line:
+                line_bytes = await stream.readline()
+                if not line_bytes:
                     break
+                line = line_bytes.decode("utf-8", errors="replace")
+                status = self.parse_vram_offload_log(line, self.state.model_id or "")
+                if status:
+                    self.verify_vram_offload(self.state.model_id or "", status)
         except Exception:
             pass
 
@@ -382,7 +388,7 @@ class ProcessManager:
             build_source="PYTHON_MODULE_FALLBACK"
         )
 
-    async def spawn_process(self, model_id: str, n_ctx: int) -> ProcessState:
+    async def spawn_process(self, model_id: str, n_ctx: int = 2048) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""
         await self.stop_process()
         self.vram_offload_status = None
@@ -447,8 +453,15 @@ class ProcessManager:
         # FR-001: Resolve CUDA llama-server binary or fallback to python module
         binary_info = self.verify_and_build_llama_server()
 
-        # FR-007: Pure Text LLM Serving (Bypass clip vision projector loading for ultra-fast startup & lower VRAM)
+        # FR-001 (015-gemma4-model-loading-fix): Resolve MMProj (CLIP vision projector) path if defined in preset
         clip_file = None
+        clip_rel = target_preset.get("clip")
+        if clip_rel:
+            candidate_clip = os.path.join(base_dir, clip_rel) if not os.path.isabs(clip_rel) else clip_rel
+            if os.path.exists(candidate_clip):
+                clip_file = candidate_clip
+            elif os.path.exists(clip_rel):
+                clip_file = clip_rel
 
         # Force 100% GPU VRAM Offloading environment variables
         env = dict(os.environ)
@@ -465,6 +478,8 @@ class ProcessManager:
                 "--split-mode", "none",
                 "--main-gpu", "0"
             ]
+            if clip_file and os.path.exists(clip_file):
+                cmd.extend(["--mmproj", clip_file])
         else:
             cmd = [
                 sys.executable, "-m", "llama_cpp.server",
@@ -472,7 +487,7 @@ class ProcessManager:
                 "--n_ctx", str(n_ctx),
                 "--host", "127.0.0.1",
                 "--port", str(self.port),
-                "--n_gpu_layers", "-1"
+                "--n_gpu_layers", "999"
             ]
 
             if clip_file and os.path.exists(clip_file):

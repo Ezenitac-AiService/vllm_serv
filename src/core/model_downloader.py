@@ -131,14 +131,22 @@ class ModelDownloader:
         return dict(self._tasks)
 
     def is_model_available(self, model_id: str) -> bool:
-        """로컬에 해당 모델의 GGUF 가중치 파일이 존재하는지 확인 (FR-003)."""
+        """로컬에 해당 모델의 GGUF 가중치 및 MMProj CLIP 프로젝터 파일이 모두 존재하는지 확인."""
         catalog_entry = MODEL_DOWNLOAD_CATALOG.get(model_id)
         if not catalog_entry:
             return False
         target_path = os.path.join(
             self.base_dir, catalog_entry["target_dir"], catalog_entry["filename"]
         )
-        return os.path.isfile(target_path)
+        if not os.path.isfile(target_path):
+            return False
+        if catalog_entry.get("clip_filename"):
+            clip_path = os.path.join(
+                self.base_dir, catalog_entry["target_dir"], catalog_entry["clip_filename"]
+            )
+            if not os.path.isfile(clip_path):
+                return False
+        return True
 
     def get_model_path(self, model_id: str) -> Optional[str]:
         """모델의 로컬 GGUF 파일 절대 경로 반환. 미존재 시 None."""
@@ -193,9 +201,13 @@ class ModelDownloader:
 
         target_dir_abs = os.path.join(self.base_dir, catalog_entry["target_dir"])
         target_file = os.path.join(target_dir_abs, catalog_entry["filename"])
+        clip_path = os.path.join(target_dir_abs, catalog_entry["clip_filename"]) if catalog_entry.get("clip_filename") else None
 
-        # FR-003: 로컬 파일 미존재 탐지
-        if os.path.isfile(target_file) and not force:
+        # FR-003: 로컬 파일 미존재 탐지 (메인 GGUF 및 MMProj 프로젝터 검증)
+        main_exists = os.path.isfile(target_file)
+        clip_exists = not clip_path or os.path.isfile(clip_path)
+
+        if main_exists and clip_exists and not force:
             task.status = DownloadStatusEnum.SKIPPED
             task.download_progress_pct = 100.0
             print(f"[ModelDownloader] {model_id}: 이미 존재함 → {target_file}")

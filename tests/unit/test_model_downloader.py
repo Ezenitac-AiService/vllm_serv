@@ -150,13 +150,14 @@ class TestModelDownloader:
             assert task.download_progress_pct == 100.0
 
     def test_download_model_without_huggingface_hub_fails_gracefully(self):
-        """huggingface_hub가 없을 때 ImportError 우아한 처리."""
+        """huggingface_hub 모듈 임포트 실패 시 FAILED 처리."""
+        from unittest.mock import patch
         with tempfile.TemporaryDirectory() as tmpdir:
             downloader = ModelDownloader(base_dir=tmpdir)
-            # huggingface_hub가 설치되어 있지 않으면 FAILED 반환
-            task = downloader.download_model("qwen3.5-2b")
-            # ImportError 또는 네트워크 에러 중 하나
-            assert task.status in (DownloadStatusEnum.FAILED, DownloadStatusEnum.COMPLETED)
+            with patch.dict("sys.modules", {"huggingface_hub": None}):
+                task = downloader.download_model("qwen3.5-2b")
+                assert task.status == DownloadStatusEnum.FAILED
+                assert "huggingface_hub" in task.error_message
 
     def test_ensure_model_available_raises_for_unknown(self):
         """알 수 없는 model_id로 ensure 호출 시 ValueError."""
@@ -203,4 +204,29 @@ def test_verify_and_build_llama_server_resolution():
     assert isinstance(info, LlamaServerBinaryInfo)
     assert info.binary_path is not None
     assert info.build_source in ("PATH", "LOCAL_BIN", "CMAKE_BUILD", "PYTHON_MODULE_FALLBACK")
+
+
+def test_gemma4_mmproj_availability_check():
+    """Verify that is_model_available requires BOTH main GGUF and MMProj files for Gemma 4."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        downloader = ModelDownloader(base_dir=tmpdir)
+        target_dir = os.path.join(tmpdir, "models", "gemma4-2b")
+        os.makedirs(target_dir, exist_ok=True)
+        
+        main_gguf = os.path.join(target_dir, "gemma-4-E2B_q4_0-it.gguf")
+        mmproj_gguf = os.path.join(target_dir, "gemma-4-E2B-it-mmproj.gguf")
+        
+        # Initially neither exists
+        assert downloader.is_model_available("gemma4-e2b") is False
+        
+        # Only main GGUF exists
+        with open(main_gguf, "wb") as f:
+            f.write(b"MAIN_GGUF")
+        assert downloader.is_model_available("gemma4-e2b") is False
+        
+        # Both main GGUF and MMProj exist
+        with open(mmproj_gguf, "wb") as f:
+            f.write(b"MMPROJ_GGUF")
+        assert downloader.is_model_available("gemma4-e2b") is True
+
 

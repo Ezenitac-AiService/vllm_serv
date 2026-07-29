@@ -1,0 +1,87 @@
+"""Unit tests for ProcessManager Gemma 4 MMProj preset catalog and CLI argument generation.
+
+Feature: 015-gemma4-model-loading-fix
+"""
+
+import os
+import pytest
+from unittest.mock import MagicMock, patch
+from src.core.process_manager import ProcessManager, ProcessStatusEnum, LlamaServerBinaryInfo
+
+
+def test_gemma4_preset_catalog_bindings():
+    """Verify that Gemma 4 presets contain the mandatory clip MMProj projector file definitions."""
+    pm = ProcessManager()
+    
+    assert "gemma4-e2b" in pm.model_presets
+    assert pm.model_presets["gemma4-e2b"]["clip"] == "models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf"
+    
+    assert "gemma4-e4b" in pm.model_presets
+    assert pm.model_presets["gemma4-e4b"]["clip"] == "models/gemma4-4b/gemma-4-E4B-it-mmproj.gguf"
+    
+    assert "gemma4-12b" in pm.model_presets
+    assert pm.model_presets["gemma4-12b"]["clip"] == "models/gemma4-12b/mmproj-gemma-4-12b-it-qat-q4_0.gguf"
+
+
+@pytest.mark.asyncio
+async def test_spawn_process_injects_mmproj_cli_arg_standalone():
+    """Verify that standalone llama-server command line includes --mmproj when MMProj projector file exists."""
+    pm = ProcessManager(port=8099)
+    
+    fake_binary_info = LlamaServerBinaryInfo(
+        binary_path="/usr/local/bin/llama-server",
+        build_source="CMAKE_CUDA_BUILD",
+        is_cuda_enabled=True,
+        exists=True
+    )
+    
+    with patch.object(pm, "verify_and_build_llama_server", return_value=fake_binary_info), \
+         patch("os.path.exists", return_value=True), \
+         patch("asyncio.create_subprocess_exec") as mock_exec:
+        
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.stdout = MagicMock()
+        mock_exec.return_value = mock_process
+        
+        await pm.spawn_process("gemma4-e2b")
+        
+        mock_exec.assert_called_once()
+        cmd = mock_exec.call_args[0]
+        
+        # Verify --mmproj is in CLI args
+        assert "--mmproj" in cmd
+        mmproj_idx = cmd.index("--mmproj")
+        assert cmd[mmproj_idx + 1].endswith("models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf")
+
+
+@pytest.mark.asyncio
+async def test_spawn_process_injects_clip_model_path_cli_arg_python_fallback():
+    """Verify that llama_cpp.server python module command line includes --clip_model_path when MMProj exists."""
+    pm = ProcessManager(port=8099)
+    
+    fake_binary_info = LlamaServerBinaryInfo(
+        binary_path="python",
+        build_source="PYTHON_MODULE_FALLBACK",
+        is_cuda_enabled=True,
+        exists=True
+    )
+    
+    with patch.object(pm, "verify_and_build_llama_server", return_value=fake_binary_info), \
+         patch("os.path.exists", return_value=True), \
+         patch("asyncio.create_subprocess_exec") as mock_exec:
+        
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.stdout = MagicMock()
+        mock_exec.return_value = mock_process
+        
+        await pm.spawn_process("gemma4-e2b")
+        
+        mock_exec.assert_called_once()
+        cmd = mock_exec.call_args[0]
+        
+        # Verify --clip_model_path is in CLI args
+        assert "--clip_model_path" in cmd
+        clip_idx = cmd.index("--clip_model_path")
+        assert cmd[clip_idx + 1].endswith("models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf")
