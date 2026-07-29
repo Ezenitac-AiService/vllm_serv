@@ -2,7 +2,7 @@
 
 **Feature Directory**: `specs/013-enhance-benchmark-report`  
 **Created Date**: 2026-07-29  
-**Status**: In Plan  
+**Status**: Complete (Pure Text LLM Serving & 6-Model Benchmark Integrated)  
 
 ---
 
@@ -12,7 +12,7 @@
 - **Primary Modules**:
   - `scripts/benchmark_quality.py`: Benchmark execution loop, markdown report generation, 6-model dataset compilation.
   - `src/eval/quality_evaluator.py`: Golden Dataset loader (`data/golden_dataset.json`), ROUGE-L & Exact Match evaluator.
-  - `src/core/process_manager.py`: Process spawning, `_wait_for_port_free()`, `stop_process()`.
+  - `src/core/process_manager.py`: Process spawning, `_wait_for_port_free()`, `stop_process()`, Pure Text LLM mode (`clip_file = None`).
   - `src/core/gpu_detector.py`: PyNVML GPU VRAM detection and OOM threshold computation.
 - **Data Storage & Contracts**:
   - `data/golden_dataset.json`: 10 representative prompt-answer ground truth items.
@@ -37,6 +37,9 @@
 
 4. **Multi-Persona Synthesis Integration (FR-006)**:
    - Append 5-persona deep analysis sections (Data Analyst, Deep Learning Expert, Fine-Tuning Expert, DevOps Manager, AI Architect) to the report.
+
+5. **Pure Text LLM Serving & Clip MMProj Bypass (FR-007)**:
+   - Bypass `--clip_model_path` multimodal vision projector during LLM process spawn in `src/core/process_manager.py` to eliminate 25~75s loading delays and reduce VRAM footprint for ultra-fast text-only serving.
 
 ---
 

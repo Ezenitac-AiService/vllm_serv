@@ -438,9 +438,9 @@ def run_real_benchmark_loop(
                 continue
 
             # Step 3: HTTP 헬스체크 및 VRAM 100% 오프로드 대기 (T011 / FR-004, FR-009)
-            print(f"[Step 3] HTTP /v1/models & VRAM 100% 오프로드 대기 (최대 60초)...")
+            print(f"[Step 3] HTTP /v1/models & VRAM 100% 오프로드 대기 (최대 120초)...")
             ready = False
-            deadline = time.time() + 60.0
+            deadline = time.time() + 120.0
             while time.time() < deadline:
                 try:
                     r = httpx.get("http://127.0.0.1:8081/v1/models", timeout=2.0)

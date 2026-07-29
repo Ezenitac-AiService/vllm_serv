@@ -1,14 +1,11 @@
 <!--
 Sync Impact Report:
-- Version Change: 1.0.0 -> 1.1.0 (added Principle IV: Non-Destructive Documentation Edit)
+- Version Change: 1.1.0 -> 1.2.0 (added Principle V: uv Environment & Package Management)
 - Modified Principles:
-  - IV. 비파괴적 문서 수정 원칙 (New)
+  - V. uv 패키지 및 환경 관리 원칙 (New)
 - Added Sections: None
 - Removed Sections: None
-- Templates Requiring Updates:
-  - .specify/templates/plan-template.md (✅ updated)
-  - .specify/templates/spec-template.md (✅ updated)
-  - .specify/templates/tasks-template.md (✅ updated)
+- Templates Requiring Updates: None
 - Follow-up TODOs: None
 -->
 
@@ -28,10 +25,13 @@ Sync Impact Report:
 ### IV. 비파괴적 문서 수정 원칙 (Non-Destructive Documentation Edit)
 모든 기존 문서(명세서, 계획서, 헌장, 과제 목록 등)의 수정 작업 시에는 명시적인 수정 대상 항목만을 선택적으로 개정해야 하며, 기존 내용이나 문맥을 무단으로 요약, 축소, 생략, 누락, 삭제하는 파괴적 편집(Destructive Edit)을 엄격히 금지합니다.
 
+### V. uv 패키지 및 환경 관리 원칙 (uv Environment & Package Management)
+본 프로젝트는 `uv` 패키지 및 파이썬 가상환경 관리자를 표준 환경으로 사용합니다. 패키지 추가, 설치 및 환경 동기화 시에는 `pip`이나 임의의 패키지 매니저 대신 `uv add`, `uv sync`를 사용해야 하며, 모든 파이썬 스크립트 실행, 모듈 호출, pytest 테스트 수행 시에는 임의의 `PYTHONPATH` 지정 대신 `uv run` (예: `uv run pytest`, `uv run python ...`) 명령을 사용하여 격리된 가상환경 경로 및 패키지 정합성을 보장해야 합니다.
+
 ## Governance
 
 본 헌장(Constitution)은 프로젝트 내 모든 작업의 기반이 되는 최상위 규칙입니다.
 - 모든 기능 제안, 명세, 계획, 구현 과정에서 위 원칙들을 검토하고 준수해야 합니다.
 - 헌장 업데이트 시에는 문서 내의 버전 규칙을 따르며, 연관된 템플릿의 정합성을 보장해야 합니다.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-29
+**Version**: 1.2.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-29

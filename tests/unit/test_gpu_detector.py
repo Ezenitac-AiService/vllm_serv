@@ -225,12 +225,13 @@ def test_estimate_kv_cache_vram_calculation():
 
 def test_get_nvml_vram_info_fallback():
     """T005: get_nvml_vram_info should fallback safely to check_gpu_availability if PyNVML fails."""
-    with patch("src.core.gpu_detector.check_gpu_availability") as mock_fallback:
-        mock_fallback.return_value = GpuDeviceInfo(
-            device_id=0, name="Fallback GPU", total_vram_mb=11264, free_vram_mb=9000, is_cuda_available=True
-        )
-        info = get_nvml_vram_info()
-        assert info.name == "Fallback GPU"
+    with patch("pynvml.nvmlInit", side_effect=Exception("NVML Error")):
+        with patch("src.core.gpu_detector.check_gpu_availability") as mock_fallback:
+            mock_fallback.return_value = GpuDeviceInfo(
+                device_id=0, name="Fallback GPU", total_vram_mb=11264, free_vram_mb=9000, is_cuda_available=True
+            )
+            info = get_nvml_vram_info()
+            assert info.name == "Fallback GPU"
 
 def test_port_collision_error_exception():
     """T005: PortCollisionError raised when port 8081 is occupied."""

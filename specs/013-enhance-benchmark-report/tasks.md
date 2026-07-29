@@ -28,6 +28,7 @@
 
 - [x] T002 Extend QualitativeSampleComparison, ContextScalingMetric, and ComprehensiveQualityReportMetric entities in src/eval/quality_evaluator.py and scripts/benchmark_quality.py
 - [x] T003 [P] Create contract validator for specs/013-enhance-benchmark-report/contracts/benchmark-report-schema.json in tests/unit/test_quality_evaluator.py
+- [x] T004 Bypass clip multimodal vision projector (--clip_model_path) in src/core/process_manager.py for pure text LLM serving (FR-007)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -41,11 +42,11 @@
 
 ### Tests for User Story 1
 
-- [x] T004 [P] [US1] Unit test for 6-model report catalog complete rendering in tests/unit/test_quality_evaluator.py
+- [x] T005 [P] [US1] Unit test for 6-model report catalog complete rendering in tests/unit/test_quality_evaluator.py
 
 ### Implementation for User Story 1
 
-- [x] T005 [US1] Update run_real_benchmark_loop and exception handler in scripts/benchmark_quality.py to ensure all 6 catalog models are 100% recorded in output report table
+- [x] T006 [US1] Update run_real_benchmark_loop and exception handler in scripts/benchmark_quality.py to ensure all 6 catalog models are 100% recorded in output report table
 
 **Checkpoint**: User Story 1 fully functional and testable independently (MVP ready!)
 
@@ -59,12 +60,12 @@
 
 ### Tests for User Story 2
 
-- [x] T006 [P] [US2] Unit test for qualitative sample text diff and error tag extraction in tests/unit/test_quality_evaluator.py
+- [x] T007 [P] [US2] Unit test for qualitative sample text diff and error tag extraction in tests/unit/test_quality_evaluator.py
 
 ### Implementation for User Story 2
 
-- [x] T007 [US2] Update QualityEvaluator in src/eval/quality_evaluator.py to extract raw responses, golden ground truth, ROUGE-L F1, Exact Match, JSON validation, and error tags ([JSON Format Failure], [Entity Hallucination], etc.)
-- [x] T008 [US2] Refactor generate_markdown_report in scripts/benchmark_quality.py to render Section 3 with GitHub Markdown <details><summary> collapsible text diff blocks
+- [x] T008 [US2] Update QualityEvaluator in src/eval/quality_evaluator.py to extract raw responses, golden ground truth, ROUGE-L F1, Exact Match, JSON validation, and error tags ([JSON Format Failure], [Entity Hallucination], etc.)
+- [x] T009 [US2] Refactor generate_markdown_report in scripts/benchmark_quality.py to render Section 3 with GitHub Markdown <details><summary> collapsible text diff blocks
 
 **Checkpoint**: User Stories 1 and 2 work independently.
 
@@ -78,11 +79,11 @@
 
 ### Tests for User Story 3
 
-- [x] T009 [P] [US3] Integration test for context scaling benchmark (n_ctx: 4K, 8K, 16K, 32K) in tests/integration/test_quality_benchmark.py
+- [x] T010 [P] [US3] Integration test for context scaling benchmark (n_ctx: 4K, 8K, 16K, 32K) in tests/integration/test_quality_benchmark.py
 
 ### Implementation for User Story 3
 
-- [x] T010 [US3] Implement benchmark_context_scaling in scripts/benchmark_quality.py measuring Peak VRAM and TTFT across n_ctx steps (4096~32768) and render Section 4 Context Window Capacity & Scaling Limits table
+- [x] T011 [US3] Implement benchmark_context_scaling in scripts/benchmark_quality.py measuring Peak VRAM and TTFT across n_ctx steps (4096~32768) with CUDA OOM exception catching (recording VRAM Safety Threshold limit without crashing) and render Section 4 Context Window Capacity & Scaling Limits table
 
 **Checkpoint**: User Stories 1, 2, and 3 functional.
 
@@ -96,11 +97,11 @@
 
 ### Tests for User Story 4
 
-- [x] T011 [P] [US4] Unit test for 5-persona deep analysis section generator in tests/unit/test_quality_evaluator.py
+- [x] T012 [P] [US4] Unit test for 5-persona deep analysis section generator in tests/unit/test_quality_evaluator.py
 
 ### Implementation for User Story 4
 
-- [x] T012 [US4] Implement generate_multi_persona_analysis in scripts/benchmark_quality.py synthesizing Data Analyst, DL Expert, Fine-Tuning Expert, DevOps Manager, and AI Architect sections
+- [x] T013 [US4] Implement generate_multi_persona_analysis in scripts/benchmark_quality.py synthesizing Data Analyst, DL Expert, Fine-Tuning Expert, DevOps Manager, and AI Architect sections
 
 **Checkpoint**: All user stories functional and complete.
 
@@ -110,8 +111,8 @@
 
 **Purpose**: Final validation, refactoring, and test suite execution
 
-- [x] T013 [P] Execute full pytest test suite (74+ tests) in tests/ to verify zero remaining regressions
-- [x] T014 Execute runnable quickstart validation guide in specs/013-enhance-benchmark-report/quickstart.md
+- [x] T014 [P] Execute full pytest test suite (74+ tests) in tests/ to verify zero remaining regressions
+- [x] T015 Execute runnable quickstart validation guide in specs/013-enhance-benchmark-report/quickstart.md
 
 ---
 
@@ -127,4 +128,4 @@
 
 ### Parallel Opportunities
 
-- T003, T004, T006, T009, T011, T013 marked [P] can run in parallel.
+- T003, T005, T007, T010, T012, T014 marked [P] can run in parallel.

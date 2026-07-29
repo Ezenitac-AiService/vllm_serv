@@ -360,9 +360,8 @@ class ProcessManager:
         if candidate_binary and "ollama" not in candidate_binary:
             binary_executable = candidate_binary
 
+        # FR-007: Pure Text LLM Serving (Bypass clip vision projector loading for ultra-fast startup & lower VRAM)
         clip_file = None
-        if target_preset.get("clip"):
-            clip_file = os.path.join(base_dir, target_preset["clip"])
 
         # Force 100% GPU VRAM Offloading environment variables
         env = dict(os.environ)
@@ -379,8 +378,6 @@ class ProcessManager:
                 "--split-mode", "none",
                 "--main-gpu", "0"
             ]
-            if clip_file:
-                cmd.extend(["--mmproj", clip_file, "--mmproj-offload"])
         else:
             cmd = [
                 sys.executable, "-m", "llama_cpp.server",
