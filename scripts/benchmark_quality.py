@@ -423,7 +423,7 @@ def run_real_benchmark_loop(
             # Step 2: llama-server 프로세스 개설
             print(f"[Step 2] llama-server 프로세스 개설 중...")
             t_load_start = time.time()
-            spawn_state = _run_async(pm.spawn_process(model_id, 4096))
+            spawn_state = _run_async(pm.spawn_process(model_id, 2048))
             t_load_end = time.time()
             load_time = round(t_load_end - t_load_start, 2)
 
