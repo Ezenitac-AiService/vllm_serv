@@ -40,9 +40,10 @@ class TestProcessManagerSwitching:
     @pytest.mark.asyncio
     async def test_spawn_missing_model_file_returns_error(self, process_manager):
         """모델 파일이 없는 상태에서 spawn 시 ERROR 반환."""
-        state = await process_manager.spawn_process("qwen3.5-2b", 4096)
-        assert state.status == ProcessStatusEnum.ERROR
-        assert "not found" in state.error_message.lower() or "Model file" in state.error_message
+        with patch("os.path.exists", return_value=False):
+            state = await process_manager.spawn_process("qwen3.5-2b", 4096)
+            assert state.status == ProcessStatusEnum.ERROR
+            assert "not found" in state.error_message.lower() or "Model file" in state.error_message
 
     @pytest.mark.asyncio
     async def test_vram_estimation(self, process_manager):

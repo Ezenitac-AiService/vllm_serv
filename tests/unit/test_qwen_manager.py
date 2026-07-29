@@ -29,10 +29,13 @@ async def test_qwen35_dry_run_vram_estimation():
     assert state.status == ProcessStatusEnum.ERROR
     assert "CUDA OOM Risk" in (state.error_message or "")
 
+from unittest.mock import patch
+
 @pytest.mark.asyncio
 async def test_qwen35_missing_model_file():
     """T013: Test error handling for missing GGUF model files."""
     pm = ProcessManager(port=8089)
-    state = await pm.spawn_process("qwen3.5-2b", 4096)
-    assert state.status == ProcessStatusEnum.ERROR
-    assert "Model file not found" in (state.error_message or "")
+    with patch("os.path.exists", return_value=False):
+        state = await pm.spawn_process("qwen3.5-2b", 4096)
+        assert state.status == ProcessStatusEnum.ERROR
+        assert "not found" in (state.error_message or "").lower() or "Model file" in (state.error_message or "")

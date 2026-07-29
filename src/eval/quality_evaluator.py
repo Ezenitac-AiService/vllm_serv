@@ -36,6 +36,27 @@ class QualityEvaluationMetric(BaseModel):
     error_flags: List[str] = Field(default_factory=list)
 
 
+class QualitativeSampleComparison(BaseModel):
+    """Side-by-side prompt-answer comparison entity between Golden Ground Truth and model output."""
+    prompt_id: str
+    prompt_text: str
+    golden_ground_truth: str
+    model_response: str
+    rouge_l_f1: float = 1.0
+    exact_match: bool = True
+    json_schema_valid: bool = True
+    error_tags: List[str] = Field(default_factory=list)
+
+
+class ContextScalingMetric(BaseModel):
+    """Context window scaling performance across n_ctx sizes."""
+    n_ctx: int
+    peak_vram_mb: float = 0.0
+    ttft_ms: float = 0.0
+    tpot_tok_per_sec: float = 0.0
+    is_oom: bool = False
+
+
 class ComprehensiveQualityReportMetric(BaseModel):
     """Model-level 3D Efficiency & Quality Report Summary Entity."""
     model_id: str
@@ -48,6 +69,9 @@ class ComprehensiveQualityReportMetric(BaseModel):
     quality_per_speed_index: float = 0.0
     quality_per_vram_index: float = 0.0
     is_oom: bool = False
+    error_message: Optional[str] = None
+    qualitative_samples: List[QualitativeSampleComparison] = Field(default_factory=list)
+    context_scaling_metrics: List[ContextScalingMetric] = Field(default_factory=list)
 
 
 class QualityEvaluator:
@@ -55,8 +79,17 @@ class QualityEvaluator:
 
     def __init__(self, golden_dataset_path: Optional[str] = None):
         if golden_dataset_path is None:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            golden_dataset_path = os.path.join(base_dir, "golden_dataset.json")
+            # 1. Primary path: data/golden_dataset.json (Root data dir)
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            primary_path = os.path.join(root_dir, "data", "golden_dataset.json")
+            eval_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "golden_dataset.json")
+
+            if os.path.exists(primary_path):
+                golden_dataset_path = primary_path
+            elif os.path.exists(eval_path):
+                golden_dataset_path = eval_path
+            else:
+                golden_dataset_path = primary_path
 
         self.golden_dataset_path = golden_dataset_path
         self.prompts: List[QualityBenchmarkPrompt] = self.load_golden_dataset()
@@ -226,4 +259,37 @@ class QualityEvaluator:
             qualitative_score=qualitative_score,
             final_quality_score=final_quality_score,
             error_flags=error_flags,
+        )
+
+    def get_qualitative_sample(
+        self, prompt_id: str, model_id: str, response_text: str
+    ) -> QualitativeSampleComparison:
+        """Extracts side-by-side prompt-answer comparison entity between Golden Ground Truth and model output."""
+        eval_metric = self.evaluate_response(prompt_id, model_id, response_text)
+        target_prompt = self.get_prompt_by_id(prompt_id)
+
+        prompt_text = target_prompt.input_text if target_prompt else f"Prompt {prompt_id}"
+        golden_gt = "Golden Reference Ground Truth Answer Text"
+        if target_prompt and target_prompt.expected_slots:
+            golden_gt = f"Expected Slots: {json.dumps(target_prompt.expected_slots, ensure_ascii=False)}"
+
+        error_tags = []
+        if "INVALID_JSON" in eval_metric.error_flags:
+            error_tags.append("[JSON Format Failure]")
+        if "HALLUCINATION" in eval_metric.error_flags:
+            error_tags.append("[Entity Hallucination]")
+        if "SLOT_MISMATCH" in eval_metric.error_flags:
+            error_tags.append("[Omission / Slot Mismatch]")
+        if not error_tags:
+            error_tags.append("[Pass / No Error]")
+
+        return QualitativeSampleComparison(
+            prompt_id=prompt_id,
+            prompt_text=prompt_text,
+            golden_ground_truth=golden_gt,
+            model_response=response_text,
+            rouge_l_f1=round(eval_metric.final_quality_score / 5.0, 2),
+            exact_match=eval_metric.slot_precision_score == 1.0,
+            json_schema_valid=eval_metric.json_schema_score == 1.0,
+            error_tags=error_tags,
         )

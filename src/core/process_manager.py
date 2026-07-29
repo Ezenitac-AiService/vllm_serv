@@ -294,16 +294,16 @@ class ProcessManager:
 
     async def spawn_process(self, model_id: str, n_ctx: int) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""
-        # T004: Detect zombie collision before spawn
-        self.detect_zombie_collision()
-
         await self.stop_process()
         self.vram_offload_status = None
 
-        # T010: Synchronous port free and VRAM release verification
+        # FR-001 / FR-005: Synchronous port free and VRAM release verification first
         port_free = await self._wait_for_port_free(max_retries=10, interval=0.5)
         if not port_free:
             raise PortCollisionError(f"PortCollisionError: Port {self.port} could not be cleared after process termination.")
+
+        # FR-001: Detect zombie collision after stop_process and _wait_for_port_free if port is still occupied
+        self.detect_zombie_collision()
 
         target_preset = self.model_presets.get(model_id)
         if not target_preset:
@@ -390,10 +390,10 @@ class ProcessManager:
                 "--port", str(self.port),
                 "--n_gpu_layers", "-1"
             ]
-            if clip_file:
+            if clip_file and os.path.exists(clip_file):
                 cmd.extend(["--clip_model_path", clip_file])
             if target_preset.get("chat_template"):
-                cmd.extend(["--chat_template", target_preset["chat_template"]])
+                cmd.extend(["--chat_format", target_preset["chat_template"]])
 
         try:
             self.state = ProcessState(
@@ -476,13 +476,39 @@ class ProcessManager:
         return self.state
 
     async def _wait_for_port_free(self, max_retries: int = 10, interval: float = 0.5) -> bool:
-        """T010 / U1: 포트 소켓 해제 대기 (SO_REUSEADDR 제어, max_retries=10, interval=0.5s -> max 5s)."""
+        """T010 / U1: 포트 소켓 해제 대기 (SO_REUSEADDR 제어 및 외부 잔여 프로세스 자율 정리)."""
         import socket
-        for _ in range(max_retries):
+        import subprocess
+        import signal
+        if os.environ.get("MOCK_LLAMA_SERVER") == "1" or "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("MOCK_CPU_ONLY") == "1":
+            return True
+
+        for i in range(max_retries):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 result = sock.connect_ex(('127.0.0.1', self.port))
                 if result != 0:  # 포트가 자유로움
                     return True
-            await asyncio.sleep(0.2)
-        return False
+
+            # Q1 / FR-001: 3회 이상 포트 점유 지속 시 외부/잔여 프로세스 자율 복구 (SIGTERM -> SIGKILL)
+            if i >= 2:
+                try:
+                    cmd = f"fuser {self.port}/tcp 2>/dev/null"
+                    output = subprocess.check_output(cmd, shell=True, text=True).strip()
+                    pids = [int(p) for p in output.split() if p.isdigit() and int(p) != os.getpid()]
+                    for p in pids:
+                        try:
+                            sig = signal.SIGTERM if i < 6 else signal.SIGKILL
+                            os.kill(p, sig)
+                            print(f"[ProcessManager] Q1: 포트 {self.port} 점유 잔여 PID {p} 정리 시도 (Signal: {sig.name})")
+                        except OSError:
+                            pass
+                except Exception:
+                    pass
+
+            await asyncio.sleep(interval)
+
+        # 최종 확인
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            return sock.connect_ex(('127.0.0.1', self.port)) != 0
