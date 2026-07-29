@@ -1,9 +1,21 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `008-response-quality-eval`
-**Generated Date**: 2026-07-29 02:12:49
+**Generated Date**: 2026-07-29 03:44:54
 **Execution Mode**: `STATIC PROFILING & FALLBACK SAMPLE MODE`
 **Golden Reference Ground Truth**: `src/eval/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
+
+---
+
+
+## 0. GPU Hardware Environment
+
+| Property | Value |
+|----------|-------|
+| GPU | `NVIDIA GeForce GTX 1080 Ti` |
+| Total VRAM | `11264 MB` |
+| CUDA Version | `13.0` |
+| CUDA Available | `True` |
 
 ---
 
@@ -11,9 +23,9 @@
 
 | Evaluation Aspect | Recommended Model Preset | Metric Value | Rationale |
 |-------------------|--------------------------|--------------|-----------|
-| **최고 품질 (Best Quality)** | `Gemma 4 E2B` | `Quality Score: 4.15 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
-| **최고 속도 가성비 (Quality/Speed)** | `Gemma 4 12B` | `Index: 2.36` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
-| **최고 메모리 가성비 (Quality/VRAM)** | `Qwen 3.5 2B` | `Index: 1.73` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
+| **최고 품질 (Best Quality)** | `{best_quality_model.model_id}` | `Quality Score: {best_quality_model.avg_quality_score} / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
+| **최고 속도 가성비 (Quality/Speed)** | `{best_speed_eff_model.model_id}` | `Index: {best_speed_eff_model.quality_per_speed_index}` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
+| **최고 메모리 가성비 (Quality/VRAM)** | `{best_vram_eff_model.model_id}` | `Index: {best_vram_eff_model.quality_per_vram_index}` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
 
 ---
 
@@ -21,12 +33,8 @@
 
 | Model Lineup | Quant | TTFT (ms) | TPOT (tok/s) | Peak VRAM (MB) | Quality Score (1~5) | Quality/Speed Index | Quality/VRAM Index |
 |--------------|-------|-----------|--------------|----------------|---------------------|---------------------|--------------------|
-| **Gemma 4 E2B** | `q4_0` | `128.0` | `44.1` | `2680` | **`4.15`** | `0.94` | `1.59` |
-| **Gemma 4 E4B** | `q4_0` | `156.0` | `33.8` | `4210` | **`4.15`** | `1.23` | `1.01` |
-| **Gemma 4 12B** | `qat_q4_0` | `285.0` | `17.6` | `8900` | **`4.15`** | `2.36` | `0.48` |
-| **Qwen 3.5 2B** | `q4_k_m` | `115.0` | `48.5` | `2450` | **`4.15`** | `0.86` | `1.73` |
-| **Qwen 3.5 4B** | `q4_k_m` | `142.0` | `36.2` | `3950` | **`4.15`** | `1.15` | `1.08` |
-| **Qwen 3.5 9B** | `q4_k_m` | `210.0` | `22.4` | `7120` | **`4.15`** | `1.85` | `0.6` |
+| **Gemma 4 E2B** | `q4_0` | `8109.9` | `12.63` | `2680` | **`1.0`** | `0.79` | `0.38` |
+| **Qwen 3.5 2B** | `q4_k_m` | `7199.3` | `14.22` | `2450` | **`1.0`** | `0.7` | `0.42` |
 
 ---
 
