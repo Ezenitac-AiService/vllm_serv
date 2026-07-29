@@ -1,10 +1,21 @@
+"""
+FastAPI Server Entrypoint and Factory Module (FR-001, FR-002, FR-008).
+Configures routes, SubnetFilterMiddleware, static assets, and lifespan management.
+"""
+
+import os
 import asyncio
+import httpx
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Response, status
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from src.core.llama_manager import llama_manager
 from src.core.config_manager import ConfigManager
 from src.api.routes.inference_api import router as inference_router
+from src.api.routes.dashboard_api import router as dashboard_router
 from src.api.middleware.subnet_filter import SubnetFilterMiddleware
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -12,14 +23,27 @@ async def lifespan(app: FastAPI):
     cm = ConfigManager()
     server_cfg = cm.get_server_config()
     default_model = server_cfg.get("default_model", "qwen3.5-4b")
-    
+    host = server_cfg.get("host", "127.0.0.1")
+    port = server_cfg.get("port", 8081)
+
+    # Initialize singleton httpx.AsyncClient with connection limits & dynamic base_url
+    limits = httpx.Limits(max_keepalive_connections=20, max_connections=100)
+    app.state.http_client = httpx.AsyncClient(
+        base_url=f"http://{host}:{port}",
+        limits=limits,
+        timeout=None
+    )
+
     # Auto-load default resident model on startup
     asyncio.create_task(llama_manager.ensure_default_model_resident(default_model))
     yield
     # Cleanup on shutdown
+    await app.state.http_client.aclose()
     await llama_manager.unload_model()
 
+
 def create_app() -> FastAPI:
+    """Create and configure FastAPI application instance with subnets middleware and routers."""
     app = FastAPI(
         title="vllm_serv Qwen3.5 & Gemma4 GPU Serving API",
         description="llama.cpp 기반 Qwen 3.5 & Gemma 4 GPU 서빙 API",
@@ -34,6 +58,12 @@ def create_app() -> FastAPI:
     app.add_middleware(SubnetFilterMiddleware, allowed_subnets=allowed_subnets)
 
     app.include_router(inference_router)
+    app.include_router(dashboard_router)
+
+    # Mount static dashboard files if static dir exists
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    if os.path.exists(static_dir):
+        app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="dashboard")
 
     @app.get("/health")
     @app.get("/health/liveness")
@@ -57,7 +87,13 @@ def create_app() -> FastAPI:
             "current_state": llama_manager.state
         }
 
+    @app.get("/")
+    async def root():
+        """Redirect root path to dashboard."""
+        return RedirectResponse(url="/dashboard/")
+
     return app
+
 
 app = create_app()
 

@@ -107,6 +107,20 @@
 
 ---
 
+## Phase 8: Convergence
+
+- [x] T026 Refactor `src/api/main.py` to unify entrypoints by delegating to `src/api/server.py:create_app()`, load server configuration dynamically via `ConfigManager`, and mount `SubnetFilterMiddleware` per FR-001, FR-002, FR-008
+- [x] T027 Refactor `src/core/process_manager.py` to load model catalog via default `ConfigManager` and eliminate hardcoded fallback dictionary per FR-001, FR-002
+- [x] T028 Refactor `scripts/benchmark_quality.py` to load server host/port via `ConfigManager` and unify `AsyncClient` HTTP connection management per FR-001, FR-002, FR-005
+- [x] T029 Refactor `scripts/benchmark_qwen35.py` to dynamically fetch VRAM capacity limit via `ConfigManager` per FR-002
+- [x] T030 Refactor `scripts/setup.sh`, `scripts/start_server.sh`, and `scripts/status_server.sh` to dynamically utilize `ConfigManager` server port and host per FR-002
+- [x] T031 Audit and complete Python 3.12+ type hints and Google Style Docstrings across all core modules in `src/` per FR-006
+
+
+
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

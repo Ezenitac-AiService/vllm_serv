@@ -103,11 +103,33 @@ class ProcessManager:
     """Subprocess lifecycle manager for llama-server subprocesses supporting Gemma 4 and Qwen3.5."""
 
     def __init__(self, port: int = 8081, config_manager: Optional['ConfigManager'] = None):
-        self.port = port
-        self.process: Optional[asyncio.subprocess.Process] = None
-        self.state: ProcessState = ProcessState(status=ProcessStatusEnum.UNLOADED, port=port)
-        self.vram_offload_status: Optional[VramOffloadStatus] = None
-        self._log_drain_task: Optional[asyncio.Task] = None
+        # FR-001 & FR-002: ConfigManager를 단일 진실 소스(Single Source of Truth)로 사용
+        if config_manager is None:
+            from src.core.config_manager import ConfigManager
+            config_manager = ConfigManager()
+        self._config_manager = config_manager
+
+        catalog = config_manager.get_model_catalog()
+        loaded_presets = {}
+        if catalog:
+            for model_id, entry in catalog.items():
+                loaded_presets[model_id] = {
+                    "model": entry.get("model_path", ""),
+                    "clip": entry.get("clip_path"),
+                    "chat_template": entry.get("chat_template", "chatml"),
+                    "vram_est_mb": entry.get("vram_est_mb", 6000),
+                    "requires_mmproj": entry.get("requires_mmproj", False),
+                }
+        self.model_presets = loaded_presets
+
+        # 외부 JSON 서버 설정에서 VRAM 상한선 및 포트 동적 로드 (명시적 port 지정 시 최우선 적용)
+        server_config = config_manager.get_server_config()
+        self.vram_max_capacity_mb = server_config.get("vram_max_capacity_mb", 11264)
+        if port != 8081:
+            self.port = port
+        else:
+            self.port = server_config.get("port", 8081) if server_config else 8081
+
         self.hardware_limits = {
             "gemma4-e2b": 35000,
             "gemma4-e4b": 16000,
@@ -117,74 +139,11 @@ class ProcessManager:
             "qwen3.5-9b": 8500
         }
         self.vram_total = 24000
-        self.vram_max_capacity_mb = 11264  # 11GB GTX 1080 Ti limit
+        self.process: Optional[asyncio.subprocess.Process] = None
+        self.state: ProcessState = ProcessState(status=ProcessStatusEnum.UNLOADED, port=self.port)
+        self.vram_offload_status: Optional[VramOffloadStatus] = None
+        self._log_drain_task: Optional[asyncio.Task] = None
 
-        # Preset catalog including Gemma 4 and Qwen 3.5 variants
-        self.model_presets: Dict[str, Dict[str, Any]] = {
-            "gemma4-e2b": {
-                "model": "models/gemma4-2b/gemma-4-E2B_q4_0-it.gguf",
-                "clip": "models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf",
-                "chat_template": "gemma",
-                "vram_est_mb": 3500,
-                "requires_mmproj": True
-            },
-            "gemma4-e4b": {
-                "model": "models/gemma4-4b/gemma-4-E4B_q4_0-it.gguf",
-                "clip": "models/gemma4-4b/gemma-4-E4B-it-mmproj.gguf",
-                "chat_template": "gemma",
-                "vram_est_mb": 6500,
-                "requires_mmproj": True
-            },
-            "gemma4-12b": {
-                "model": "models/gemma4-12b/gemma-4-12b-it-qat-q4_0.gguf",
-                "clip": "models/gemma4-12b/mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-                "chat_template": "gemma",
-                "vram_est_mb": 9500,
-                "requires_mmproj": True
-            },
-            "qwen3.5-2b": {
-                "model": "models/qwen3.5-2b/Qwen3.5-2B-Q4_K_M.gguf",
-                "clip": None,
-                "chat_template": "chatml",
-                "vram_est_mb": 3000
-            },
-            "qwen3.5-4b": {
-                "model": "models/qwen3.5-4b/Qwen3.5-4B-Q4_K_M.gguf",
-                "clip": None,
-                "chat_template": "chatml",
-                "vram_est_mb": 5500
-            },
-            "qwen3.5-9b": {
-                "model": "models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf",
-                "clip": None,
-                "chat_template": "chatml",
-                "vram_est_mb": 9800
-            }
-        }
-
-        # FR-008: 외부 JSON 카탈로그에서 모델 프리셋 동적 로드 (config_manager 제공 시)
-        self._config_manager = config_manager
-        if config_manager is not None:
-            catalog = config_manager.get_model_catalog()
-            if catalog:
-                loaded_presets = {}
-                for model_id, entry in catalog.items():
-                    loaded_presets[model_id] = {
-                        "model": entry.get("model_path", ""),
-                        "clip": entry.get("clip_path"),
-                        "chat_template": entry.get("chat_template", "chatml"),
-                        "vram_est_mb": entry.get("vram_est_mb", 6000),
-                        "requires_mmproj": entry.get("requires_mmproj", False),
-                    }
-                self.model_presets = loaded_presets
-
-            # FR-009/FR-010: 서버 설정에서 VRAM 상한 동적 로드
-            server_config = config_manager.get_server_config()
-            if server_config:
-                self.vram_max_capacity_mb = server_config.get("vram_max_capacity_mb", 11264)
-
-            # FR-009: 서버 포트 동적 로드
-            self.port = server_config.get("port", port) if server_config else port
 
     def verify_vram_released(self, baseline_free_vram_mb: int = 0, tolerance_mb: int = 200) -> bool:
         """FR-013: VRAM memory release check via nvidia-smi."""

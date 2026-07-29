@@ -39,19 +39,22 @@ echo -e "${COLOR_GREEN}[SERVER] 3. 로그 파일 경로: $LOG_FILE${COLOR_NC}"
 
 mkdir -p "$BASE_DIR/logs"
 
-nohup uv run python -m src.api.server > "$LOG_FILE" 2>&1 &
-SERVER_PID=$!
-disown $SERVER_PID 2>/dev/null || true
+nohup setsid .venv/bin/python -m src.api.server < /dev/null > "$LOG_FILE" 2>&1 &
+sleep 0.5
+SERVER_PID=$(pgrep -f "src.api.server" | tail -n 1 || echo "")
 echo "$SERVER_PID" > "$PID_FILE"
 
 echo -e "${COLOR_GREEN}✓ 서버 데몬 백그라운드 구동 성공! (PID: $SERVER_PID)${COLOR_NC}"
 
+SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
+SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
+
 # 서빙 준비 완료 대기 (최대 30초)
 echo -n "[SERVER] 서빙 READY 상태 대기 중..."
 for i in {1..30}; do
-    if curl -s http://127.0.0.1:8081/health > /dev/null 2>&1 || curl -s http://127.0.0.1:8081/v1/models > /dev/null 2>&1; then
-        echo -e "\n${COLOR_GREEN}✓ 서버 준비 완료! (http://127.0.0.1:8081)${COLOR_NC}"
-        echo -e "OpenAI API 엔드포인트: http://127.0.0.1:8081/v1/chat/completions"
+    if curl -s "http://$SERVER_HOST:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://$SERVER_HOST:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
+        echo -e "\n${COLOR_GREEN}✓ 서버 준비 완료! (http://$SERVER_HOST:$SERVER_PORT)${COLOR_NC}"
+        echo -e "OpenAI API 엔드포인트: http://$SERVER_HOST:$SERVER_PORT/v1/chat/completions"
         exit 0
     fi
     echo -n "."

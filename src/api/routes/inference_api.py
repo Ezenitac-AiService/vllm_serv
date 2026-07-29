@@ -1,4 +1,10 @@
+"""
+OpenAI-compatible inference routing and proxy handlers (FR-001, FR-005, FR-007, FR-009).
+Provides GET /v1/models catalog listing and reverse-proxying for RAG/Agent requests.
+"""
+
 import time
+from typing import Any, AsyncGenerator
 import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
@@ -8,7 +14,8 @@ from src.core.model_downloader import ModelDownloader
 
 router = APIRouter()
 
-def _get_llama_server_config():
+
+def _get_llama_server_config() -> tuple[int, str]:
     """FR-009: 서버 포트 및 호스트를 config/server_config.json 또는 환경변수에서 동적 로드."""
     try:
         cm = ConfigManager()
@@ -19,11 +26,13 @@ def _get_llama_server_config():
     except Exception:
         return 8081, "127.0.0.1"
 
+
 _port, _host = _get_llama_server_config()
 LLAMA_SERVER_PORT = _port
 LLAMA_SERVER_URL = f"http://{_host}:{LLAMA_SERVER_PORT}"
 
-def _build_default_client():
+
+def _build_default_client() -> httpx.AsyncClient:
     """FR-005 & FR-009: 커넥션 풀 설정을 config/server_config.json에서 동적 로드하여 싱글톤 구성."""
     try:
         cm = ConfigManager()
@@ -41,10 +50,14 @@ def _build_default_client():
         timeout=None
     )
 
+
 _default_client = _build_default_client()
 
-async def check_llama_status():
+
+async def check_llama_status() -> bool:
+    """Check if the backend LLM engine is ready to accept requests."""
     return llama_manager.is_ready()
+
 
 def _get_http_client(request: Request) -> httpx.AsyncClient:
     """Helper to retrieve singleton AsyncClient from app.state or fallback."""
@@ -52,8 +65,9 @@ def _get_http_client(request: Request) -> httpx.AsyncClient:
         return request.app.state.http_client
     return _default_client
 
+
 @router.get("/v1/models")
-async def list_models(request: Request):
+async def list_models(request: Request) -> dict[str, Any]:
     """FR-001 & FR-007: OpenAI API 표준 GET /v1/models 동적 모델 카탈로그 엔드포인트.
     
     ConfigManager 기반 전체 지원 모델 정보, 다운로드 상태, 현재 활성화 여부를
@@ -69,7 +83,6 @@ async def list_models(request: Request):
         current_model = cfg.get("current_model")
     except Exception:
         pass
-
 
     created_ts = int(time.time())
     models_data = []
@@ -90,7 +103,7 @@ async def list_models(request: Request):
 
 
 @router.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
-async def reverse_proxy(request: Request, path: str):
+async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
     """FR-009: RAG 및 Agent 마이크로서비스 요청을 비동기 싱글톤 커넥션 풀로 역방향 프록시 처리."""
     if path in ("chat/completions", "completions") and not await check_llama_status():
         raise HTTPException(
@@ -120,7 +133,7 @@ async def reverse_proxy(request: Request, path: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    async def stream_generator():
+    async def stream_generator() -> AsyncGenerator[bytes, None]:
         """RAG 및 Agent 마이크로서비스 전용 SSE 스트리밍 제너레이터."""
         try:
             async for chunk in r.aiter_raw():

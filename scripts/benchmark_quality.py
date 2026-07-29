@@ -24,7 +24,14 @@ from src.core.model_downloader import ModelDownloader, DownloadStatusEnum
 from src.core.gpu_detector import check_gpu_availability, GpuAccelerationError
 
 
-SERVER_API_URL = "http://127.0.0.1:8081/v1/chat/completions"
+from src.core.config_manager import ConfigManager
+
+_cm = ConfigManager()
+_server_cfg = _cm.get_server_config()
+SERVER_HOST = _server_cfg.get("host", "127.0.0.1")
+SERVER_PORT = _server_cfg.get("port", 8081)
+SERVER_BASE_URL = f"http://{SERVER_HOST}:{SERVER_PORT}"
+SERVER_API_URL = f"{SERVER_BASE_URL}/v1/chat/completions"
 
 MODELS_CATALOG = [
     {
@@ -85,12 +92,13 @@ MODELS_CATALOG = [
 
 
 def check_live_server() -> bool:
-    """Checks if a real llama-server is currently active on port 8081."""
+    """Checks if a real llama-server is currently active on configured host/port."""
     try:
-        r = httpx.get("http://127.0.0.1:8081/v1/models", timeout=1.5)
+        r = httpx.get(f"{SERVER_BASE_URL}/v1/models", timeout=1.5)
         return r.status_code == 200
     except Exception:
         return False
+
 
 
 def request_live_inference(prompt_text: str) -> Optional[Dict[str, Any]]:
@@ -382,7 +390,7 @@ async def run_real_benchmark_loop(
 
     evaluator = QualityEvaluator()
     downloader = ModelDownloader()
-    pm = ProcessManager(port=8081)
+    pm = ProcessManager(port=SERVER_PORT)
     reports: List[ComprehensiveQualityReportMetric] = []
 
     # FR-005: GPU 검증 결과 메타데이터 수집
@@ -445,7 +453,7 @@ async def run_real_benchmark_loop(
                 deadline = time.time() + 120.0
                 while time.time() < deadline:
                     try:
-                        r = await client.get("http://127.0.0.1:8081/v1/models")
+                        r = await client.get(f"{SERVER_BASE_URL}/v1/models")
                         if r.status_code == 200:
                             ready = True
                             print(f"[Step 3] ✅ 서빙 READY (/v1/models OpenAPI 확인, load_time={load_time}s)")
@@ -454,7 +462,7 @@ async def run_real_benchmark_loop(
                         pass
 
                     try:
-                        r = await client.get("http://127.0.0.1:8081/health")
+                        r = await client.get(f"{SERVER_BASE_URL}/health")
                         if r.status_code == 200:
                             data = r.json()
                             if data.get("status") in ("ok", "ready") or data.get("slots_idle", 0) >= 0:
@@ -548,14 +556,14 @@ async def run_real_benchmark_loop(
                     ctx_deadline = time.time() + 120.0
                     while time.time() < ctx_deadline:
                         try:
-                            r = await ctx_client.get("http://127.0.0.1:8081/v1/models")
+                            r = await ctx_client.get(f"{SERVER_BASE_URL}/v1/models")
                             if r.status_code == 200:
                                 ctx_ready = True
                                 break
                         except Exception:
                             pass
                         try:
-                            r = await ctx_client.get("http://127.0.0.1:8081/health")
+                            r = await ctx_client.get(f"{SERVER_BASE_URL}/health")
                             if r.status_code == 200:
                                 ctx_ready = True
                                 break

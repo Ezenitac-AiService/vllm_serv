@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.process_manager import ProcessManager, ProcessStatusEnum
+from src.core.config_manager import ConfigManager
 
 class BenchmarkMetric(BaseModel):
     model_id: str = Field(..., description="모델 ID")
@@ -54,7 +54,12 @@ class QwenBenchmarkRunner:
     ]
 
     def __init__(self, output_report_path: str = "specs/007-qwen35-model-support/analysis_report_qwen35.md"):
-        self.pm = ProcessManager(port=8089)
+        from src.core.process_manager import ProcessManager
+        self.cm = ConfigManager()
+        server_cfg = self.cm.get_server_config()
+        self.vram_limit_mb = server_cfg.get("vram_max_capacity_mb", 11264)
+        port = server_cfg.get("port", 8081)
+        self.pm = ProcessManager(port=port, config_manager=self.cm)
         self.output_report_path = output_report_path
         self.results: List[BenchmarkMetric] = []
 
@@ -83,8 +88,8 @@ class QwenBenchmarkRunner:
         elif "8000t" in prompt_name:
             vram_peak += 1800
 
-        is_oom = vram_peak > 11264  # GTX 1080 Ti limit
-        err_msg = "CUDA Out Of Memory: Exceeds 11GB VRAM" if is_oom else None
+        is_oom = vram_peak > self.vram_limit_mb
+        err_msg = f"CUDA Out Of Memory: Exceeds {self.vram_limit_mb}MB VRAM" if is_oom else None
 
         base_speed = base_speed_map.get(m_id, 25.0)
         tpot = round(base_speed / (1.6 if quant == "q8_0" else 1.0), 2)
