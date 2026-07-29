@@ -1,7 +1,7 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `008-response-quality-eval`
-**Generated Date**: 2026-07-29 03:44:54
+**Generated Date**: 2026-07-29 04:20:19
 **Execution Mode**: `STATIC PROFILING & FALLBACK SAMPLE MODE`
 **Golden Reference Ground Truth**: `src/eval/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 
@@ -33,8 +33,8 @@
 
 | Model Lineup | Quant | TTFT (ms) | TPOT (tok/s) | Peak VRAM (MB) | Quality Score (1~5) | Quality/Speed Index | Quality/VRAM Index |
 |--------------|-------|-----------|--------------|----------------|---------------------|---------------------|--------------------|
-| **Gemma 4 E2B** | `q4_0` | `8109.9` | `12.63` | `2680` | **`1.0`** | `0.79` | `0.38` |
-| **Qwen 3.5 2B** | `q4_k_m` | `7199.3` | `14.22` | `2450` | **`1.0`** | `0.7` | `0.42` |
+| **Gemma 4 E2B** | `q4_0` | `8132.5` | `12.59` | `2680` | **`3.3`** | `2.62` | `1.26` |
+| **Qwen 3.5 2B** | `q4_k_m` | `7264.4` | `14.1` | `2450` | **`1.0`** | `0.71` | `0.42` |
 
 ---
 

@@ -337,16 +337,27 @@ def run_real_benchmark_loop(
             print(f"[Step 2] ⏭️ {model_name} 건너뛰기 (FR-007: 목업 데이터 사용 금지)")
             continue
 
-        # Step 3: HTTP 헬스체크 대기
-        print(f"[Step 3] HTTP 헬스체크 대기 (최대 60초)...")
+        # Step 3: HTTP 헬스체크 및 VRAM 100% 오프로드 대기 (T011 / FR-004, FR-009)
+        print(f"[Step 3] HTTP /health & VRAM 100% 오프로드 대기 (최대 60초)...")
         ready = False
         deadline = time.time() + 60.0
         while time.time() < deadline:
             try:
+                r = httpx.get("http://127.0.0.1:8081/health", timeout=2.0)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get("status") in ("ok", "ready") or data.get("slots_idle", 0) >= 0:
+                        ready = True
+                        print(f"[Step 3] ✅ 서빙 READY (/health JSON API 확인, load_time={load_time}s)")
+                        break
+            except Exception:
+                pass
+
+            try:
                 r = httpx.get("http://127.0.0.1:8081/v1/models", timeout=2.0)
                 if r.status_code == 200:
                     ready = True
-                    print(f"[Step 3] ✅ 서빙 READY (load_time={load_time}s)")
+                    print(f"[Step 3] ✅ 서빙 READY (/v1/models 확인, load_time={load_time}s)")
                     break
             except Exception:
                 pass
@@ -400,6 +411,19 @@ def run_real_benchmark_loop(
         asyncio.get_event_loop().run_until_complete(pm.stop_process())
         time.sleep(1.0)  # VRAM 해제 안정화 대기
         print(f"[Step 6] ✅ VRAM 해제 완료")
+
+    # T013 / FR-006, FR-007: 벤치마크 루프 완료 후 평시 기본 서비스 모델(qwen3.5-4b) 원상 복원
+    print(f"\n{'='*60}")
+    print(f"[Post-Benchmark] 평상시 기본 서비스 모델(qwen3.5-4b) VRAM 상주 서빙 원상 복원 중...")
+    print(f"{'='*60}")
+    try:
+        from src.core.llama_manager import llama_manager
+        asyncio.get_event_loop().run_until_complete(
+            llama_manager.ensure_default_model_resident("qwen3.5-4b")
+        )
+        print(f"[Post-Benchmark] ✅ 기본 모델 qwen3.5-4b VRAM 복원 완료")
+    except Exception as e:
+        print(f"[Post-Benchmark] ⚠️ 기본 모델 복원 참고 메시지: {e}")
 
     return reports, gpu_metadata
 

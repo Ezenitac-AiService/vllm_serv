@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from src.api.routes import router
+from fastapi import FastAPI, Response, status
+from src.core.llama_manager import llama_manager
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -8,7 +8,26 @@ def create_app() -> FastAPI:
         version="1.0.0"
     )
     
-    app.include_router(router)
+    @app.get("/health/liveness")
+    async def liveness():
+        """K8s/LiteLLM Liveness probe (FR-013). Returns 200 OK if server process is running."""
+        return {"status": "alive", "pid": llama_manager.process_manager.state.pid}
+
+    @app.get("/health/readiness")
+    async def readiness(response: Response):
+        """K8s/LiteLLM Readiness probe (FR-013). Returns 200 OK if 100% VRAM offloaded and state is READY."""
+        if llama_manager.is_ready():
+            return {
+                "status": "ready",
+                "vram_offloaded_100pct": True,
+                "model_id": llama_manager.process_manager.state.model_id
+            }
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {
+            "status": "not_ready",
+            "vram_offloaded_100pct": False,
+            "current_state": llama_manager.state
+        }
     
     return app
 

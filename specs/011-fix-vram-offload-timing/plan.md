@@ -16,7 +16,7 @@
 - **Primary Dependencies**: `llama-cpp-python` (CUDA `cu124`), `pydantic` v2, `fastapi`, `httpx`, `pytest`, `asyncio`, `pynvml` (PyNVML C-API)
 - **Hardware/Platform**: Linux x86_64, NVIDIA GeForce GTX 1080 Ti (11GB VRAM, CUDA 13.0 / Driver 580.173.02)
 - **Default Resident Model**: `qwen3.5-4b` (평상시 GPU VRAM 상주 서빙 대상)
-- **Target Exception Classes**: `GpuAccelerationError`, `VramOverflowError`
+- **Target Exception Classes**: `GpuAccelerationError`, `VramOverflowError`, `PortCollisionError` (포트 8081 충돌 및 좀비 프로세스 전용)
 - **Testing**: `pytest` (`uv run pytest`)
 - **Performance Goals**:
   - GPU 100% VRAM 오프로딩 동기화를 통한 TTFT < 1.0s 및 TPOT > 30 tok/s 달성

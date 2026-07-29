@@ -25,8 +25,8 @@
 
 **Purpose**: Define process lifecycle timing models, PyNVML C-API VRAM inspection, and KV Cache VRAM estimator
 
-- [ ] T001 Define `ProcessLifecycleState` and `VramLoadTimingGuard` Pydantic models in `src/core/process_manager.py`
-- [ ] T002 Implement PyNVML (`pynvml`) C-API VRAM inspection helper and GGUF KV Cache pre-flight VRAM estimator ($2 \cdot L \cdot H \cdot D \cdot n_{ctx}$) (FR-008, FR-012) in `src/core/gpu_detector.py`
+- [x] T001 Define `ProcessLifecycleState` and `VramLoadTimingGuard` Pydantic models in `src/core/process_manager.py`
+- [x] T002 Implement PyNVML (`pynvml`) C-API VRAM inspection helper and GGUF KV Cache pre-flight VRAM estimator ($2 \cdot L \cdot H \cdot D \cdot n_{ctx}$) (FR-008, FR-012) in `src/core/gpu_detector.py`
 
 ---
 
@@ -34,8 +34,8 @@
 
 **Purpose**: Implement Graceful Stream Drain, sequential process teardown, socket `SO_REUSEADDR` port clearing, and zombie collision guards
 
-- [ ] T003 Implement Graceful Stream Drain (`active_requests == 0`, max 5s timeout) and sequential process teardown (SIGTERM -> SIGKILL -> `SO_REUSEADDR` port release check -> PyNVML VRAM baseline check) in `ProcessManager.stop_process()` (FR-002, FR-005, FR-010, FR-011) in `src/core/process_manager.py`
-- [ ] T004 [P] Implement zombie process and port 8081 collision detector in `src/core/process_manager.py`
+- [x] T003 Implement Graceful Stream Drain (`active_requests == 0`, max 5s timeout) and sequential process teardown (SIGTERM -> SIGKILL -> `SO_REUSEADDR` port release check -> PyNVML VRAM baseline check) in `ProcessManager.stop_process()` (FR-002, FR-005, FR-010, FR-011) in `src/core/process_manager.py`
+- [x] T004 [P] Implement zombie process and port 8081 collision detector (raising `PortCollisionError`) in `src/core/process_manager.py`
 
 ---
 
@@ -47,10 +47,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [P] [US1] Write unit tests for PyNVML VRAM inspection, KV Cache estimation, and `/health` JSON API READY synchronization in `tests/unit/test_gpu_detector.py`
-- [ ] T006 [US1] Update `LlamaManager._wait_for_ready()` to check BOTH `/health` JSON API (`status: "ok"`) AND `vram_offloaded_100pct == True` before setting state to READY (FR-001, FR-003, FR-009) in `src/core/llama_manager.py`
-- [ ] T007 [P] [US1] Expose K8s & LiteLLM-compatible `GET /health/liveness` and `GET /health/readiness` endpoints in `src/api/server.py` (FR-013)
-- [ ] T008 [US1] Block incoming inference requests in `LlamaManager` while process is in `LOADING` status prior to `vram_offloaded=True` (FR-003) in `src/core/llama_manager.py`
+- [x] T005 [P] [US1] Write unit tests for PyNVML VRAM inspection, KV Cache estimation, and `/health` JSON API READY synchronization in `tests/unit/test_gpu_detector.py`
+- [x] T006 [US1] Update `LlamaManager._wait_for_ready()` to check BOTH `/health` JSON API (`status: "ok"`) AND `vram_offloaded_100pct == True` (polling with `max_retries=10`, `interval=0.5s`, max 5s timeout) before setting state to READY (FR-001, FR-003, FR-009) in `src/core/llama_manager.py`
+- [x] T007 [P] [US1] Expose K8s & LiteLLM-compatible `GET /health/liveness` and `GET /health/readiness` endpoints in `src/api/server.py` (FR-013)
+- [x] T008 [US1] Block incoming inference requests in `LlamaManager` while process is in `LOADING` status prior to `vram_offloaded_100pct=True` (FR-003) in `src/core/llama_manager.py`
 
 **Checkpoint**: User Story 1 complete - PyNVML VRAM inspection, `/health` API sync, K8s readiness probes, and READY transition verified.
 
@@ -64,8 +64,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T009 [P] [US2] Write integration tests for Graceful Stream Drain, process termination, `SO_REUSEADDR` socket release, and PyNVML VRAM baseline verification in `tests/integration/test_gpu_validation.py`
-- [ ] T010 [US2] Implement synchronous `_wait_for_port_free()` and `verify_vram_released()` checks inside `ProcessManager.spawn_process()` prior to child execution (FR-002, FR-010) in `src/core/process_manager.py`
+- [x] T009 [P] [US2] Write integration tests for Graceful Stream Drain, process termination, `SO_REUSEADDR` socket release, and PyNVML VRAM baseline verification in `tests/integration/test_gpu_validation.py`
+- [x] T010 [US2] Implement synchronous `_wait_for_port_free()` and `verify_vram_released()` checks (with `max_retries=10`, `interval=0.5s`, max 5s timeout) inside `ProcessManager.spawn_process()` prior to child execution (FR-002, FR-010) in `src/core/process_manager.py`
 
 **Checkpoint**: User Story 2 complete - Process teardown, Graceful Stream Drain, `SO_REUSEADDR` socket isolation, and PyNVML release verified.
 
@@ -79,9 +79,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T011 [P] [US3] Update `scripts/benchmark_quality.py` Step 3 to explicitly poll for `/health` JSON API and `vram_offloaded_100pct` in `ProcessManager` status before proceeding to Step 4 inference (FR-004, FR-009) in `scripts/benchmark_quality.py`
-- [ ] T012 [US3] Implement post-benchmark default model restoration (`qwen3.5-4b` re-load into VRAM) in `scripts/benchmark_quality.py` (FR-006, FR-007) in `scripts/benchmark_quality.py`
-- [ ] T013 [US3] Add default model residency helper `ensure_default_model_resident()` in `src/core/llama_manager.py` for normal serving startup (FR-006) in `src/core/llama_manager.py`
+- [x] T011 [P] [US3] Update `scripts/benchmark_quality.py` Step 3 to explicitly poll for `/health` JSON API and `vram_offloaded_100pct` in `ProcessManager` status before proceeding to Step 4 inference (FR-004, FR-009) in `scripts/benchmark_quality.py`
+- [x] T012 [US3] Add default model residency helper `ensure_default_model_resident()` in `src/core/llama_manager.py` for normal serving startup (FR-006) in `src/core/llama_manager.py`
+- [x] T013 [US3] Implement post-benchmark default model restoration (`qwen3.5-4b` re-load into VRAM via `ensure_default_model_resident()`) in `scripts/benchmark_quality.py` (FR-006, FR-007) in `scripts/benchmark_quality.py`
 
 **Checkpoint**: User Story 3 complete - Benchmark timing sync and default resident model restoration verified.
 
@@ -91,7 +91,7 @@
 
 **Purpose**: Execute regression test suite and validate quickstart guide scenarios
 
-- [ ] T014 Run full regression test suite (`uv run pytest`) and validate scenario steps in `specs/011-fix-vram-offload-timing/quickstart.md`
+- [x] T014 Run full regression test suite (`uv run pytest`) and validate scenario steps in `specs/011-fix-vram-offload-timing/quickstart.md`
 
 ---
 

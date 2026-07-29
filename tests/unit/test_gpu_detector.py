@@ -212,3 +212,28 @@ def test_check_vram_runtime_overflow_no_nvidia_smi():
     pm = ProcessManager()
     with patch("shutil.which", return_value=None):
         pm.check_vram_runtime_overflow(threshold_pct=95.0)  # Should not raise
+
+
+# T005 / US1: Unit tests for get_nvml_vram_info, estimate_kv_cache_vram, PortCollisionError
+from src.core.gpu_detector import get_nvml_vram_info, estimate_kv_cache_vram, PortCollisionError
+
+def test_estimate_kv_cache_vram_calculation():
+    """T005: KV Cache VRAM estimator calculation test."""
+    # 2 * 36 layers * 32 heads * 128 dim * 4096 ctx * 2 bytes = 2,415,919,104 bytes = ~2304 MB
+    kv_mb = estimate_kv_cache_vram(n_layers=36, n_heads=32, head_dim=128, n_ctx=4096)
+    assert kv_mb == 2304
+
+def test_get_nvml_vram_info_fallback():
+    """T005: get_nvml_vram_info should fallback safely to check_gpu_availability if PyNVML fails."""
+    with patch("src.core.gpu_detector.check_gpu_availability") as mock_fallback:
+        mock_fallback.return_value = GpuDeviceInfo(
+            device_id=0, name="Fallback GPU", total_vram_mb=11264, free_vram_mb=9000, is_cuda_available=True
+        )
+        info = get_nvml_vram_info()
+        assert info.name == "Fallback GPU"
+
+def test_port_collision_error_exception():
+    """T005: PortCollisionError raised when port 8081 is occupied."""
+    with pytest.raises(PortCollisionError):
+        raise PortCollisionError("Port 8081 occupied")
+

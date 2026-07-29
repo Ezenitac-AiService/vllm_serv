@@ -96,7 +96,7 @@
 
 ### Key Entities
 
-- **ProcessLifecycleState**: status (UNLOADED, DOWNLOADING, LOADING, VRAM_OFFLOADED, READY, ERROR), pid, port, vram_offloaded, active_requests
+- **ProcessLifecycleState**: status (UNLOADED, DOWNLOADING, LOADING, VRAM_OFFLOADED, READY, ERROR), pid, port, vram_offloaded_100pct, active_requests
 - **VramLoadTimingGuard**: baseline_vram, target_vram, offload_verified_at, socket_cleared, nvml_handle, kv_cache_vram_mb
 
 ## Success Criteria *(mandatory)*

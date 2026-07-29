@@ -47,3 +47,30 @@ def test_verify_vram_released_nvidia_smi_missing():
     pm = ProcessManager(port=8081)
     with patch("shutil.which", return_value=None):
         assert pm.verify_vram_released(baseline_free_vram_mb=24000) is True
+
+
+@pytest.mark.asyncio
+async def test_graceful_stream_drain_and_port_release():
+    """T009: Graceful Stream Drain active_requests wait and port release verification."""
+    pm = ProcessManager(port=8081)
+    os.environ["MOCK_LLAMA_SERVER"] = "1"
+    try:
+        await pm.spawn_process("qwen3.5-2b", 4096)
+        pm.state = pm.state.model_copy(update={"active_requests": 1})
+        assert pm.state.active_requests == 1
+        
+        # In background, decrement active_requests to simulate stream completion
+        async def mock_stream_drain():
+            await asyncio.sleep(0.4)
+            pm.state = pm.state.model_copy(update={"active_requests": 0})
+            
+        import asyncio
+        asyncio.create_task(mock_stream_drain())
+        
+        # stop_process should drain active_requests, terminate process, and clear port
+        state = await pm.stop_process()
+        assert state.status == ProcessStatusEnum.UNLOADED
+        assert pm.state.active_requests == 0
+    finally:
+        os.environ.pop("MOCK_LLAMA_SERVER", None)
+

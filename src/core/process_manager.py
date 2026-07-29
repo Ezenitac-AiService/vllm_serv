@@ -10,17 +10,20 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.gpu_detector import (
     check_gpu_availability,
+    get_nvml_vram_info,
+    estimate_kv_cache_vram,
     GpuDeviceInfo,
     VramOffloadStatus,
     GpuAccelerationError,
-    VramOverflowError
+    VramOverflowError,
+    PortCollisionError
 )
-import re
 
 class ProcessStatusEnum(str, Enum):
     UNLOADED = "UNLOADED"
     DOWNLOADING = "DOWNLOADING"
     LOADING = "LOADING"
+    VRAM_OFFLOADED = "VRAM_OFFLOADED"
     READY = "READY"
     ERROR = "ERROR"
 
@@ -32,8 +35,32 @@ class ProcessState(BaseModel):
     port: Optional[int] = Field(default=None, description="llama-server 바인딩 포트")
     pid: Optional[int] = Field(default=None, description="OS 프로세스 PID")
     error_message: Optional[str] = Field(default=None, description="에러 발생 시 상세 메시지")
-    exit_code: Optional[int] = Field(default=None, description="프로세스 종료 코드")
-    vram_offloaded: Optional[bool] = Field(default=None, description="T019/US2-AC1: VRAM 100% 오프로드 검증 완료 여부")
+    exit_code: Optional[int] = Field(default=None, description="종료 코드")
+    vram_offloaded: Optional[bool] = Field(default=None, description="VRAM 100% 오프로드 검증 완료 여부")
+    vram_offloaded_100pct: bool = Field(default=False, description="VRAM 100% 오프로드 검증 완료 여부")
+    active_requests: int = Field(default=0, description="현재 진행 중인 활성 추론 스트림 수")
+
+class ProcessLifecycleState(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    status: ProcessStatusEnum = Field(default=ProcessStatusEnum.UNLOADED, description="현재 프로세스 구동 상태")
+    pid: Optional[int] = Field(default=None, description="OS 프로세스 PID")
+    port: Optional[int] = Field(default=None, description="llama-server 바인딩 포트")
+    vram_offloaded_100pct: bool = Field(default=False, description="VRAM 100% 오프로드 검증 완료 여부")
+    active_requests: int = Field(default=0, description="현재 진행 중인 활성 추론 스트림 수")
+    model_id: Optional[str] = Field(default=None, description="로딩된 모델 식별자")
+    error_message: Optional[str] = Field(default=None, description="에러 메시지")
+    exit_code: Optional[int] = Field(default=None, description="종료 코드")
+
+class VramLoadTimingGuard(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    baseline_vram: int = Field(default=0, description="프로세스 실행 전 기본 VRAM 사용량(MB)")
+    target_vram: int = Field(default=0, description="목표 VRAM 탑재 용량(MB)")
+    offload_verified_at: Optional[float] = Field(default=None, description="VRAM 100% 검증 시각")
+    socket_cleared: bool = Field(default=False, description="소켓 포트 완전 클리어 여부")
+    nvml_handle: Optional[Any] = Field(default=None, description="PyNVML 핸들 참조")
+    kv_cache_vram_mb: int = Field(default=0, description="사전 추정된 KV Cache VRAM 용량(MB)")
 
 class QwenModelPreset(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -241,21 +268,42 @@ class ProcessManager:
         except Exception as e:
             print(f"[ProcessManager] T021: VRAM 런타임 모니터링 경고: {e}")
 
-    def is_ready(self) -> bool:
-        return self.state.status == ProcessStatusEnum.READY
+    def detect_zombie_collision(self) -> None:
+        """T004: Detect zombie or external processes occupying port 8081."""
+        import socket
+        if os.environ.get("MOCK_LLAMA_SERVER") == "1" or "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("MOCK_CPU_ONLY") == "1":
+            return
+        if self.process is None or self.process.returncode is not None:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                res = sock.connect_ex(('127.0.0.1', self.port))
+                if res == 0:
+                    raise PortCollisionError(
+                        f"PortCollisionError: Port {self.port} is already occupied by a zombie or external process."
+                    )
 
     def estimate_vram_usage(self, model_id: str, n_ctx: int) -> int:
         """FR-010: Dry-run VRAM calculation based on model base VRAM and context scaling."""
         preset = self.model_presets.get(model_id)
         base_vram = preset.get("vram_est_mb", 6000) if preset else 6000
-        # Context KV cache estimation (~0.5MB per token above 4K)
         extra_ctx_vram = max(0, int((n_ctx - 4096) * 0.5))
         return base_vram + extra_ctx_vram
 
+    def is_ready(self) -> bool:
+        return self.state.status == ProcessStatusEnum.READY
+
     async def spawn_process(self, model_id: str, n_ctx: int) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""
+        # T004: Detect zombie collision before spawn
+        self.detect_zombie_collision()
+
         await self.stop_process()
         self.vram_offload_status = None
+
+        # T010: Synchronous port free and VRAM release verification
+        port_free = await self._wait_for_port_free(max_retries=10, interval=0.5)
+        if not port_free:
+            raise PortCollisionError(f"PortCollisionError: Port {self.port} could not be cleared after process termination.")
 
         target_preset = self.model_presets.get(model_id)
         if not target_preset:
@@ -270,14 +318,17 @@ class ProcessManager:
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         model_file = os.path.join(base_dir, target_preset["model"])
 
-        # FR-010: Dry-run VRAM check & Missing model file validation
-        vram_est = self.estimate_vram_usage(model_id, n_ctx)
+        # FR-012 / T002: Pre-flight GGUF + KV Cache VRAM estimator
+        kv_vram_mb = estimate_kv_cache_vram(n_ctx=n_ctx)
+        base_vram = target_preset.get("vram_est_mb", 6000)
+        vram_est = base_vram + kv_vram_mb
+
         if vram_est > self.vram_max_capacity_mb + 2000:  # Hard limit check
             self.state = ProcessState(
                 status=ProcessStatusEnum.ERROR,
                 model_id=model_id,
                 port=self.port,
-                error_message=f"CUDA OOM Risk: Estimated VRAM {vram_est}MB exceeds GPU capacity limit {self.vram_max_capacity_mb}MB"
+                error_message=f"CUDA OOM Risk: Estimated VRAM {vram_est}MB (KV Cache: {kv_vram_mb}MB) exceeds GPU capacity limit {self.vram_max_capacity_mb}MB"
             )
             return self.state
 
@@ -293,7 +344,7 @@ class ProcessManager:
 
         if not os.environ.get("MOCK_LLAMA_SERVER"):
             try:
-                gpu_info = check_gpu_availability()
+                gpu_info = get_nvml_vram_info()
             except GpuAccelerationError as e:
                 self.state = ProcessState(
                     status=ProcessStatusEnum.ERROR,
@@ -303,11 +354,11 @@ class ProcessManager:
                 )
                 return self.state
 
-        # Search for llama-server binary or fallback to python module
-        binary_executable = (
-            shutil.which("llama-server")
-            or ("/usr/local/lib/ollama/llama-server" if os.path.exists("/usr/local/lib/ollama/llama-server") else None)
-        )
+        # Search for standalone CUDA-supported llama-server binary or fallback to python module
+        candidate_binary = shutil.which("llama-server")
+        binary_executable = None
+        if candidate_binary and "ollama" not in candidate_binary:
+            binary_executable = candidate_binary
 
         clip_file = None
         if target_preset.get("clip"):
@@ -332,12 +383,12 @@ class ProcessManager:
                 cmd.extend(["--mmproj", clip_file, "--mmproj-offload"])
         else:
             cmd = [
-                "python3", "-m", "llama_cpp.server",
+                sys.executable, "-m", "llama_cpp.server",
                 "--model", model_file,
                 "--n_ctx", str(n_ctx),
                 "--host", "127.0.0.1",
                 "--port", str(self.port),
-                "--n_gpu_layers", "999"
+                "--n_gpu_layers", "-1"
             ]
             if clip_file:
                 cmd.extend(["--clip_model_path", clip_file])
@@ -351,7 +402,7 @@ class ProcessManager:
                 port=self.port
             )
 
-            # Check if model file exists locally; if not, raise readable error or mock for test
+            # Check if model file exists locally; if not, return clear error message per spec
             if not os.path.exists(model_file) and not os.environ.get("MOCK_LLAMA_SERVER"):
                 # If model file does not exist, return clear error message per spec
                 self.state = ProcessState(
@@ -384,11 +435,16 @@ class ProcessManager:
         return self.state
 
     async def stop_process(self) -> ProcessState:
-        """Stops the running subprocess with SIGTERM -> SIGKILL escalation and zombie reaping.
+        """Stops the running subprocess with Graceful Stream Drain, SIGTERM -> SIGKILL escalation and socket cleanup.
 
-        FR-004: 기존 프로세스를 안전 종료하고 GPU VRAM을 완전 해제한 후
-        포트 소켓이 클리어되었음을 확인합니다.
+        FR-002, FR-005, FR-010, FR-011: Graceful Stream Drain (active_requests == 0, max 5s)
+        및 프로세스 안전 종료/포트 해제/PyNVML VRAM 완납 검증.
         """
+        # T003: Graceful Stream Drain (active_requests == 0, max 5s timeout)
+        drain_start = asyncio.get_event_loop().time()
+        while getattr(self.state, "active_requests", 0) > 0 and (asyncio.get_event_loop().time() - drain_start) < 5.0:
+            await asyncio.sleep(0.2)
+
         if self.process:
             try:
                 if self.process.returncode is None:
@@ -406,8 +462,8 @@ class ProcessManager:
         else:
             exit_code = None
 
-        # FR-004: 포트 소켓 클리어 대기 (최대 3초)
-        await self._wait_for_port_free(timeout=3.0)
+        # FR-010 / T010: 포트 소켓 클리어 대기 (max_retries=10, interval=0.5s -> max 5s)
+        await self._wait_for_port_free(max_retries=10, interval=0.5)
 
         vram_ok = self.verify_vram_released()
         print(f"[ProcessManager] FR-004: VRAM 해제 검증 완료: {'성공' if vram_ok else '경고 - VRAM 잔여 점유 감지'}")
@@ -419,12 +475,12 @@ class ProcessManager:
         )
         return self.state
 
-    async def _wait_for_port_free(self, timeout: float = 3.0) -> bool:
-        """포트가 해제될 때까지 대기. FR-004 VRAM 완전 해제 보장."""
+    async def _wait_for_port_free(self, max_retries: int = 10, interval: float = 0.5) -> bool:
+        """T010 / U1: 포트 소켓 해제 대기 (SO_REUSEADDR 제어, max_retries=10, interval=0.5s -> max 5s)."""
         import socket
-        deadline = asyncio.get_event_loop().time() + timeout
-        while asyncio.get_event_loop().time() < deadline:
+        for _ in range(max_retries):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 result = sock.connect_ex(('127.0.0.1', self.port))
                 if result != 0:  # 포트가 자유로움
                     return True

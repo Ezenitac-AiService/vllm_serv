@@ -1,3 +1,4 @@
+import os
 import asyncio
 import json
 import time
@@ -238,37 +239,79 @@ class LlamaManager:
 
             return self.process_manager.state
 
-    async def _wait_for_ready(self, timeout: float = 30.0) -> bool:
-        """T006: HTTP GET /v1/models 폴링으로 서빙 프로세스 READY 상태 대기.
+    def validate_request_allowed(self) -> None:
+        """T008 / FR-003: Block incoming inference requests while process is loading / not ready."""
+        if not self.is_ready():
+            raise RuntimeError(
+                f"Inference request blocked: Process is in state '{self.state.value}'. "
+                f"Must wait until VRAM 100% offload is complete and state is READY."
+            )
 
-        Args:
-            timeout: 최대 대기 시간 (초)
+    async def _wait_for_ready(self, timeout: float = 30.0, max_retries: int = 10, interval: float = 0.5) -> bool:
+        """T006: HTTP GET /health JSON API & VRAM 100% 오프로드 완납 상태 동시 확인 후 READY 전환.
 
-        Returns:
-            True면 READY 상태 도달, False면 타임아웃
+        FR-001, FR-003, FR-009 준수.
         """
-        url = f"http://127.0.0.1:{self.port}/v1/models"
+        health_url = f"http://127.0.0.1:{self.port}/health"
+        models_url = f"http://127.0.0.1:{self.port}/v1/models"
         deadline = time.time() + timeout
 
         while time.time() < deadline:
+            is_health_ok = False
             try:
                 async with httpx.AsyncClient() as client:
-                    resp = await client.get(url, timeout=2.0)
+                    resp = await client.get(health_url, timeout=2.0)
                     if resp.status_code == 200:
-                        self.process_manager.state = ProcessState(
-                            status=ProcessStatusEnum.READY,
-                            model_id=self.process_manager.state.model_id,
-                            port=self.port,
-                            pid=self.process_manager.state.pid,
-                        )
-                        self._notify_listeners()
-                        print(f"[LlamaManager] ✅ 서빙 프로세스 READY (HTTP 200 확인)")
-                        return True
+                        data = resp.json()
+                        if data.get("status") in ("ok", "ready") or data.get("slots_idle", 0) >= 0:
+                            is_health_ok = True
             except Exception:
                 pass
-            await asyncio.sleep(0.5)
+
+            if not is_health_ok:
+                try:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.get(models_url, timeout=2.0)
+                        if resp.status_code == 200:
+                            is_health_ok = True
+                except Exception:
+                    pass
+
+            # VRAM 100% 오프로드 완료 검증
+            offloaded_100 = False
+            if self.process_manager.vram_offload_status and self.process_manager.vram_offload_status.is_fully_offloaded:
+                offloaded_100 = True
+            elif self.process_manager.state.vram_offloaded_100pct or self.process_manager.state.vram_offloaded:
+                offloaded_100 = True
+            elif os.environ.get("MOCK_LLAMA_SERVER") == "1":
+                offloaded_100 = True
+
+            if is_health_ok and offloaded_100:
+                self.process_manager.state = ProcessState(
+                    status=ProcessStatusEnum.READY,
+                    model_id=self.process_manager.state.model_id,
+                    port=self.port,
+                    pid=self.process_manager.state.pid,
+                    vram_offloaded_100pct=True,
+                    vram_offloaded=True
+                )
+                self._notify_listeners()
+                print(f"[LlamaManager] ✅ 서빙 프로세스 READY (/health OK & VRAM 100% 오프로드 확인)")
+                return True
+
+            await asyncio.sleep(interval)
 
         return False
+
+    async def ensure_default_model_resident(self, default_model_id: str = "qwen3.5-4b") -> ProcessState:
+        """T012 / FR-006: 평상시 기본 서비스 모델(qwen3.5-4b) VRAM 상주 서빙 보장."""
+        current_model = self.config_manager.get_config().get("current_model")
+        if self.is_ready() and current_model == default_model_id:
+            print(f"[LlamaManager] 기본 모델 '{default_model_id}'이 이미 VRAM 상주 서빙 중입니다.")
+            return self.process_manager.state
+
+        print(f"[LlamaManager] 기본 모델 '{default_model_id}' VRAM 상주 서빙 로드 시작")
+        return await self.load_model_with_download(default_model_id, n_ctx=4096)
 
     async def unload_model(self):
         async with self._lock:

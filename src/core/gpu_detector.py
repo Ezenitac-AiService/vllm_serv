@@ -25,6 +25,11 @@ class VramOverflowError(GpuValidationError):
     pass
 
 
+class PortCollisionError(GpuValidationError):
+    """Raised when port 8081 is occupied by zombie or colliding process."""
+    pass
+
+
 class GpuDeviceInfo(BaseModel):
     """GPU Device and CUDA Runtime Information."""
     device_id: int = Field(default=0, description="GPU device index")
@@ -146,3 +151,42 @@ def check_gpu_availability() -> GpuDeviceInfo:
         if isinstance(e, GpuAccelerationError):
             raise e
         raise GpuAccelerationError(f"Failed to verify GPU hardware: {str(e)}")
+
+
+def get_nvml_vram_info(device_index: int = 0) -> GpuDeviceInfo:
+    """FR-008: Non-blocking VRAM inspection via PyNVML C-API (<1ms), with nvidia-smi fallback."""
+    try:
+        import pynvml
+        pynvml.nvmlInit()
+        handle = pynvml.nvmlDeviceGetHandleByIndex(device_index)
+        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        name = pynvml.nvmlDeviceGetName(handle)
+        if isinstance(name, bytes):
+            name = name.decode("utf-8")
+        total_mb = int(info.total / (1024 * 1024))
+        free_mb = int(info.free / (1024 * 1024))
+        pynvml.nvmlShutdown()
+        return GpuDeviceInfo(
+            device_id=device_index,
+            name=name,
+            total_vram_mb=total_mb,
+            free_vram_mb=free_mb,
+            is_cuda_available=True
+        )
+    except Exception:
+        # Fallback to nvidia-smi
+        return check_gpu_availability()
+
+
+def estimate_kv_cache_vram(
+    n_layers: int = 36,
+    n_heads: int = 32,
+    head_dim: int = 128,
+    n_ctx: int = 4096,
+    bytes_per_element: int = 2
+) -> int:
+    """FR-012: Pre-flight KV Cache VRAM estimator (2 * L * H * D * n_ctx * bytes). Returns VRAM MB."""
+    # 2 for Key and Value matrices
+    total_bytes = 2 * n_layers * n_heads * head_dim * n_ctx * bytes_per_element
+    return max(1, int(total_bytes / (1024 * 1024)))
+

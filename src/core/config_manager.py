@@ -7,7 +7,7 @@ class ConfigManager:
     """Manages system configuration with same-directory atomic replace, chmod 0600, and memory caching."""
 
     DEFAULT_CONFIG = {
-        "current_model": None,
+        "current_model": "qwen3.5-4b",
         "current_n_ctx": 4096,
         "available_presets": ["gemma4-e2b", "gemma4-e4b", "gemma4-12b", "qwen3.5-2b", "qwen3.5-4b", "qwen3.5-9b"]
     }
