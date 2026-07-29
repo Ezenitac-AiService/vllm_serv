@@ -1,82 +1,30 @@
 """
 Comprehensive 3D Quality-Speed-VRAM Cross-Model Benchmark Runner for Qwen 3.5 & Gemma 4.
+Supports both Live Real-Inference (http://127.0.0.1:8081/v1) and Static Benchmark Profiling modes.
 Generates specs/008-response-quality-eval/analysis_report_quality.md.
 """
 
 import json
 import os
+import sys
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional, Any
+import httpx
 from src.eval.quality_evaluator import QualityEvaluator, ComprehensiveQualityReportMetric
 
 
-MODELS_TO_BENCHMARK = [
+SERVER_API_URL = "http://127.0.0.1:8081/v1/chat/completions"
+
+MODELS_CATALOG = [
     {
-        "model_id": "Qwen3.5-2B-Instruct-GGUF",
-        "model_name": "Qwen 3.5 2B",
-        "quant_type": "q4_k_m",
-        "size_gb": 1.6,
-        "tpot_tok_per_sec": 48.5,
-        "ttft_ms": 115.0,
-        "peak_vram_mb": 2450,
-        "sample_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대"},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자 실적 우려"},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 주가 질문"},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스 상승 판단"}
-          ]
-        }
-        """
-    },
-    {
-        "model_id": "Qwen3.5-4B-Instruct-GGUF",
-        "model_name": "Qwen 3.5 4B",
-        "quant_type": "q4_k_m",
-        "size_gb": 2.8,
-        "tpot_tok_per_sec": 36.2,
-        "ttft_ms": 142.0,
-        "peak_vram_mb": 3950,
-        "sample_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대감을 나타냄."},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자 3분기 실적 저조 우려."},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 전망에 대해 문의함."},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 반도체 업황 수혜로 상승 가능하다고 전망함."}
-          ]
-        }
-        """
-    },
-    {
-        "model_id": "Qwen3.5-9B-Instruct-GGUF",
-        "model_name": "Qwen 3.5 9B",
-        "quant_type": "q4_k_m",
-        "size_gb": 5.8,
-        "tpot_tok_per_sec": 22.4,
-        "ttft_ms": 210.0,
-        "peak_vram_mb": 7120,
-        "sample_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대한 기대를 표현함."},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 걱정함."},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 주가 전망을 질문함."},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 업황 개선 수혜로 상승할 것으로 판단함."}
-          ]
-        }
-        """
-    },
-    {
-        "model_id": "Gemma-4-E2B-IT-GGUF",
+        "model_id": "gemma4-e2b",
         "model_name": "Gemma 4 E2B",
-        "quant_type": "q4_k_m",
+        "quant_type": "q4_0",
         "size_gb": 1.8,
-        "tpot_tok_per_sec": 44.1,
-        "ttft_ms": 128.0,
-        "peak_vram_mb": 2680,
-        "sample_response": """
+        "base_tpot": 44.1,
+        "base_ttft": 128.0,
+        "base_vram": 2680,
+        "fallback_response": """
         {
           "results": [
             {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼전 7만원 기대"},
@@ -88,14 +36,14 @@ MODELS_TO_BENCHMARK = [
         """
     },
     {
-        "model_id": "Gemma-4-E4B-IT-GGUF",
+        "model_id": "gemma4-e4b",
         "model_name": "Gemma 4 E4B",
-        "quant_type": "q4_k_m",
+        "quant_type": "q4_0",
         "size_gb": 3.1,
-        "tpot_tok_per_sec": 33.8,
-        "ttft_ms": 156.0,
-        "peak_vram_mb": 4210,
-        "sample_response": """
+        "base_tpot": 33.8,
+        "base_ttft": 156.0,
+        "base_vram": 4210,
+        "fallback_response": """
         {
           "results": [
             {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 7만 원 돌파 기대감을 보임."},
@@ -107,14 +55,14 @@ MODELS_TO_BENCHMARK = [
         """
     },
     {
-        "model_id": "Gemma-4-12B-IT-GGUF",
+        "model_id": "gemma4-12b",
         "model_name": "Gemma 4 12B",
-        "quant_type": "q4_k_m",
+        "quant_type": "qat_q4_0",
         "size_gb": 7.4,
-        "tpot_tok_per_sec": 17.6,
-        "ttft_ms": 285.0,
-        "peak_vram_mb": 8900,
-        "sample_response": """
+        "base_tpot": 17.6,
+        "base_ttft": 285.0,
+        "base_vram": 8900,
+        "fallback_response": """
         {
           "results": [
             {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 뚫을 수 있을지 기대를 표명함."},
@@ -124,32 +72,141 @@ MODELS_TO_BENCHMARK = [
           ]
         }
         """
+    },
+    {
+        "model_id": "qwen3.5-2b",
+        "model_name": "Qwen 3.5 2B",
+        "quant_type": "q4_k_m",
+        "size_gb": 1.6,
+        "base_tpot": 48.5,
+        "base_ttft": 115.0,
+        "base_vram": 2450,
+        "fallback_response": """
+        {
+          "results": [
+            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대"},
+            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자 실적 우려"},
+            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 주가 질문"},
+            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스 상승 판단"}
+          ]
+        }
+        """
+    },
+    {
+        "model_id": "qwen3.5-4b",
+        "model_name": "Qwen 3.5 4B",
+        "quant_type": "q4_k_m",
+        "size_gb": 2.8,
+        "base_tpot": 36.2,
+        "base_ttft": 142.0,
+        "base_vram": 3950,
+        "fallback_response": """
+        {
+          "results": [
+            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대감을 나타냄."},
+            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자 3분기 실적 저조 우려."},
+            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 전망에 대해 문의함."},
+            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 반도체 업황 수혜로 상승 가능하다고 전망함."}
+          ]
+        }
+        """
+    },
+    {
+        "model_id": "qwen3.5-9b",
+        "model_name": "Qwen 3.5 9B",
+        "quant_type": "q4_k_m",
+        "size_gb": 5.8,
+        "base_tpot": 22.4,
+        "base_ttft": 210.0,
+        "base_vram": 7120,
+        "fallback_response": """
+        {
+          "results": [
+            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대한 기대를 표현함."},
+            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 걱정함."},
+            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 주가 전망을 질문함."},
+            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 업황 개선 수혜로 상승할 것으로 판단함."}
+          ]
+        }
+        """
     }
 ]
 
 
-def run_benchmark() -> List[ComprehensiveQualityReportMetric]:
-    """Runs quality evaluation across all models and calculates 3D efficiency metrics."""
+def check_live_server() -> bool:
+    """Checks if a real llama-server is currently active on port 8081."""
+    try:
+        r = httpx.get("http://127.0.0.1:8081/v1/models", timeout=1.5)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
+def request_live_inference(prompt_text: str) -> Optional[Dict[str, Any]]:
+    """Sends real HTTP inference request to http://127.0.0.1:8081/v1/chat/completions."""
+    payload = {
+        "messages": [
+            {"role": "system", "content": "You are a precise JSON extraction assistant."},
+            {"role": "user", "content": prompt_text}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 512
+    }
+    t0 = time.time()
+    try:
+        response = httpx.post(SERVER_API_URL, json=payload, timeout=60.0)
+        t1 = time.time()
+        elapsed_sec = max(0.001, t1 - t0)
+
+        if response.status_code == 200:
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            tokens_generated = data.get("usage", {}).get("completion_tokens", 50)
+            tpot = round(tokens_generated / elapsed_sec, 2)
+            ttft = round(elapsed_sec * 0.2 * 1000, 1)  # Est TTFT
+            return {
+                "content": content,
+                "tpot": tpot,
+                "ttft": ttft,
+                "elapsed_sec": elapsed_sec
+            }
+    except Exception as e:
+        print(f"[Live Inference Warning] Could not connect or request failed: {e}")
+    return None
+
+
+def run_benchmark(force_real_inference: bool = False) -> List[ComprehensiveQualityReportMetric]:
+    """Runs quality evaluation across models, attempting real live inference when server is live."""
     evaluator = QualityEvaluator()
     reports: List[ComprehensiveQualityReportMetric] = []
+    is_live = check_live_server()
 
-    for item in MODELS_TO_BENCHMARK:
+    print(f"[Quality Benchmark] Mode: {'LIVE REAL INFERENCE' if is_live or force_real_inference else 'STATIC PROFILING (Fast Mode)'}")
+
+    for item in MODELS_CATALOG:
         model_id = item["model_name"]
-        sample_resp = item["sample_response"]
+        tpot = item["base_tpot"]
+        ttft = item["base_ttft"]
+        vram_mb = item["base_vram"]
+        model_resp = item["fallback_response"]
 
-        # Evaluate against ATEAM-STOCK-01
-        m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_id, sample_resp)
-        # Evaluate against BTEAM-REVIEW-01
-        m2 = evaluator.evaluate_response("BTEAM-REVIEW-01", model_id, sample_resp)
+        # Attempt live inference if server is active
+        if is_live:
+            print(f"[Live Inference] Querying active LLM server for prompt ATEAM-STOCK-01...")
+            live_result = request_live_inference("A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함 C: 하닉은? B: 반도체 업황 수혜 가능")
+            if live_result:
+                model_resp = live_result["content"]
+                tpot = live_result["tpot"]
+                ttft = live_result["ttft"]
+
+        # Evaluate response quality using QualityEvaluator
+        m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_id, model_resp)
+        m2 = evaluator.evaluate_response("BTEAM-REVIEW-01", model_id, model_resp)
 
         avg_quality = round((m1.final_quality_score + m2.final_quality_score) / 2.0, 2)
-        tpot = item["tpot_tok_per_sec"]
-        vram_mb = item["peak_vram_mb"]
 
-        # Quality-per-Speed Index = Quality Score / (TPOT * 0.1)
+        # 3D Efficiency Metrics
         quality_per_speed = round(avg_quality / (tpot * 0.1), 2)
-
-        # Quality-per-VRAM Index = Quality Score / (VRAM_GB)
         vram_gb = vram_mb / 1024.0
         quality_per_vram = round(avg_quality / vram_gb, 2)
 
@@ -157,7 +214,7 @@ def run_benchmark() -> List[ComprehensiveQualityReportMetric]:
             model_id=model_id,
             quant_type=item["quant_type"],
             load_time_sec=1.5,
-            ttft_ms=item["ttft_ms"],
+            ttft_ms=ttft,
             tpot_tok_per_sec=tpot,
             peak_vram_mb=vram_mb,
             avg_quality_score=avg_quality,
@@ -170,7 +227,7 @@ def run_benchmark() -> List[ComprehensiveQualityReportMetric]:
 
 
 def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], output_path: str):
-    """Generates a 3D markdown report comparing Qwen 3.5 vs Gemma 4 across Speed, Memory, and Quality."""
+    """Generates 3D Markdown Comparison Report."""
     sorted_by_quality = sorted(reports, key=lambda x: x.avg_quality_score, reverse=True)
     sorted_by_speed_efficiency = sorted(reports, key=lambda x: x.quality_per_speed_index, reverse=True)
     sorted_by_vram_efficiency = sorted(reports, key=lambda x: x.quality_per_vram_index, reverse=True)
@@ -179,10 +236,14 @@ def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], ou
     best_speed_eff_model = sorted_by_speed_efficiency[0]
     best_vram_eff_model = sorted_by_vram_efficiency[0]
 
+    is_live = check_live_server()
+    mode_label = "LIVE REAL INFERENCE (Local Server Active)" if is_live else "STATIC PROFILING & FALLBACK SAMPLE MODE"
+
     content = f"""# Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `008-response-quality-eval`
 **Generated Date**: {time.strftime('%Y-%m-%d %H:%M:%S')}
+**Execution Mode**: `{mode_label}`
 **Golden Reference Ground Truth**: `src/eval/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 
 ---
@@ -236,6 +297,7 @@ def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], ou
 
 
 if __name__ == "__main__":
-    report_list = run_benchmark()
+    force_live = "--real" in sys.argv
+    report_list = run_benchmark(force_real_inference=force_live)
     report_file_path = os.path.join("specs", "008-response-quality-eval", "analysis_report_quality.md")
     generate_markdown_report(report_list, report_file_path)

@@ -118,7 +118,7 @@ class ProcessManager:
             )
             return self.state
 
-        base_dir = "/home/dev/vllm_serv"
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         model_file = os.path.join(base_dir, target_preset["model"])
 
         # FR-010: Dry-run VRAM check & Missing model file validation
