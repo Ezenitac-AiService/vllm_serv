@@ -6,211 +6,300 @@
 
 ## 📌 개요 (Overview)
 
-`vllm_serv`는 단일 NVIDIA GPU(예: GTX 1080 Ti 11GB VRAM) 환경에서 **Qwen 3.5** (2B, 4B, 9B) 및 **Gemma 4** (E2B, E4B, 12B) GGUF 양자화 모델을 최대로 가속하여 서빙하기 위한 차세대 파이프라인 엔진입니다.
+`vllm_serv`는 단일 NVIDIA GPU(예: GTX 1080 Ti 11GB VRAM) 환경에서 **Qwen 3.5** (2B, 4B, 9B) 및 **Gemma 4** (E2B, E4B, 12B) GGUF 양자화 모델을 최대로 가속하여 서빙하기 위한 고성능 파이프라인 엔진입니다.
 
-CPU-only 전용 바이너리로 인한 성능 저하를 사전에 100% 차단하며, 모델 가중치 및 CLIP 프로젝터의 **GPU VRAM 100% 레이어 오프로딩을 실시간 검증**하여 초당 30~50 tok/s 이상의 고성능 추론 및 OOM(Out of Memory) 방지를 보장합니다.
+CPU-only 전용 바이너리로 인한 성능 저하를 사전에 100% 차단하며, 모델 가중치 및 CLIP 프로젝터의 **GPU VRAM 100% 레이어 오프로딩을 실시간 검증**하여 초당 30~50 tok/s 이상의 고성능 추론과 VRAM OOM(Out of Memory) 사전 방지를 보장합니다.
+
+또한 **표준 OpenAI REST API (`GET /v1/models`, `POST /v1/chat/completions`) 규격을 100% 지원**하여 파이썬 OpenAI SDK, Node.js SDK, LangChain, LlamaIndex, Open-WebUI 등 기존 LLM 생태계 앱과 완벽히 연동됩니다.
+
+---
+
+## 🛠️ 서버 셋팅 및 구축 절차 (Server Setup & Operation Workflow)
+
+`vllm_serv`는 원스톱 셋팅 쉘 스크립트(`./setup.sh`)를 통해 프로젝트 환경 검증, `uv` 동기화, 방화벽 포트 개설 및 서버 제어 스크립트를 자동 생성합니다.
+
+```mermaid
+graph TD
+    A["./setup.sh (환경 구축 & 방화벽 등록)"] --> B["./start_server.sh (서버 데몬 구동)"]
+    B --> C1["1. llama-server CUDA 빌드"]
+    B --> C2["2. GGUF 모델 자동 다운로드"]
+    B --> C3["3. VRAM 100% 오프로드 검증"]
+    C1 --> D["서빙 READY (http://127.0.0.1:8081)"]
+    C2 --> D
+    C3 --> D
+    D --> E["./status_server.sh (모니터링)"]
+    D --> F["./stop_server.sh (안전 종료 & VRAM 반납)"]
+```
+
+### 1단계: 원스톱 환경 셋팅 (`./setup.sh`)
+아래 명령어를 실행하면 필요한 모든 기본 설정과 방화벽 등록, 서버 제어 스크립트 생성이 자동으로 진행됩니다:
+
+```bash
+# 원스톱 셋팅 스크립트 실행
+./setup.sh
+```
+
+**`./setup.sh` 자동 처리 항목**:
+1. **필수 프로젝트 파일 검증**: `pyproject.toml`, `config/*.json`, `src/api/server.py` 등 필수 파일 유무 검사
+2. **`uv` 패키지 매니저 및 가상환경 구성**: `uv` 설치 여부 확인 및 패키지 자동 동기화 (`uv sync`)
+3. **NVIDIA GPU 및 드라이버 검증**: `nvidia-smi`를 통해 GPU 명칭 및 VRAM 타겟 검증
+4. **네트워크 방화벽 자동 등록**: `config/server_config.json` 포트(`8081/tcp`)를 읽어 `ufw` / `firewalld` 허용 규칙 추가
+5. **서버 제어 쉘 스크립트 생성 및 심볼릭 링크 연결**: `./start_server.sh`, `./stop_server.sh`, `./status_server.sh` 자동 생성 및 실행 권한 부여
+
+---
+
+### 2단계: 서버 백그라운드 구동 (`./start_server.sh`)
+서버 인퍼런스 엔진을 백그라운드 데몬 프로세스로 시작합니다:
+
+```bash
+./start_server.sh
+```
+
+**`./start_server.sh` 자동 파이프라인 단계**:
+1. **바이너리 자동 빌드**: `llama-server` CUDA 바이너리 미존재 시 `GGML_CUDA=ON` 옵션으로 C++ 소스코드를 자동 컴파일
+2. **가중치 자동 다운로드**: 기본 상주 모델(`qwen3.5-4b`) GGUF 파일 미존재 시 HuggingFace Hub에서 원스톱 자동 다운로드
+3. **VRAM 100% 오프로드 검증**: 서빙 개설 직후 VRAM 레이어 오프로딩 및 헬스체크(`http://127.0.0.1:8081/health`) 확인 후 `READY` 상태 전환
+
+---
+
+### 3단계: 서버 상태 및 GPU VRAM 모니터링 (`./status_server.sh`)
+현재 서빙 프로세스 구동 상태, REST API 헬스체크 및 GPU VRAM 실시간 현황을 조회합니다:
+
+```bash
+./status_server.sh
+```
+
+---
+
+### 4단계: 서버 안전 종료 및 VRAM 해제 (`./stop_server.sh`)
+서버와 관련 `llama-server` 하위 프로세스를 완전히 종료하고 GPU VRAM을 무결하게 반납합니다:
+
+```bash
+./stop_server.sh
+```
+
+---
+
+## 📋 서버 제어 쉘 스크립트 레퍼런스 (Control Scripts Reference)
+
+| 쉘 스크립트명 | 실행 경로 | 주요 역할 및 내부 수행 동작 |
+|---------------|-----------|-----------------------------|
+| **`setup.sh`** | `./setup.sh` | 필수 파일 점검, `uv sync` 가상환경 동기화, `8081/tcp` 방화벽 등록, 제어 스크립트 생성 |
+| **`start_server.sh`** | `./start_server.sh` | 백그라운드 데몬 구동, llama-server C++ 자동 빌드, GGUF 자동 다운로드, VRAM 100% 오프로드 검증 |
+| **`stop_server.sh`** | `./stop_server.sh` | PID 및 하위 llama-server 프로세스 단계별 종료 (`SIGTERM` ➔ `SIGKILL`), VRAM 메모리 완전 반납 |
+| **`status_server.sh`** | `./status_server.sh` | 서빙 PID, HTTP `/health` JSON API 헬스체크, nvidia-smi GPU 사용량 및 온도 실시간 리포트 |
 
 ---
 
 ## 🔥 핵심 기능 (Key Features)
 
-### 1. 🛡️ GPU/CUDA 하드웨어 사전 검증 엔진 (`src/core/gpu_detector.py`)
+### 1. 🌐 OpenAI API 표준 100% 호환 (`/v1/models`, `/v1/chat/completions`)
+- **동적 모델 목록 조회 (`GET /v1/models`)**: 서버 구동 상태와 무관하게 카탈로그 6개 전체 지원 모델의 ID, VRAM 상주 서빙 여부(`active`), 로컬 가중치 미존재/존재 여부(`available`)를 OpenAI 표준 JSON 규격으로 리턴합니다.
+- **표준 챗 컴플리션 (`POST /v1/chat/completions`)**: `temperature`, `top_p`, `max_tokens`, `stream` 등의 파라미터를 지원하는 표준 텍스트 생성 API를 제공합니다.
+
+### 2. 🛡️ GPU/CUDA 하드웨어 사전 검증 엔진 (`src/core/gpu_detector.py`)
 - **3단계 하드웨어 Pre-flight Check**: NVIDIA GPU 존재 여부, CUDA 백엔드 드라이버, `nvcc` 툴킷 버전을 동적으로 감지합니다.
-- **CPU Fallback 엄격 차단**: CPU 전용 실행 시도가 감지되거나 CUDA 백엔드 로드 실패 시 `GpuAccelerationError`를 즉각 발생시켜 서빙 개설을 차단하고 상세 트러블슈팅 안내를 제공합니다.
+- **CPU Fallback 엄격 차단**: CPU 전용 실행 시도가 감지되거나 CUDA 백엔드 로드 실패 시 `GpuAccelerationError`를 즉각 발생시켜 서빙 개설을 차단합니다.
 
-### 2. ⚡ VRAM 100% 레이어 오프로딩 실시간 검증 (`src/core/process_manager.py`)
+### 3. ⚡ VRAM 100% 레이어 오프로딩 실시간 검증 (`src/core/process_manager.py`)
 - **실시간 로그 파싱**: `llama-server` 구동 로그를 파싱하여 모델 전체 레이어 및 CLIP 멀티모달 가중치가 VRAM에 100% 오프로드되었는지 검증합니다.
-- **부분 오프로드 에러 차단**: VRAM 부족으로 일부 레이어가 RAM으로 튕겨 나가는 현상 감지 시 `VramOverflowError` (`VRAM_PARTIAL_OFFLOAD_ERROR`) 예외를 던지고 프로세스를 안전 종료합니다.
-- **VRAM 해제 무결성 보장**: 모델 언로드/스위칭 시 `nvidia-smi`를 통해 GPU VRAM이 baseline(0MB 잔여) 수준으로 완전 반납되었는지 파싱 후 신규 모델을 개설합니다.
-- **실시간 VRAM 오버플로우 방지**: 추론 컨텍스트 확장 시 VRAM 점유율 임계치(기본 95%)를 초과할 위험을 실시간 모니터링(`check_vram_runtime_overflow`)하여 OOM 크래시를 사전 차단합니다.
+- **부분 오프로드 에러 차단**: VRAM 부족으로 일부 레이어가 RAM으로 튕겨 나가는 현상 감지 시 `VramOverflowError` 예외를 던지고 프로세스를 안전 종료합니다.
+- **VRAM 해제 무결성 보장**: 모델 언로드/스위칭 시 `nvidia-smi`를 통해 GPU VRAM이 완전 반납되었는지 확인 후 신규 모델을 개설합니다.
 
-### 3. 🔄 동적 모델 스위칭 (Hot-Swap) & Asynchronous SSE 브로드캐스팅
+### 4. 🔄 동적 모델 스위칭 (Hot-Swap) & Asynchronous SSE 브로드캐스팅
 - **서버 재시작 없는 핫스왑**: `/api/v1/models/load` 호출만으로 메모리 누수 없이 모델을 즉시 스위칭합니다.
-- **실시간 상태 브로드캐스팅**: SSE 엔드포인트(`GET /api/v1/events/stream`)를 통해 GPU 정보, VRAM 점유량, 100% 오프로드 여부(`vram_offloaded_100pct`), 프로세스 상태를 클라이언트에 실시간 스트리밍합니다.
+- **실시간 상태 브로드캐스팅**: SSE 엔드포인트(`GET /api/v1/events/stream`)를 통해 GPU 정보 및 VRAM 점유량을 실시간 스트리밍합니다.
 
-### 4. 🌐 OpenAI 호환 규격 API
-- `/v1/chat/completions` 및 `/v1/models` 엔드포인트를 제공하여 기존 LLM 생태계 도구(LangChain, LlamaIndex, OpenAI SDK 등)와 즉시 호환됩니다.
-
-### 5. 📊 3차원 품질-속도-VRAM 교차 벤치마크 (`scripts/benchmark_quality.py`)
-- Golden Reference Ground Truth 데이터셋(`src/eval/golden_dataset.json`)을 기반으로 **품질 점수(1~5점)**, **지연시간(TTFT)**, **생성 속도(TPOT tok/s)**, **VRAM 사용량** 및 3D 가성비 지수(Quality/Speed Index, Quality/VRAM Index)를 종합 측정하여 보고서를 마크다운으로 자동 생성합니다.
+### 5. ⚙️ 외부 설정 JSON & 환경변수 모듈화
+- 파이썬 소스 코드 하드코딩을 제거하고 모델 카탈로그(`config/model_catalog.json`), 서버 호스트/포트 및 타임아웃(`config/server_config.json`), 환경변수(`LLAMA_PORT`, `LLAMA_HOST`)로 시스템 동작을 가변 설정할 수 있습니다.
 
 ---
 
-## 🛠️ 기술 스택 및 요구사항 (Tech Stack & Prerequisites)
+## 🌐 API 접속 주소 및 엔드포인트 (API Reference)
 
-- **Language/Runtime**: Python 3.12+ (uv 패키지 매니저 사용)
-- **Primary Engines**: `llama-cpp-python` (CUDA 12.4 / 13.0), `pydantic` v2, `fastapi`, `httpx`, `pytest`
-- **Hardware Requirement**: NVIDIA GPU (GTX 1080 Ti 11GB VRAM 이상 권장), NVIDIA Driver & CUDA Runtime Environment
+### Base URL
+- **기본 접속 URL**: `http://127.0.0.1:8081` (또는 `config/server_config.json` 설정 기준)
 
----
+### 주요 API 엔드포인트 목록
 
-## 🚀 빠른 시작 (Quickstart)
-
-### 1. 패키지 설치 및 환경 세팅
-
-```bash
-# uv 환경 동기화
-uv sync
-
-# CUDA 가속 지원 llama-cpp-python 재빌드 (필요시)
-CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python --upgrade --force-reinstall --no-cache-dir
-```
-
-### 2. 환경 변수 설정
-```bash
-cp .env.example .env
-# .env 내 HF_TOKEN 설정 (Hugging Face 가중치 자동 다운로드용)
-```
-
-### 3. GPU 가속 사전 검증 및 단위 테스트 실행
-```bash
-uv run pytest tests/unit/test_gpu_detector.py -v
-```
-
-### 4. 서빙 서버 실행
-
-```bash
-uv run python -m src.api.server
-```
-*(기본 포트: 8081, `http://127.0.0.1:8081` 바인딩)*
+| 엔드포인트 | Method | 설명 | 요청 규격 |
+|------------|--------|------|-----------|
+| `/v1/models` | `GET` | 서빙 지원 카탈로그 전체 모델 목록 동적 조회 | OpenAI API Standard |
+| `/v1/chat/completions` | `POST` | OpenAI 호환 텍스트/대화 생성 | OpenAI API Standard |
+| `/api/v1/status` | `GET` | GPU VRAM 사용량, 100% 오프로드 여부 및 서빙 상태 조회 | `vllm_serv` Custom JSON |
+| `/api/v1/models/load` | `POST` | VRAM 상주 서빙 모델 동적 핫스왑 (Hot-Swap) | `{"model_id": "...", "n_ctx": 4096}` |
+| `/api/v1/events/stream` | `GET` | GPU 및 서빙 프로세스 상태 SSE 실시간 스트리밍 | Event-Stream (`text/event-stream`) |
 
 ---
 
-## 📋 API 레퍼런스 (API Reference)
+## 🤖 서빙 LLM 모델 목록 (Servable Model Catalog)
 
-### 1. OpenAI 호환 텍스트 생성 (`POST /v1/chat/completions`)
+`vllm_serv`는 **Gemma 4** 라인업 3종 및 **Qwen 3.5** 라인업 3종, 총 6개 모델 카탈로그를 기본 지원합니다.
 
+| 모델 ID (`model_id`) | 모델명 | 양자화 | 파일 크기 | 기본 VRAM 점유 | CLIP 비전 지원 | 권장 안전 `n_ctx` 범위 |
+|----------------------|--------|--------|-----------|----------------|----------------|------------------------|
+| **`gemma4-e2b`** | Gemma 4 E2B | `q4_0` | 1.8 GB | ~2,680 MB | ✅ 지원 (`mmproj`) | `2K` ~ `32K` (Safe) |
+| **`gemma4-e4b`** | Gemma 4 E4B | `q4_0` | 3.1 GB | ~4,210 MB | ✅ 지원 (`mmproj`) | `2K` ~ `16K` (Safe) |
+| **`gemma4-12b`** | Gemma 4 12B | `qat_q4_0` | 7.4 GB | ~8,900 MB | ✅ 지원 (`mmproj`) | `2K` ~ `8K` (Max Limit) |
+| **`qwen3.5-2b`** | Qwen 3.5 2B | `q4_k_m` | 1.6 GB | ~2,450 MB | ❌ 미지원 | `2K` ~ `32K` (Safe) |
+| **`qwen3.5-4b`** *(Default)* | Qwen 3.5 4B | `q4_k_m` | 2.8 GB | ~3,950 MB | ❌ 미지원 | `2K` ~ `16K` (Safe) |
+| **`qwen3.5-9b`** | Qwen 3.5 9B | `q4_k_m` | 5.8 GB | ~7,120 MB | ❌ 미지원 | `2K` ~ `8K` (Max Limit) |
+
+---
+
+## 🎯 서비스 목적별 적정 모델 & 적정 컨텍스트 윈도우 추천 매트릭스
+
+단일 GTX 1080 Ti (11GB VRAM) 환경에서의 실측 벤치마크 기반 서비스 유형별 최적 조합입니다:
+
+| 서비스 추천 카테고리 | 추천 모델 ID | 적정 컨텍스트 크기 (`n_ctx`) | TTFT (ms) | TPOT (tok/s) | VRAM 안전 마진 & 추천 사유 |
+|----------------------|--------------|------------------------------|-----------|--------------|----------------------------|
+| ⚡ **초저지연 에이전트 서빙** | `qwen3.5-2b` | **`4,096`** (또는 `2,048`) | **~95 ms** | **55.3 tok/s** | 최소 지연시간 및 최대 토큰 생성 속도, 8GB VRAM 여유 마진 확보 |
+| ⚖️ **기본 상주 서빙 (Default)** | `qwen3.5-4b` | **`8,192`** (또는 `4,096`) | **~142 ms** | **36.2 tok/s** | 품질-속도-VRAM 종합 1위 가성비 밸런스, Peak VRAM ~3.95GB |
+| 🎯 **고정밀 분석 서빙** | `gemma4-12b` | **`8,192`** (최대 상한) | **~285 ms** | **17.6 tok/s** | 지시 이행력 및 슬롯 정밀도 최고 수준 (8K 초과 시 VRAM OOM 가드 작동) |
+
+---
+
+## 🎛️ 요청 파라미터 종류 및 값의 범위 (Request Parameters)
+
+`POST /v1/chat/completions` 호출 시 사용할 수 있는 파라미터 규격입니다:
+
+| 파라미터명 | 타입 | 기본값 | 허용/권장 범위 | 설명 |
+|------------|------|--------|----------------|------|
+| **`model`** *(필요)* | `string` | `"qwen3.5-4b"` | 카탈로그 6개 ID 중 선택 | 추론 요청을 전달할 LLM 모델 ID |
+| **`messages`** *(필요)* | `array` | - | `[{"role": "...", "content": "..."}]` | 대화 메시지 객체 리스트 (`system`, `user`, `assistant`) |
+| **`temperature`** | `float` | `0.7` | `0.0` ~ `2.0` | 생성 무작위성 제어 (`0.0`: 결점 정밀 추론, `1.0+`: 창의적 생성) |
+| **`top_p`** | `float` | `0.9` | `0.0` ~ `1.0` | Nucleus 샘플링 상위 확률 누적 임계치 |
+| **`max_tokens`** | `integer` | `512` | `1` ~ `n_ctx` | 모델이 생성할 최대 토큰 수 |
+| **`stream`** | `boolean` | `false` | `true` / `false` | `true` 설정 시 SSE 표준 토큰 스트리밍 반환 |
+| **`presence_penalty`** | `float` | `0.0` | `-2.0` ~ `2.0` | 새 토큰의 대화 내 존재 여부에 따른 패널티 |
+| **`frequency_penalty`**| `float` | `0.0` | `-2.0` ~ `2.0` | 토큰 빈도수에 따른 반복 억제 패널티 |
+| **`n_ctx`** *(옵션)* | `integer` | `4096` | `2048`, `4096`, `8192`, `16384`, `32768` | 핫스왑/로드 시 컨텍스트 윈도우 크기 지정 |
+
+---
+
+## 💻 OpenAI API 라이브러리 연동 호출 양식 (Code Examples)
+
+### 1. Python OpenAI SDK (`openai>=1.0.0`)
+
+```python
+from openai import OpenAI
+
+# 1. vllm_serv API 클라이언트 생성 (로컬 서빙으로 API 키 불필요)
+client = OpenAI(
+    base_url="http://127.0.0.1:8081/v1",
+    api_key="not-needed"
+)
+
+# 2. 지원 모델 목록 동적 조회 (GET /v1/models)
+models_list = client.models.list()
+print("=== [vllm_serv 서빙 가능 모델 카탈로그] ===")
+for model in models_list.data:
+    active_status = "🟢 ACTIVE (VRAM 상주)" if getattr(model, "active", False) else "⚪ Standby"
+    print(f"- {model.id} [{active_status}]")
+
+# 3. 챗 컴플리션 텍스트 생성 (POST /v1/chat/completions)
+response = client.chat.completions.create(
+    model="qwen3.5-4b",
+    messages=[
+        {"role": "system", "content": "당신은 한국어 정보 추출 및 요약 전문 AI 비서입니다."},
+        {"role": "user", "content": "GPU VRAM 100% 오프로딩이 LLM 인퍼런스 속도에 미치는 영향을 3줄로 요약해줘."}
+    ],
+    temperature=0.2,
+    max_tokens=256
+)
+
+print("\n=== [모델 생성 답변] ===")
+print(response.choices[0].message.content)
+```
+
+#### Python Streaming 응답 예시
+```python
+stream_response = client.chat.completions.create(
+    model="qwen3.5-4b",
+    messages=[{"role": "user", "content": "인공지능의 미래에 대해 짤막하게 말해줘."}],
+    stream=True
+)
+
+for chunk in stream_response:
+    content = chunk.choices[0].delta.content or ""
+    print(content, end="", flush=True)
+```
+
+---
+
+### 2. Node.js / TypeScript OpenAI SDK (`openai`)
+
+```typescript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  baseURL: 'http://127.0.0.1:8081/v1',
+  apiKey: 'not-needed',
+});
+
+async function main() {
+  // GET /v1/models
+  const models = await openai.models.list();
+  console.log('Available Models:', models.data.map(m => m.id));
+
+  // POST /v1/chat/completions
+  const completion = await openai.chat.completions.create({
+    model: 'gemma4-e4b',
+    messages: [
+      { role: 'system', content: 'You are a concise AI assistant.' },
+      { role: 'user', content: 'What is GQA (Grouped-Query Attention)?' }
+    ],
+    temperature: 0.1,
+    max_tokens: 200,
+  });
+
+  console.log('Response:', completion.choices[0].message.content);
+}
+
+main();
+```
+
+---
+
+### 3. cURL CLI 호출 양식
+
+#### A. 모델 목록 조회 (`GET /v1/models`)
+```bash
+curl -s http://127.0.0.1:8081/v1/models | jq .
+```
+
+#### B. 챗 컴플리션 생성 (`POST /v1/chat/completions`)
 ```bash
 curl -X POST http://127.0.0.1:8081/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
+    "model": "qwen3.5-4b",
     "messages": [
       {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "GPU VRAM 오프로딩의 장점에 대해 설명해줘."}
+      {"role": "user", "content": "안녕하세요! 간단히 자기소개 해주세요."}
     ],
-    "temperature": 0.2,
-    "max_tokens": 256
-  }'
-```
-
-### 2. GPU & 서빙 시스템 상태 조회 (`GET /api/v1/status`)
-
-```bash
-curl -s http://127.0.0.1:8081/api/v1/status | jq .
-```
-**응답 예시**:
-```json
-{
-  "state": "READY",
-  "current_model": "qwen3.5-4b",
-  "vram_total": 24000,
-  "vram_used": 3950,
-  "gpu_cuda_available": true,
-  "vram_offloaded_100pct": true,
-  "gpu_info": {
-    "device_id": 0,
-    "name": "NVIDIA GeForce GTX 1080 Ti",
-    "total_vram_mb": 11264,
-    "free_vram_mb": 7314,
-    "driver_version": "580.173.02",
-    "cuda_version": "13.0",
-    "is_cuda_available": true
-  },
-  "offload_status": {
-    "model_id": "qwen3.5-4b",
-    "total_layers": 28,
-    "offloaded_layers": 28,
-    "is_fully_offloaded": true,
-    "offloaded_vram_mb": 3950
-  }
-}
-```
-
-### 3. 동적 모델 핫스왑 (`POST /api/v1/models/load`)
-
-```bash
-curl -X POST http://127.0.0.1:8081/api/v1/models/load \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model_id": "gemma4-e4b",
-    "n_ctx": 4096
+    "temperature": 0.3,
+    "max_tokens": 128
   }'
 ```
 
 ---
 
-## 📊 모델 벤치마크 (Benchmarking)
+## 📊 3D 종합 벤치마크 실행
 
-### 1. 원스톱 자동 다운로드 + 실측 GPU 벤치마크 (권장)
-로컬에 모델 파일이 없는 경우 자동으로 다운로드 후 순차적으로 GPU VRAM에 로드하여 실측 추론 및 품질 평가를 수행합니다.
+원스톱 자동 다운로드 및 실측 GPU 벤치마크를 수행하여 품질, 속도(TTFT/TPOT), VRAM 점유량을 측정하고 마크다운 리포트를 자동 생성합니다:
 
 ```bash
 uv run python scripts/benchmark_quality.py --auto-download --real
 ```
-
-### 2. 라이브 서버 추론 벤치마크
-현재 실행 중인 서버(`http://127.0.0.1:8081`)를 대상으로 실측 추론 벤치마크를 수행합니다.
-
-```bash
-uv run python scripts/benchmark_quality.py --real
-```
-
-### 3. 컨텍스트 스케일링 벤치마크
-컨텍스트 크기 확장 시 VRAM 점유량 및 지연시간 스케일링을 모니터링합니다.
-
-```bash
-uv run python src/scripts/benchmark_context_scaling.py
-```
-
-> 벤치마크 종합 분석 결과는 [specs/008-response-quality-eval/analysis_report_quality.md](file:///home/dev/storage/vllm_serv/specs/008-response-quality-eval/analysis_report_quality.md) 경로에 자동 저장됩니다.
+> 생성된 리포트 경로: `specs/016-context-scaling-and-cleanup-fix/analysis_report_quality.md` 및 `data/reports/analysis_report_quality.md`
 
 ---
 
-## 🧪 테스트 실행 (Test Suite)
+## ⚙️ 외부 설정 파일 구조 (Configurations)
 
-전체 단위 테스트 및 통합 테스트 수트를 실행합니다 (70+ test cases, 100% Pass).
-
-```bash
-# 전체 테스트 실행
-uv run pytest tests/ -v
-
-# GPU Detector 및 VRAM 오프로드 검증 테스트만 실행
-uv run pytest tests/unit/test_gpu_detector.py tests/integration/test_gpu_validation.py -v
-```
-
----
-
-## 📁 프로젝트 구조 (Project Structure)
-
-```text
-vllm_serv/
-├── src/
-│   ├── core/
-│   │   ├── gpu_detector.py         # GPU/CUDA 사전 검증기 및 예외 정의
-│   │   ├── process_manager.py      # VRAM 100% 오프로드 파싱 & 서빙 프로세스 수명주기 관리
-│   │   ├── llama_manager.py        # 서빙 코디네이터 & VRAM 오프로드 상태 동기화
-│   │   ├── model_downloader.py     # HuggingFace Hub 가중치 자동 다운로드 매니저
-│   │   ├── event_broadcaster.py    # Asynchronous SSE 브로드캐스터
-│   │   └── config_manager.py       # 시스템 설정 관리자
-│   ├── eval/
-│   │   ├── quality_evaluator.py    # 한국어 구조화 응답 품질 평가기
-│   │   └── golden_dataset.json     # Ground Truth 데이터셋
-│   └── api/
-│       └── server.py               # FastAPI 서빙 엔드포인트
-├── scripts/
-│   ├── benchmark_quality.py        # 3D 품질-속도-VRAM 교차 벤치마크 러너
-│   └── benchmark_qwen35.py         # Qwen 3.5 전용 벤치마크
-├── tests/
-│   ├── unit/
-│   │   ├── test_gpu_detector.py    # GPU 검증기 및 VRAM 오프로드 단위 테스트
-│   │   └── test_model_downloader.py# 다운로더 단위 테스트
-│   └── integration/
-│       ├── test_gpu_validation.py  # CPU 차단 및 VRAM 해제 통합 테스트
-│       └── test_quality_benchmark.py# 벤치마크 통합 테스트
-├── specs/                          # 기능 명세, 계획 및 벤치마크 보고서
-├── pyproject.toml                  # 프로젝트 의존성 및 pytest 설정
-└── README.md                       # 본 문서
-```
+- **`config/model_catalog.json`**: 지원 모델의 GGUF 경로, CLIP 경로, HF repo_id, VRAM 추정치 모듈화.
+- **`config/server_config.json`**: 서빙 포트(`8081`), 호스트(`127.0.0.1`), VRAM 상한(`11264MB`), 헬스체크 타임아웃(`120s`) 설정.
 
 ---
 

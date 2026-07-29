@@ -22,3 +22,8 @@ models/
 Thumbs.db
 *.tmp
 *.swp
+
+# Runtime logs and PID
+logs/
+*.pid
+
