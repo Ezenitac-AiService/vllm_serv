@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 from enum import Enum
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
@@ -72,19 +73,19 @@ class ProcessManager:
                 "vram_est_mb": 9500
             },
             "qwen3.5-2b": {
-                "model": "models/qwen3.5-2b/qwen-3.5-2b-instruct-q4_k_m.gguf",
+                "model": "models/qwen3.5-2b/Qwen3.5-2B-Q4_K_M.gguf",
                 "clip": None,
                 "chat_template": "chatml",
                 "vram_est_mb": 3000
             },
             "qwen3.5-4b": {
-                "model": "models/qwen3.5-4b/qwen-3.5-4b-instruct-q4_k_m.gguf",
+                "model": "models/qwen3.5-4b/Qwen3.5-4B-Q4_K_M.gguf",
                 "clip": None,
                 "chat_template": "chatml",
                 "vram_est_mb": 5500
             },
             "qwen3.5-9b": {
-                "model": "models/qwen3.5-9b/qwen-3.5-9b-instruct-q4_k_m.gguf",
+                "model": "models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf",
                 "clip": None,
                 "chat_template": "chatml",
                 "vram_est_mb": 9800
@@ -133,23 +134,40 @@ class ProcessManager:
             )
             return self.state
 
-        cmd = [
-            "python3", "-m", "llama_cpp.server",
-            "--model", model_file,
-            "--n_ctx", str(n_ctx),
-            "--host", "127.0.0.1",
-            "--port", str(self.port),
-            "--n_gpu_layers", "-1"
-        ]
+        # Search for llama-server binary or fallback to python module
+        binary_executable = (
+            shutil.which("llama-server")
+            or ("/usr/local/lib/ollama/llama-server" if os.path.exists("/usr/local/lib/ollama/llama-server") else None)
+        )
 
-        # Bind CLIP projector if present
+        clip_file = None
         if target_preset.get("clip"):
             clip_file = os.path.join(base_dir, target_preset["clip"])
-            cmd.extend(["--clip_model_path", clip_file])
 
-        # FR-009: Bind explicit chat template (chatml for Qwen3.5, gemma for Gemma 4)
-        if target_preset.get("chat_template"):
-            cmd.extend(["--chat_template", target_preset["chat_template"]])
+        if binary_executable:
+            cmd = [
+                binary_executable,
+                "-m", model_file,
+                "-c", str(n_ctx),
+                "--host", "127.0.0.1",
+                "--port", str(self.port),
+                "-ngl", "99"
+            ]
+            if clip_file:
+                cmd.extend(["--mmproj", clip_file])
+        else:
+            cmd = [
+                "python3", "-m", "llama_cpp.server",
+                "--model", model_file,
+                "--n_ctx", str(n_ctx),
+                "--host", "127.0.0.1",
+                "--port", str(self.port),
+                "--n_gpu_layers", "-1"
+            ]
+            if clip_file:
+                cmd.extend(["--clip_model_path", clip_file])
+            if target_preset.get("chat_template"):
+                cmd.extend(["--chat_template", target_preset["chat_template"]])
 
         try:
             self.state = ProcessState(

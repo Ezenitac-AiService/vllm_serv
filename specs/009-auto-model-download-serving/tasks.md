@@ -119,3 +119,27 @@
 3. User Story 2 -> Dynamic Server Process Lifecycle & HTTP Health Check
 4. User Story 3 -> One-stop Real GPU Inference Benchmark Pipeline
 5. Polish -> 100% pytest regression pass
+
+---
+
+## Phase 7: Convergence
+
+- [x] T011 Add `--real-inference` CLI flag support alongside `--real` in `scripts/benchmark_quality.py` per FR-005, US3/AC1 (partial)
+- [x] T012 Enhance download progress callback to calculate and report byte-level transfer speed and size per FR-002 (partial)
+
+---
+
+## Phase 8: Convergence
+
+- [x] T013 Fix invalid Qwen HuggingFace repository IDs in `MODEL_DOWNLOAD_CATALOG` (`Qwen/Qwen2.5-*-Instruct-GGUF`) in `src/core/model_downloader.py` per FR-001, US1/AC1 (contradicts)
+- [x] T014 Fix `llama-server` process invocation in `src/core/process_manager.py` to support `llama-server` binary or fallback when `llama_cpp.server` module is missing per FR-004, US2/AC1 (contradicts)
+- [x] T015 Add empty reports list check guard in `generate_markdown_report` in `scripts/benchmark_quality.py` to prevent `IndexError` when models fail or skip per FR-005 (partial)
+
+---
+
+## Phase 9: Convergence
+
+- [x] T016 Update `MODEL_DOWNLOAD_CATALOG` in `src/core/model_downloader.py` to use valid Qwen 3.5 GGUF repositories (`unsloth/Qwen3.5-2B-GGUF`, `unsloth/Qwen3.5-4B-GGUF`, `unsloth/Qwen3.5-9B-GGUF`) and filenames (`Qwen3.5-2B-Q4_K_M.gguf`, `Qwen3.5-4B-Q4_K_M.gguf`, `Qwen3.5-9B-Q4_K_M.gguf`) per FR-001, US1/AC1 (contradicts)
+
+
+

@@ -233,6 +233,11 @@ def run_benchmark(force_real_inference: bool = False) -> List[ComprehensiveQuali
 
 def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], output_path: str):
     """Generates 3D Markdown Comparison Report."""
+    if not reports:
+        print("[Quality Benchmark] ⚠️ 경고: 수집된 벤치마크 결과 리스트가 비어 있습니다. (모든 모델 다운로드/로드 실패 또는 스킵)")
+        print("[Quality Benchmark] 보고서 생성을 건너뜁니다.")
+        return
+
     sorted_by_quality = sorted(reports, key=lambda x: x.avg_quality_score, reverse=True)
     sorted_by_speed_efficiency = sorted(reports, key=lambda x: x.quality_per_speed_index, reverse=True)
     sorted_by_vram_efficiency = sorted(reports, key=lambda x: x.quality_per_vram_index, reverse=True)
@@ -448,7 +453,7 @@ def run_real_benchmark_loop(
 
 
 if __name__ == "__main__":
-    force_live = "--real" in sys.argv
+    force_live = "--real" in sys.argv or "--real-inference" in sys.argv
     auto_download = "--auto-download" in sys.argv
 
     if auto_download or force_live:

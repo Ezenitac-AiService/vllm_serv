@@ -13,6 +13,7 @@ HuggingFace Hub GGUF & mmproj CLIP 자동 다운로더 모듈 (FR-001, FR-002, F
 
 import os
 import shutil
+import time
 from enum import Enum
 from typing import Optional, Dict, List, Callable
 from pydantic import BaseModel, ConfigDict, Field
@@ -51,20 +52,20 @@ class ModelDownloadTask(BaseModel):
 
 MODEL_DOWNLOAD_CATALOG: Dict[str, Dict] = {
     "qwen3.5-2b": {
-        "repo_id": "Qwen/Qwen3.5-2B-Instruct-GGUF",
-        "filename": "qwen3.5-2b-instruct-q4_k_m.gguf",
+        "repo_id": "unsloth/Qwen3.5-2B-GGUF",
+        "filename": "Qwen3.5-2B-Q4_K_M.gguf",
         "clip_filename": None,
         "target_dir": "models/qwen3.5-2b",
     },
     "qwen3.5-4b": {
-        "repo_id": "Qwen/Qwen3.5-4B-Instruct-GGUF",
-        "filename": "qwen3.5-4b-instruct-q4_k_m.gguf",
+        "repo_id": "unsloth/Qwen3.5-4B-GGUF",
+        "filename": "Qwen3.5-4B-Q4_K_M.gguf",
         "clip_filename": None,
         "target_dir": "models/qwen3.5-4b",
     },
     "qwen3.5-9b": {
-        "repo_id": "Qwen/Qwen3.5-9B-Instruct-GGUF",
-        "filename": "qwen3.5-9b-instruct-q4_k_m.gguf",
+        "repo_id": "unsloth/Qwen3.5-9B-GGUF",
+        "filename": "Qwen3.5-9B-Q4_K_M.gguf",
         "clip_filename": None,
         "target_dir": "models/qwen3.5-9b",
     },
@@ -212,31 +213,42 @@ class ModelDownloader:
             # huggingface_hub 동적 임포트 (런타임 의존성)
             from huggingface_hub import hf_hub_download
 
-            # FR-001: 메인 GGUF 가중치 다운로드
+            # FR-001/FR-002: 메인 GGUF 가중치 다운로드
+            t_start = time.time()
             downloaded_path = hf_hub_download(
                 repo_id=catalog_entry["repo_id"],
                 filename=catalog_entry["filename"],
                 local_dir=target_dir_abs,
                 resume_download=True,
             )
-            task.download_progress_pct = 80.0
-            print(f"[ModelDownloader] {model_id}: GGUF 가중치 다운로드 완료 → {downloaded_path}")
-            if progress_callback:
-                progress_callback(model_id, 80.0)
+            t_elapsed = max(0.001, time.time() - t_start)
+            file_bytes = os.path.getsize(downloaded_path) if os.path.exists(downloaded_path) else 0
+            size_mb = round(file_bytes / (1024 * 1024), 2)
+            speed_mbps = round(size_mb / t_elapsed, 2)
 
-            # FR-001: CLIP mmproj 프로젝터 다운로드 (Gemma 4 전용)
+            task.download_progress_pct = 80.0 if catalog_entry.get("clip_filename") else 100.0
+            print(f"[ModelDownloader] {model_id}: GGUF 가중치 다운로드 완료 ({size_mb} MB, 평균 {speed_mbps} MB/s) → {downloaded_path}")
+            if progress_callback:
+                progress_callback(model_id, task.download_progress_pct)
+
+            # FR-001/FR-002: CLIP mmproj 프로젝터 다운로드 (Gemma 4 전용)
             if catalog_entry.get("clip_filename"):
+                t_clip_start = time.time()
                 clip_downloaded = hf_hub_download(
                     repo_id=catalog_entry["repo_id"],
                     filename=catalog_entry["clip_filename"],
                     local_dir=target_dir_abs,
                     resume_download=True,
                 )
-                print(f"[ModelDownloader] {model_id}: CLIP mmproj 다운로드 완료 → {clip_downloaded}")
+                t_clip_elapsed = max(0.001, time.time() - t_clip_start)
+                clip_bytes = os.path.getsize(clip_downloaded) if os.path.exists(clip_downloaded) else 0
+                clip_mb = round(clip_bytes / (1024 * 1024), 2)
+                clip_speed = round(clip_mb / t_clip_elapsed, 2)
+                print(f"[ModelDownloader] {model_id}: CLIP mmproj 다운로드 완료 ({clip_mb} MB, 평균 {clip_speed} MB/s) → {clip_downloaded}")
 
             task.status = DownloadStatusEnum.COMPLETED
             task.download_progress_pct = 100.0
-            print(f"[ModelDownloader] {model_id}: ✅ 다운로드 완료")
+            print(f"[ModelDownloader] {model_id}: ✅ 다운로드 완료 (총 저장 경로: {target_dir_abs})")
             if progress_callback:
                 progress_callback(model_id, 100.0)
 

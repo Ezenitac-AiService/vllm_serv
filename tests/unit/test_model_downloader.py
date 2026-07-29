@@ -100,7 +100,7 @@ class TestModelDownloader:
             # 가짜 GGUF 파일 생성
             target_dir = os.path.join(tmpdir, "models", "qwen3.5-2b")
             os.makedirs(target_dir, exist_ok=True)
-            fake_gguf = os.path.join(target_dir, "qwen3.5-2b-instruct-q4_k_m.gguf")
+            fake_gguf = os.path.join(target_dir, "Qwen3.5-2B-Q4_K_M.gguf")
             with open(fake_gguf, "wb") as f:
                 f.write(b"FAKE_GGUF_CONTENT")
 
@@ -140,7 +140,7 @@ class TestModelDownloader:
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(tmpdir, "models", "qwen3.5-2b")
             os.makedirs(target_dir, exist_ok=True)
-            fake_gguf = os.path.join(target_dir, "qwen3.5-2b-instruct-q4_k_m.gguf")
+            fake_gguf = os.path.join(target_dir, "Qwen3.5-2B-Q4_K_M.gguf")
             with open(fake_gguf, "wb") as f:
                 f.write(b"FAKE_GGUF_CONTENT")
 
@@ -170,20 +170,20 @@ class TestModelDownloader:
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(tmpdir, "models", "qwen3.5-4b")
             os.makedirs(target_dir, exist_ok=True)
-            fake_gguf = os.path.join(target_dir, "qwen3.5-4b-instruct-q4_k_m.gguf")
+            fake_gguf = os.path.join(target_dir, "Qwen3.5-4B-Q4_K_M.gguf")
             with open(fake_gguf, "wb") as f:
                 f.write(b"FAKE_GGUF")
 
             downloader = ModelDownloader(base_dir=tmpdir)
             path = downloader.ensure_model_available("qwen3.5-4b")
-            assert path.endswith("qwen3.5-4b-instruct-q4_k_m.gguf")
+            assert path.endswith("Qwen3.5-4B-Q4_K_M.gguf")
 
     def test_progress_callback_called(self):
         """다운로드 시 progress_callback이 호출됨."""
         with tempfile.TemporaryDirectory() as tmpdir:
             target_dir = os.path.join(tmpdir, "models", "qwen3.5-2b")
             os.makedirs(target_dir, exist_ok=True)
-            fake_gguf = os.path.join(target_dir, "qwen3.5-2b-instruct-q4_k_m.gguf")
+            fake_gguf = os.path.join(target_dir, "Qwen3.5-2B-Q4_K_M.gguf")
             with open(fake_gguf, "wb") as f:
                 f.write(b"FAKE_GGUF")
 
