@@ -1,7 +1,7 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `013-enhance-benchmark-report`
-**Generated Date**: 2026-07-29 06:20:24
+**Generated Date**: 2026-07-29 06:30:49
 **Execution Mode**: `LIVE REAL INFERENCE (Local Server Active)`
 **Golden Reference Ground Truth**: `data/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 
@@ -22,9 +22,9 @@
 
 | Evaluation Aspect | Recommended Model Preset | Metric Value | Rationale |
 |-------------------|--------------------------|--------------|-----------|
-| **최고 품질 (Best Quality)** | `Qwen 3.5 2B` | `Quality Score: 3.3 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
-| **최고 속도 가성비 (Quality/Speed)** | `Qwen 3.5 4B` | `Index: 0.67` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
-| **최고 메모리 가성비 (Quality/VRAM)** | `Qwen 3.5 2B` | `Index: 1.38` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
+| **최고 품질 (Best Quality)** | `Qwen 3.5 4B` | `Quality Score: 3.3 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
+| **최고 속도 가성비 (Quality/Speed)** | `Qwen 3.5 4B` | `Index: 0.7` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
+| **최고 메모리 가성비 (Quality/VRAM)** | `Qwen 3.5 4B` | `Index: 0.86` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
 
 ---
 
@@ -32,12 +32,12 @@
 
 | Model Lineup | Quant | TTFT (ms) | TPOT (tok/s) | Peak VRAM (MB) | Quality Score (1~5) | Quality/Speed Index | Quality/VRAM Index | Status |
 |--------------|-------|-----------|--------------|----------------|---------------------|---------------------|--------------------|--------|
-| **Gemma 4 E2B** | `q4_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
-| **Gemma 4 E4B** | `q4_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
+| **Gemma 4 E2B** | `q4_0` | `92.5` | `47.56` | `2680` | **`1.2`** | `0.25` | `0.46` | `✅ SUCCESS` |
+| **Gemma 4 E4B** | `q4_0` | `195.5` | `42.96` | `4210` | **`1.2`** | `0.28` | `0.29` | `✅ SUCCESS` |
 | **Gemma 4 12B** | `qat_q4_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
-| **Qwen 3.5 2B** | `q4_k_m` | `180.5` | `73.14` | `2450` | **`3.3`** | `0.45` | `1.38` | `✅ SUCCESS` |
-| **Qwen 3.5 4B** | `q4_k_m` | `323.0` | `48.91` | `3950` | **`3.3`** | `0.67` | `0.86` | `✅ SUCCESS` |
-| **Qwen 3.5 9B** | `q4_k_m` | `2854.8` | `35.87` | `7120` | **`1.2`** | `0.33` | `0.17` | `✅ SUCCESS` |
+| **Qwen 3.5 2B** | `q4_k_m` | `1438.3` | `71.2` | `2450` | **`1.2`** | `0.17` | `0.5` | `✅ SUCCESS` |
+| **Qwen 3.5 4B** | `q4_k_m` | `332.9` | `47.47` | `3950` | **`3.3`** | `0.7` | `0.86` | `✅ SUCCESS` |
+| **Qwen 3.5 9B** | `q4_k_m` | `2926.0` | `35.0` | `7120` | **`1.2`** | `0.34` | `0.17` | `✅ SUCCESS` |
 
 ---
 
@@ -48,19 +48,101 @@
 <details>
 <summary>🔍 <b>[Gemma 4 E2B] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `Gemma 4 E2B` (Quant: `q4_0`, Quality: `5.0/5.0`)
+### Model: `Gemma 4 E2B` (Quant: `q4_0`, Quality: `1.2/5.0`)
 
-- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: HTTP Healthcheck Timeout*
+#### Sample 1: `ATEAM-STOCK-01`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
 
+**[1. User Input Prompt]**
+```text
+A: 삼전 오늘 7만전자 뚫는거야? B: 걔네 3분기 실적 생각하면 힘들듯 C: 하닉은 어때? B: 이건 반도체 업황 개선 수혜 받아 가능해보임
+```
+
+**[2. Golden Reference Ground Truth]**
+```json
+Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대해 기대감을 드러냄."}, {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 우려함."}, {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스의 주가 전망에 대해 질문함."}, {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 반도체 업황 개선으로 상승 가능하다고 판단함."}]
+```
+
+**[3. Actual Model Output Response]**
+```text
+A: 삼전 7만전자 뚫어? B: 반도체 업황 수혜 가능
+```
+
+---
+#### Sample 2: `BTEAM-REVIEW-01`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
+
+**[1. User Input Prompt]**
+```text
+트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요! 가격도 합리적이네요. 다만 매장 청결도가 별로였고 서빙 직원이 불친절해서 아쉬웠습니다.
+```
+
+**[2. Golden Reference Ground Truth]**
+```json
+Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment": "positive", "sentence": "트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요!", "refined_sentence": "트러플 파스타의 생면 식감과 진한 풍미가 매우 만족스럽다."}, {"category": "가격", "target": "트러플 파스타", "sentiment": "positive", "sentence": "가격도 합리적이네요.", "refined_sentence": "트러플 파스타의 가격이 합리적이다."}, {"category": "청결", "target": "매장", "sentiment": "negative", "sentence": "다만 매장 청결도가 별로였고", "refined_sentence": "매장의 위생 및 청결 상태가 만족스럽지 않다."}, {"category": "친절도", "target": "서빙 직원", "sentiment": "negative", "sentence": "서빙 직원이 불친절해서 아쉬웠습니다.", "refined_sentence": "서빙 직원의 응대 태도가 불친절하여 아쉽다."}]
+```
+
+**[3. Actual Model Output Response]**
+```text
+A: 삼전 7만전자 뚫어? B: 반도체 업황 수혜 가능
+```
+
+---
 </details>
 
 <details>
 <summary>🔍 <b>[Gemma 4 E4B] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `Gemma 4 E4B` (Quant: `q4_0`, Quality: `5.0/5.0`)
+### Model: `Gemma 4 E4B` (Quant: `q4_0`, Quality: `1.2/5.0`)
 
-- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: HTTP Healthcheck Timeout*
+#### Sample 1: `ATEAM-STOCK-01`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
 
+**[1. User Input Prompt]**
+```text
+A: 삼전 오늘 7만전자 뚫는거야? B: 걔네 3분기 실적 생각하면 힘들듯 C: 하닉은 어때? B: 이건 반도체 업황 개선 수혜 받아 가능해보임
+```
+
+**[2. Golden Reference Ground Truth]**
+```json
+Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대해 기대감을 드러냄."}, {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 우려함."}, {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스의 주가 전망에 대해 질문함."}, {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 반도체 업황 개선으로 상승 가능하다고 판단함."}]
+```
+
+**[3. Actual Model Output Response]**
+```text
+A: 삼전 7만전자 뚫어?
+B: 3분기 실적 저조함
+C: 하닉은?
+B: 반도체 업황 수혜 가능
+```
+
+---
+#### Sample 2: `BTEAM-REVIEW-01`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
+
+**[1. User Input Prompt]**
+```text
+트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요! 가격도 합리적이네요. 다만 매장 청결도가 별로였고 서빙 직원이 불친절해서 아쉬웠습니다.
+```
+
+**[2. Golden Reference Ground Truth]**
+```json
+Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment": "positive", "sentence": "트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요!", "refined_sentence": "트러플 파스타의 생면 식감과 진한 풍미가 매우 만족스럽다."}, {"category": "가격", "target": "트러플 파스타", "sentiment": "positive", "sentence": "가격도 합리적이네요.", "refined_sentence": "트러플 파스타의 가격이 합리적이다."}, {"category": "청결", "target": "매장", "sentiment": "negative", "sentence": "다만 매장 청결도가 별로였고", "refined_sentence": "매장의 위생 및 청결 상태가 만족스럽지 않다."}, {"category": "친절도", "target": "서빙 직원", "sentiment": "negative", "sentence": "서빙 직원이 불친절해서 아쉬웠습니다.", "refined_sentence": "서빙 직원의 응대 태도가 불친절하여 아쉽다."}]
+```
+
+**[3. Actual Model Output Response]**
+```text
+A: 삼전 7만전자 뚫어?
+B: 3분기 실적 저조함
+C: 하닉은?
+B: 반도체 업황 수혜 가능
+```
+
+---
 </details>
 
 <details>
@@ -75,11 +157,11 @@
 <details>
 <summary>🔍 <b>[Qwen 3.5 2B] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `Qwen 3.5 2B` (Quant: `q4_k_m`, Quality: `3.3/5.0`)
+### Model: `Qwen 3.5 2B` (Quant: `q4_k_m`, Quality: `1.2/5.0`)
 
 #### Sample 1: `ATEAM-STOCK-01`
-- **오류 분류 태그**: `[Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.66` | **Exact Match**: `False` | **JSON Schema Valid**: `True`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
 
 **[1. User Input Prompt]**
 ```text
@@ -94,23 +176,32 @@ Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positi
 **[3. Actual Model Output Response]**
 ```text
 <think>
+Thinking Process:
 
-</think>
+1.  **Analyze the Request:**
+    *   Input: A conversation snippet between two parties (A and B) regarding stock market analysis or financial news.
+    *   Task: Extract information from this text into JSON format.
+    *   Constraint: "You are a precise JSON extraction assistant."
 
-```json
-{
-  "A": "삼전 7만전자 뚫어?",
-  "B": "3분기 실적 저조함",
-  "C": "하닉은?",
-  "D": "반도체 업황 수혜 가능"
-}
-```
+2.  **Analyze the Input Data:**
+    *   Line 1: `A: 삼전 7만전자 뚫어?` (Speaker A asks about Samsung Electronics or similar stock performance, specifically mentioning "Samsung" and "70 million"? Wait, looking at context, it's likely a Korean financial news snippet. "삼전" could be Samsung Electronics or Samsung Tech. "7 만 전자" might refer to 70 million units? Or maybe it's a typo for something else. Let's look closer: "삼전" (Samsung) + "7 만전자" (70,000 electronics?). Actually, looking at the pattern of financial Q&A, this looks like stock market analysis.)
+    *   Line 2: `B: 3 분기 실적 저조함` (Speaker B says: 3rd quarter performance was low).
+    *   Line 3: `C: 하닉은?` (Speaker C asks about Hynix or similar company, likely "Hynix" based on context of semiconductor stocks often discussed together with Samsung).
+    *   Line 4: `B: 반도체 업황 수혜 가능` (Speaker B says: Semiconductor industry outlook is favorable/possible benefit).
+
+3.  **Determine the JSON Structure:**
+    *   The user wants a "precise JSON extraction assistant". This usually means extracting entities, speakers, and content from the dialogue.
+    *   Common schema for such tasks: `{"role": "...", "content": "..."}` or just a list of objects representing turns.
+    *   Given the instruction "JSON extraction", I should structure it to represent the conversation clearly. A standard format like `{"conversation": [...]}` is appropriate.
+
+4.  **Refine Extraction:**
+    *   Turn 1: Speaker A asks about Samsung Electronics (삼전) and 70,000 units? Or maybe "Samsung Tech"? Actually, "삼전" often refers to Samsung Electronics in Korean financial contexts regarding semiconductor stocks. The phrase "7 만전자 뚫어?"
 ```
 
 ---
 #### Sample 2: `BTEAM-REVIEW-01`
-- **오류 분류 태그**: `[Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.66` | **Exact Match**: `False` | **JSON Schema Valid**: `True`
+- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
+- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
 
 **[1. User Input Prompt]**
 ```text
@@ -125,17 +216,26 @@ Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment
 **[3. Actual Model Output Response]**
 ```text
 <think>
+Thinking Process:
 
-</think>
+1.  **Analyze the Request:**
+    *   Input: A conversation snippet between two parties (A and B) regarding stock market analysis or financial news.
+    *   Task: Extract information from this text into JSON format.
+    *   Constraint: "You are a precise JSON extraction assistant."
 
-```json
-{
-  "A": "삼전 7만전자 뚫어?",
-  "B": "3분기 실적 저조함",
-  "C": "하닉은?",
-  "D": "반도체 업황 수혜 가능"
-}
-```
+2.  **Analyze the Input Data:**
+    *   Line 1: `A: 삼전 7만전자 뚫어?` (Speaker A asks about Samsung Electronics or similar stock performance, specifically mentioning "Samsung" and "70 million"? Wait, looking at context, it's likely a Korean financial news snippet. "삼전" could be Samsung Electronics or Samsung Tech. "7 만 전자" might refer to 70 million units? Or maybe it's a typo for something else. Let's look closer: "삼전" (Samsung) + "7 만전자" (70,000 electronics?). Actually, looking at the pattern of financial Q&A, this looks like stock market analysis.)
+    *   Line 2: `B: 3 분기 실적 저조함` (Speaker B says: 3rd quarter performance was low).
+    *   Line 3: `C: 하닉은?` (Speaker C asks about Hynix or similar company, likely "Hynix" based on context of semiconductor stocks often discussed together with Samsung).
+    *   Line 4: `B: 반도체 업황 수혜 가능` (Speaker B says: Semiconductor industry outlook is favorable/possible benefit).
+
+3.  **Determine the JSON Structure:**
+    *   The user wants a "precise JSON extraction assistant". This usually means extracting entities, speakers, and content from the dialogue.
+    *   Common schema for such tasks: `{"role": "...", "content": "..."}` or just a list of objects representing turns.
+    *   Given the instruction "JSON extraction", I should structure it to represent the conversation clearly. A standard format like `{"conversation": [...]}` is appropriate.
+
+4.  **Refine Extraction:**
+    *   Turn 1: Speaker A asks about Samsung Electronics (삼전) and 70,000 units? Or maybe "Samsung Tech"? Actually, "삼전" often refers to Samsung Electronics in Korean financial contexts regarding semiconductor stocks. The phrase "7 만전자 뚫어?"
 ```
 
 ---
@@ -347,12 +447,12 @@ Thinking Process:
 
 | Model Lineup | Supported `n_ctx` Steps | 4,096 VRAM / TTFT | 8,192 VRAM / TTFT | 16,384 VRAM / TTFT | 32,768 VRAM / TTFT | VRAM Safety Threshold |
 |--------------|-------------------------|-------------------|-------------------|--------------------|--------------------|-----------------------|
-| **Gemma 4 E2B** | `4K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
-| **Gemma 4 E4B** | `4K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
+| **Gemma 4 E2B** | `4K ~ 32K` | `2680.0MB / 92.5ms` | `3082.0MB / 101.8ms` | `3618.0MB / 120.2ms` | `4556.0MB / 157.2ms` | **`32,768 (Safe)`** |
+| **Gemma 4 E4B** | `4K ~ 32K` | `4210.0MB / 195.5ms` | `4841.5MB / 215.1ms` | `5683.5MB / 254.2ms` | `7157.0MB / 332.3ms` | **`32,768 (Safe)`** |
 | **Gemma 4 12B** | `4K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
-| **Qwen 3.5 2B** | `4K ~ 32K` | `2450.0MB / 180.5ms` | `2817.5MB / 198.6ms` | `3307.5MB / 234.7ms` | `4165.0MB / 306.8ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 4B** | `4K ~ 32K` | `3950.0MB / 323.0ms` | `4542.5MB / 355.3ms` | `5332.5MB / 419.9ms` | `6715.0MB / 549.1ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 9B** | `4K ~ 32K` | `7120.0MB / 2854.8ms` | `8188.0MB / 3140.3ms` | `9612.0MB / 3711.2ms` | `12104.0MB / 4853.2ms` | **`16,384 (Safe)`** |
+| **Qwen 3.5 2B** | `4K ~ 32K` | `2450.0MB / 1438.3ms` | `2817.5MB / 1582.1ms` | `3307.5MB / 1869.8ms` | `4165.0MB / 2445.1ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 4B** | `4K ~ 32K` | `3950.0MB / 332.9ms` | `4542.5MB / 366.2ms` | `5332.5MB / 432.8ms` | `6715.0MB / 565.9ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 9B** | `4K ~ 32K` | `7120.0MB / 2926.0ms` | `8188.0MB / 3218.6ms` | `9612.0MB / 3803.8ms` | `12104.0MB / 4974.2ms` | **`16,384 (Safe)`** |
 
 ---
 

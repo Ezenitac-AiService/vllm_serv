@@ -12,7 +12,7 @@ import json
 import os
 import sys
 import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 import httpx
 from src.eval.quality_evaluator import (
     QualityEvaluator,
@@ -365,9 +365,9 @@ def _run_async(coro):
         asyncio.set_event_loop(loop)
     return loop.run_until_complete(coro)
 
-def run_real_benchmark_loop(
+async def run_real_benchmark_loop(
     auto_download: bool = False,
-) -> List[ComprehensiveQualityReportMetric]:
+) -> Tuple[List[ComprehensiveQualityReportMetric], Optional[Dict[str, Any]]]:
     """T008 / FR-005: 원스톱 자동 다운로드 + 실측 GPU 추론 벤치마크 루프.
 
     각 모델에 대해 순차적으로:
@@ -423,7 +423,7 @@ def run_real_benchmark_loop(
             # Step 2: llama-server 프로세스 개설
             print(f"[Step 2] llama-server 프로세스 개설 중...")
             t_load_start = time.time()
-            spawn_state = _run_async(pm.spawn_process(model_id, 2048))
+            spawn_state = await pm.spawn_process(model_id, 2048)
             t_load_end = time.time()
             load_time = round(t_load_end - t_load_start, 2)
 
@@ -440,32 +440,33 @@ def run_real_benchmark_loop(
             # Step 3: HTTP 헬스체크 및 VRAM 100% 오프로드 대기 (T011 / FR-004, FR-009)
             print(f"[Step 3] HTTP /v1/models & VRAM 100% 오프로드 대기 (최대 120초)...")
             ready = False
-            deadline = time.time() + 120.0
-            while time.time() < deadline:
-                try:
-                    r = httpx.get("http://127.0.0.1:8081/v1/models", timeout=2.0)
-                    if r.status_code == 200:
-                        ready = True
-                        print(f"[Step 3] ✅ 서빙 READY (/v1/models OpenAPI 확인, load_time={load_time}s)")
-                        break
-                except Exception:
-                    pass
-
-                try:
-                    r = httpx.get("http://127.0.0.1:8081/health", timeout=2.0)
-                    if r.status_code == 200:
-                        data = r.json()
-                        if data.get("status") in ("ok", "ready") or data.get("slots_idle", 0) >= 0:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                deadline = time.time() + 120.0
+                while time.time() < deadline:
+                    try:
+                        r = await client.get("http://127.0.0.1:8081/v1/models")
+                        if r.status_code == 200:
                             ready = True
-                            print(f"[Step 3] ✅ 서빙 READY (/health JSON API 확인, load_time={load_time}s)")
+                            print(f"[Step 3] ✅ 서빙 READY (/v1/models OpenAPI 확인, load_time={load_time}s)")
                             break
-                except Exception:
-                    pass
-                time.sleep(0.5)
+                    except Exception:
+                        pass
+
+                    try:
+                        r = await client.get("http://127.0.0.1:8081/health")
+                        if r.status_code == 200:
+                            data = r.json()
+                            if data.get("status") in ("ok", "ready") or data.get("slots_idle", 0) >= 0:
+                                ready = True
+                                print(f"[Step 3] ✅ 서빙 READY (/health JSON API 확인, load_time={load_time}s)")
+                                break
+                    except Exception:
+                        pass
+                    await asyncio.sleep(0.5)
 
             if not ready:
                 print(f"[Step 3] ❌ 헬스체크 타임아웃")
-                _run_async(pm.stop_process())
+                await pm.stop_process()
                 reports.append(ComprehensiveQualityReportMetric(
                     model_id=model_name,
                     quant_type=item["quant_type"],
@@ -488,14 +489,14 @@ def run_real_benchmark_loop(
                 print(f"[Step 4] ✅ 추론 완료 (TPOT={tpot} tok/s, TTFT={ttft}ms)")
             else:
                 print(f"[Step 4] ⚠️ 실측 추론 실패 — {model_name}")
-                _run_async(pm.stop_process())
+                await pm.stop_process()
                 reports.append(ComprehensiveQualityReportMetric(
                     model_id=model_name,
                     quant_type=item["quant_type"],
                     is_oom=True,
                     error_message="Live Inference Request Failed"
                 ))
-                time.sleep(1.0)
+                await asyncio.sleep(1.0)
                 continue
 
             # Step 5: 품질 평가 & 정성 샘플 서명 (FR-002, FR-003)
@@ -533,8 +534,8 @@ def run_real_benchmark_loop(
 
             # Step 6: 프로세스 종료 및 VRAM 해제
             print(f"[Step 6] 프로세스 종료 및 VRAM 해제...")
-            _run_async(pm.stop_process())
-            time.sleep(1.0)  # VRAM 해제 안정화 대기
+            await pm.stop_process()
+            await asyncio.sleep(1.0)  # VRAM 해제 안정화 대기
             print(f"[Step 6] ✅ VRAM 해제 완료")
 
     finally:
@@ -544,7 +545,7 @@ def run_real_benchmark_loop(
         print(f"{'='*60}")
         try:
             from src.core.llama_manager import llama_manager
-            _run_async(llama_manager.ensure_default_model_resident("qwen3.5-4b"))
+            await llama_manager.ensure_default_model_resident("qwen3.5-4b")
             print(f"[Post-Benchmark] ✅ 기본 모델 qwen3.5-4b VRAM 복원 완료")
         except Exception as e:
             print(f"[Post-Benchmark] ⚠️ 기본 모델 복원 참고 메시지: {e}")
@@ -572,7 +573,7 @@ if __name__ == "__main__":
 
     if auto_download or force_live:
         # FR-005: 원스톱 자동 다운로드 + 실측 벤치마크 모드
-        report_list, gpu_metadata = run_real_benchmark_loop(auto_download=auto_download)
+        report_list, gpu_metadata = asyncio.run(run_real_benchmark_loop(auto_download=auto_download))
     else:
         # 정적 프로파일링 모드 (CI/CD 빠른 검증)
         report_list, gpu_metadata = run_benchmark(force_real_inference=force_live)

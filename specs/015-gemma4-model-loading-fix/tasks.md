@@ -44,8 +44,10 @@
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T010 [P] Run full dual-mode pytest suite `uv run pytest -v` to ensure 100% test pass rate
-- [ ] T011 Run real GPU benchmark quality evaluation `uv run python scripts/benchmark_quality.py --auto-download --real` and verify report generation in `data/reports/analysis_report_quality.md`
+**Goal**: CI 듀얼 모드 테스트 수트 100% 통과 및 실측 GPU 벤치마크 마크다운 리포트 자동 생성 검증.
+
+- [x] T010 Run full dual-mode pytest suite `uv run pytest -v` ensuring 100% test pass rate
+- [x] T011 Run real GPU benchmark quality evaluation `uv run python scripts/benchmark_quality.py --auto-download --real` and verify report generation in `data/reports/analysis_report_quality.md`
 
 ---
 
