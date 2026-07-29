@@ -7,6 +7,7 @@ from src.core.config_manager import ConfigManager
 from src.core.process_manager import ProcessManager, ProcessStatusEnum, ProcessState
 from src.core.event_broadcaster import EventBroadcaster
 from src.core.model_downloader import ModelDownloader
+from src.core.gpu_detector import GpuDeviceInfo, VramOffloadStatus, check_gpu_availability, GpuAccelerationError
 
 # Alias ServerState to ProcessStatusEnum for 100% backward compatibility
 ServerState = ProcessStatusEnum
@@ -22,6 +23,8 @@ class LlamaManager:
         self.model_downloader = ModelDownloader()
         self._error_msg = ""
         self._lock = asyncio.Lock()
+        self._gpu_info: Optional[GpuDeviceInfo] = None
+        self._vram_offload_status: Optional[VramOffloadStatus] = None
 
     @property
     def state(self) -> ProcessStatusEnum:
@@ -75,16 +78,27 @@ class LlamaManager:
             "current_model": cfg.get("current_model"),
             "current_n_ctx": cfg.get("current_n_ctx"),
             "vram_total": self.vram_total,
-            "vram_used": 0 if state.status == ProcessStatusEnum.UNLOADED else 8000,
+            "vram_used": (self._gpu_info.total_vram_mb - self._gpu_info.free_vram_mb) if self._gpu_info else (0 if state.status == ProcessStatusEnum.UNLOADED else 0),
             "error_msg": state.error_message or self._error_msg,
-            "gpu_cuda_available": True,
-            "vram_offloaded_100pct": True if state.status == ProcessStatusEnum.READY else False
+            "gpu_cuda_available": self._gpu_info.is_cuda_available if self._gpu_info else False,
+            "vram_offloaded_100pct": self._vram_offload_status.is_fully_offloaded if self._vram_offload_status else False,
+            "gpu_info": self._gpu_info.model_dump() if self._gpu_info else None,
+            "offload_status": self._vram_offload_status.model_dump() if self._vram_offload_status else None,
         }
         return {"event": "status", "data": json.dumps(data)}
 
     async def _start_server_subprocess(self, model_id: str, n_ctx: int):
         self._error_msg = ""
         state = await self.process_manager.spawn_process(model_id, n_ctx)
+
+        # FR-005: GPU 검증 결과 캡처
+        try:
+            self._gpu_info = check_gpu_availability()
+        except GpuAccelerationError:
+            self._gpu_info = None
+        # T012: ProcessManager의 VRAM 오프로드 상태 동기화
+        self._vram_offload_status = self.process_manager.vram_offload_status
+
         self._notify_listeners()
 
         if state.status == ProcessStatusEnum.ERROR:
@@ -99,6 +113,8 @@ class LlamaManager:
         if not proc or not proc.stdout:
             return
 
+        model_id = self.process_manager.state.model_id
+
         try:
             while True:
                 line = await proc.stdout.readline()
@@ -106,6 +122,34 @@ class LlamaManager:
                     break
                 decoded_line = line.decode('utf-8', errors='replace').strip()
                 print(f"[llama-server] {decoded_line}")
+
+                # T015/FR-003: 실시간 VRAM 오프로드 로그 파싱 및 검증
+                if model_id and self.process_manager.state.status == ProcessStatusEnum.LOADING:
+                    offload_status = ProcessManager.parse_vram_offload_log(decoded_line, model_id)
+                    if offload_status is not None:
+                        try:
+                            self.process_manager.verify_vram_offload(model_id, offload_status)
+                            # 검증 성공 시 LlamaManager 상태 동기화
+                            self._vram_offload_status = self.process_manager.vram_offload_status
+                            self._notify_listeners()
+                            print(f"[LlamaManager] T015: VRAM 오프로드 검증 통과 — {offload_status}")
+                        except Exception as vram_err:
+                            from src.core.gpu_detector import VramOverflowError
+                            if isinstance(vram_err, VramOverflowError):
+                                print(f"[LlamaManager] ❌ VRAM 오프로드 실패: {vram_err}")
+                                self._error_msg = str(vram_err)
+                                self.process_manager.state = ProcessState(
+                                    status=ProcessStatusEnum.ERROR,
+                                    model_id=model_id,
+                                    port=self.port,
+                                    pid=proc.pid,
+                                    error_message=self._error_msg,
+                                )
+                                self._notify_listeners()
+                                # 부분 오프로드 시 프로세스 안전 종료
+                                proc.terminate()
+                                return
+                            raise
 
                 if (self.process_manager.state.status == ProcessStatusEnum.LOADING
                         and "Application startup complete." in decoded_line):
@@ -115,9 +159,12 @@ class LlamaManager:
                         port=self.port,
                         pid=proc.pid
                     )
+                    # READY 전환 시 최종 VRAM 오프로드 상태 동기화
+                    self._vram_offload_status = self.process_manager.vram_offload_status
                     self._notify_listeners()
         except Exception:
             pass
+
 
         await proc.wait()
         if self.process_manager.state.status != ProcessStatusEnum.UNLOADED:
@@ -229,6 +276,7 @@ class LlamaManager:
 
     async def _unload_model_internal(self):
         await self.process_manager.stop_process()
+        self._vram_offload_status = None
         self._notify_listeners()
 
 # Global instances

@@ -4,12 +4,20 @@ Integration tests for 3D Quality-Speed-VRAM Benchmark Runner and Report Generato
 
 import os
 import pytest
+from unittest.mock import patch
 from scripts.benchmark_quality import run_benchmark, generate_markdown_report
 
 
-def test_run_benchmark_execution():
-    """Verify that run_benchmark computes metrics for all 6 models."""
-    reports = run_benchmark()
+@patch("scripts.benchmark_quality.check_live_server", return_value=True)
+@patch("scripts.benchmark_quality.request_live_inference", return_value={
+    "content": '{"results": [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대"}]}',
+    "tpot": 35.0,
+    "ttft": 150.0,
+    "elapsed_sec": 1.0
+})
+def test_run_benchmark_execution(mock_req, mock_live):
+    """Verify that run_benchmark computes metrics for all 6 models when server is live."""
+    reports, gpu_metadata = run_benchmark()
     assert len(reports) == 6
     model_ids = [r.model_id for r in reports]
     assert "Qwen 3.5 2B" in model_ids
@@ -25,12 +33,19 @@ def test_run_benchmark_execution():
         assert r.quality_per_vram_index > 0.0
 
 
-def test_markdown_report_generation(tmp_path):
+@patch("scripts.benchmark_quality.check_live_server", return_value=True)
+@patch("scripts.benchmark_quality.request_live_inference", return_value={
+    "content": '{"results": [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대"}]}',
+    "tpot": 35.0,
+    "ttft": 150.0,
+    "elapsed_sec": 1.0
+})
+def test_markdown_report_generation(mock_req, mock_live, tmp_path):
     """Verify markdown report file generation and content structure."""
-    reports = run_benchmark()
+    reports, gpu_metadata = run_benchmark()
     test_report_path = os.path.join(tmp_path, "analysis_report_quality.md")
     
-    generate_markdown_report(reports, test_report_path)
+    generate_markdown_report(reports, test_report_path, gpu_metadata=gpu_metadata)
     assert os.path.exists(test_report_path)
 
     with open(test_report_path, "r", encoding="utf-8") as f:
@@ -41,3 +56,4 @@ def test_markdown_report_generation(tmp_path):
     assert "Quality/VRAM Index" in content
     assert "Qwen 3.5 4B" in content
     assert "Gemma 4 12B" in content
+

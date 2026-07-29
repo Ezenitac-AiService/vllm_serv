@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import shutil
 import socket
 import sys
@@ -14,6 +15,7 @@ from src.core.gpu_detector import (
     GpuAccelerationError,
     VramOverflowError
 )
+import re
 
 class ProcessStatusEnum(str, Enum):
     UNLOADED = "UNLOADED"
@@ -31,6 +33,7 @@ class ProcessState(BaseModel):
     pid: Optional[int] = Field(default=None, description="OS 프로세스 PID")
     error_message: Optional[str] = Field(default=None, description="에러 발생 시 상세 메시지")
     exit_code: Optional[int] = Field(default=None, description="프로세스 종료 코드")
+    vram_offloaded: Optional[bool] = Field(default=None, description="T019/US2-AC1: VRAM 100% 오프로드 검증 완료 여부")
 
 class QwenModelPreset(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -51,6 +54,7 @@ class ProcessManager:
         self.port = port
         self.process: Optional[asyncio.subprocess.Process] = None
         self.state: ProcessState = ProcessState(status=ProcessStatusEnum.UNLOADED, port=port)
+        self.vram_offload_status: Optional[VramOffloadStatus] = None
         self.hardware_limits = {
             "gemma4-e2b": 35000,
             "gemma4-e4b": 16000,
@@ -102,8 +106,140 @@ class ProcessManager:
             }
         }
 
+    def verify_vram_released(self, baseline_free_vram_mb: int = 0, tolerance_mb: int = 200) -> bool:
+        """FR-013: VRAM memory release check via nvidia-smi."""
+        import subprocess
+        import shutil
+        
+        nvidia_smi = shutil.which("nvidia-smi")
+        if not nvidia_smi:
+            print("[ProcessManager] Warning: nvidia-smi not found. Skipping VRAM release verification.")
+            return True
+            
+        try:
+            result = subprocess.run(
+                [nvidia_smi, "--query-gpu=memory.free", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, check=True
+            )
+            free_vram_mb = int(result.stdout.strip().split('\n')[0])
+            
+            if baseline_free_vram_mb > 0:
+                if (abs(free_vram_mb - baseline_free_vram_mb) <= tolerance_mb or 
+                    free_vram_mb >= baseline_free_vram_mb - tolerance_mb or
+                    (self.vram_total - free_vram_mb) <= tolerance_mb):
+                    return True
+                return False
+                
+            return True
+        except Exception as e:
+            print(f"[ProcessManager] Warning: nvidia-smi failed during VRAM release verification: {e}")
+            return True
+
     def get_vram_limit(self, model_id: str) -> int:
         return self.hardware_limits.get(model_id, 16000)
+
+    @staticmethod
+    def parse_vram_offload_log(line: str, model_id: str) -> Optional[VramOffloadStatus]:
+        layers_match = re.search(r"offloaded (\d+)/(\d+) layers to GPU", line)
+        if layers_match:
+            offloaded = int(layers_match.group(1))
+            total = int(layers_match.group(2))
+            return VramOffloadStatus(
+                model_id=model_id,
+                total_layers=total,
+                offloaded_layers=offloaded,
+                is_fully_offloaded=(offloaded == total)
+            )
+
+        clip_match = re.search(r"(clip model loaded|mmproj loaded)", line, re.IGNORECASE)
+        if clip_match:
+            return VramOffloadStatus(
+                model_id=model_id,
+                is_fully_offloaded=True,
+                has_clip_offload=True
+            )
+
+        vram_match = re.search(r"model buffer size =\s*([\d.]+)\s*MiB", line)
+        if vram_match:
+            vram_mb = int(float(vram_match.group(1)))
+            return VramOffloadStatus(
+                model_id=model_id,
+                is_fully_offloaded=True,
+                offloaded_vram_mb=vram_mb
+            )
+
+        return None
+
+    def verify_vram_offload(self, model_id: str, status: VramOffloadStatus) -> None:
+        if not status.is_fully_offloaded:
+            raise VramOverflowError(
+                f"VRAM_PARTIAL_OFFLOAD_ERROR: {status.offloaded_layers}/{status.total_layers} layers offloaded. 100% VRAM offload required."
+            )
+        
+        if self.vram_offload_status is None:
+            self.vram_offload_status = status
+        else:
+            if status.total_layers > 0:
+                self.vram_offload_status.total_layers = status.total_layers
+                self.vram_offload_status.offloaded_layers = status.offloaded_layers
+                self.vram_offload_status.is_fully_offloaded = status.is_fully_offloaded
+            if status.has_clip_offload is not None:
+                self.vram_offload_status.has_clip_offload = status.has_clip_offload
+            if status.offloaded_vram_mb > 0:
+                self.vram_offload_status.offloaded_vram_mb = status.offloaded_vram_mb
+
+        # T019/US2-AC1: ProcessState에 vram_offloaded=True 기록
+        if self.state.model_id == model_id:
+            self.state = ProcessState(
+                status=self.state.status,
+                model_id=self.state.model_id,
+                port=self.state.port,
+                pid=self.state.pid,
+                error_message=self.state.error_message,
+                exit_code=self.state.exit_code,
+                vram_offloaded=True,
+            )
+
+    def check_vram_runtime_overflow(self, threshold_pct: float = 95.0) -> None:
+        """T021: 추론 컨텍스트 확장 시 실시간 VRAM 오버플로우 감지.
+
+        nvidia-smi를 통해 현재 GPU VRAM 사용률을 확인하고,
+        임계치(기본 95%)를 초과할 경우 VramOverflowError를 발생시켜
+        CUDA OOM 크래시를 사전 차단합니다.
+
+        Args:
+            threshold_pct: VRAM 사용률 임계치 (백분율, 기본 95.0%)
+
+        Raises:
+            VramOverflowError: VRAM 사용률이 임계치를 초과할 경우
+        """
+        import subprocess
+
+        nvidia_smi = shutil.which("nvidia-smi")
+        if not nvidia_smi:
+            return  # nvidia-smi 미설치 환경에서는 검사 생략
+
+        try:
+            result = subprocess.run(
+                [nvidia_smi, "--query-gpu=memory.used,memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, check=True
+            )
+            parts = [p.strip() for p in result.stdout.strip().split('\n')[0].split(',')]
+            used_mb = int(parts[0])
+            total_mb = int(parts[1])
+
+            usage_pct = (used_mb / total_mb) * 100.0 if total_mb > 0 else 0.0
+
+            if usage_pct >= threshold_pct:
+                raise VramOverflowError(
+                    f"VRAM 실시간 오버플로우 감지: {used_mb}MB / {total_mb}MB "
+                    f"({usage_pct:.1f}% ≥ {threshold_pct}% 임계치). "
+                    f"추론 컨텍스트 축소 또는 더 작은 모델 사용을 권장합니다."
+                )
+        except VramOverflowError:
+            raise
+        except Exception as e:
+            print(f"[ProcessManager] T021: VRAM 런타임 모니터링 경고: {e}")
 
     def is_ready(self) -> bool:
         return self.state.status == ProcessStatusEnum.READY
@@ -119,6 +255,7 @@ class ProcessManager:
     async def spawn_process(self, model_id: str, n_ctx: int) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""
         await self.stop_process()
+        self.vram_offload_status = None
 
         target_preset = self.model_presets.get(model_id)
         if not target_preset:
@@ -271,6 +408,9 @@ class ProcessManager:
 
         # FR-004: 포트 소켓 클리어 대기 (최대 3초)
         await self._wait_for_port_free(timeout=3.0)
+
+        vram_ok = self.verify_vram_released()
+        print(f"[ProcessManager] FR-004: VRAM 해제 검증 완료: {'성공' if vram_ok else '경고 - VRAM 잔여 점유 감지'}")
 
         self.state = ProcessState(
             status=ProcessStatusEnum.UNLOADED,

@@ -3,6 +3,7 @@ GPU and CUDA Acceleration Detector and Exception Hierarchy.
 Provides hardware validation, VRAM memory checks, and CUDA backend verification.
 """
 
+import re
 import subprocess
 import shutil
 from typing import Optional
@@ -76,6 +77,32 @@ def check_gpu_availability() -> GpuDeviceInfo:
         free_vram = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 8500
         driver_ver = parts[3] if len(parts) > 3 else "Unknown"
 
+        # T018: nvidia-smi 일반 출력에서 CUDA 버전 동적 감지
+        detected_cuda_version: Optional[str] = None
+        try:
+            smi_res = subprocess.run(
+                [nvidia_smi_path], capture_output=True, text=True, check=True
+            )
+            cuda_match = re.search(r'CUDA Version:\s*([\d.]+)', smi_res.stdout)
+            if cuda_match:
+                detected_cuda_version = cuda_match.group(1)
+        except (subprocess.CalledProcessError, OSError):
+            pass
+
+        # T020: nvcc (CUDA toolkit compiler) 버전 감지
+        nvcc_version: Optional[str] = None
+        nvcc_path = shutil.which("nvcc")
+        if nvcc_path:
+            try:
+                nvcc_res = subprocess.run(
+                    [nvcc_path, "--version"], capture_output=True, text=True, check=True
+                )
+                nvcc_match = re.search(r'release\s+([\d.]+)', nvcc_res.stdout)
+                if nvcc_match:
+                    nvcc_version = nvcc_match.group(1)
+            except (subprocess.CalledProcessError, OSError):
+                pass
+
         # Check llama_cpp CUDA support
         is_cuda_supported = True
         try:
@@ -86,9 +113,22 @@ def check_gpu_availability() -> GpuDeviceInfo:
             pass
 
         if not is_cuda_supported:
-            raise GpuAccelerationError(
-                "installed llama-cpp-python lacks CUDA acceleration support. Reinstall with CUDA enabled."
-            )
+            # T020: CUDA 가속 미지원 시 문제 해결 안내 메시지 구성
+            troubleshoot_lines = [
+                "설치된 llama-cpp-python에 CUDA 가속 지원이 없습니다.",
+                "문제 해결 방법:",
+                "  1. llama-cpp-python이 CUDA 지원으로 빌드되었는지 확인하세요.",
+                "  2. nvidia-smi와 nvcc 버전 호환성을 확인하세요.",
+                f"     - nvidia-smi CUDA Version: {detected_cuda_version or 'N/A'}",
+                f"     - nvcc version: {nvcc_version or 'N/A'}",
+                "  3. CUDA cmake 인수를 사용하여 재설치하세요:",
+                '     pip install llama-cpp-python --force-reinstall --no-cache-dir'
+            ]
+            if not nvcc_path:
+                troubleshoot_lines.append(
+                    "  [경고] nvcc (CUDA toolkit compiler)를 찾을 수 없습니다. CUDA toolkit이 설치되어 있는지 확인하세요."
+                )
+            raise GpuAccelerationError("\n".join(troubleshoot_lines))
 
         return GpuDeviceInfo(
             device_id=0,
@@ -96,7 +136,7 @@ def check_gpu_availability() -> GpuDeviceInfo:
             total_vram_mb=total_vram,
             free_vram_mb=free_vram,
             driver_version=driver_ver,
-            cuda_version="13.0",
+            cuda_version=detected_cuda_version,
             is_cuda_available=True
         )
 

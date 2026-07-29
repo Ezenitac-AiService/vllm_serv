@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Any
 import httpx
 from src.eval.quality_evaluator import QualityEvaluator, ComprehensiveQualityReportMetric
 from src.core.model_downloader import ModelDownloader, DownloadStatusEnum
+from src.core.gpu_detector import check_gpu_availability, GpuAccelerationError
 
 
 SERVER_API_URL = "http://127.0.0.1:8081/v1/chat/completions"
@@ -29,16 +30,6 @@ MODELS_CATALOG = [
         "base_tpot": 44.1,
         "base_ttft": 128.0,
         "base_vram": 2680,
-        "fallback_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼전 7만원 기대"},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 실적 우려"},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 하닉 문의"},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 수혜 반등 판단"}
-          ]
-        }
-        """
     },
     {
         "model_id": "gemma4-e4b",
@@ -48,16 +39,6 @@ MODELS_CATALOG = [
         "base_tpot": 33.8,
         "base_ttft": 156.0,
         "base_vram": 4210,
-        "fallback_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 7만 원 돌파 기대감을 보임."},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 3분기 실적 생각 시 어렵다고 봄."},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 상황에 대해 물음."},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 반도체 업황 개선으로 상승을 기대함."}
-          ]
-        }
-        """
     },
     {
         "model_id": "gemma4-12b",
@@ -67,16 +48,6 @@ MODELS_CATALOG = [
         "base_tpot": 17.6,
         "base_ttft": 285.0,
         "base_vram": 8900,
-        "fallback_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 뚫을 수 있을지 기대를 표명함."},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 3분기 실적을 고려할 때 부정적이라고 봄."},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스의 분위기에 대해 질문함."},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 반도체 업황 개선 수혜로 SK하이닉스 상승을 전망함."}
-          ]
-        }
-        """
     },
     {
         "model_id": "qwen3.5-2b",
@@ -86,16 +57,6 @@ MODELS_CATALOG = [
         "base_tpot": 48.5,
         "base_ttft": 115.0,
         "base_vram": 2450,
-        "fallback_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대"},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자 실적 우려"},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 주가 질문"},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스 상승 판단"}
-          ]
-        }
-        """
     },
     {
         "model_id": "qwen3.5-4b",
@@ -105,16 +66,6 @@ MODELS_CATALOG = [
         "base_tpot": 36.2,
         "base_ttft": 142.0,
         "base_vram": 3950,
-        "fallback_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자 7만 원 돌파 기대감을 나타냄."},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자 3분기 실적 저조 우려."},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 전망에 대해 문의함."},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 반도체 업황 수혜로 상승 가능하다고 전망함."}
-          ]
-        }
-        """
     },
     {
         "model_id": "qwen3.5-9b",
@@ -124,16 +75,6 @@ MODELS_CATALOG = [
         "base_tpot": 22.4,
         "base_ttft": 210.0,
         "base_vram": 7120,
-        "fallback_response": """
-        {
-          "results": [
-            {"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대한 기대를 표현함."},
-            {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 걱정함."},
-            {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스 주가 전망을 질문함."},
-            {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 업황 개선 수혜로 상승할 것으로 판단함."}
-          ]
-        }
-        """
     }
 ]
 
@@ -186,6 +127,19 @@ def run_benchmark(force_real_inference: bool = False) -> List[ComprehensiveQuali
     reports: List[ComprehensiveQualityReportMetric] = []
     is_live = check_live_server()
 
+    # FR-005: GPU 검증 결과 메타데이터 수집
+    gpu_metadata = None
+    try:
+        gpu_info = check_gpu_availability()
+        gpu_metadata = {
+            "gpu_name": gpu_info.name,
+            "total_vram_mb": gpu_info.total_vram_mb,
+            "cuda_version": gpu_info.cuda_version,
+            "is_cuda_available": gpu_info.is_cuda_available,
+        }
+    except GpuAccelerationError as e:
+        print(f"[Quality Benchmark] ⚠️ GPU 검증 실패: {e}")
+
     print(f"[Quality Benchmark] Mode: {'LIVE REAL INFERENCE' if is_live or force_real_inference else 'STATIC PROFILING (Fast Mode)'}")
 
     for item in MODELS_CATALOG:
@@ -193,7 +147,6 @@ def run_benchmark(force_real_inference: bool = False) -> List[ComprehensiveQuali
         tpot = item["base_tpot"]
         ttft = item["base_ttft"]
         vram_mb = item["base_vram"]
-        model_resp = item["fallback_response"]
 
         # Attempt live inference if server is active
         if is_live:
@@ -203,6 +156,12 @@ def run_benchmark(force_real_inference: bool = False) -> List[ComprehensiveQuali
                 model_resp = live_result["content"]
                 tpot = live_result["tpot"]
                 ttft = live_result["ttft"]
+            else:
+                print(f"[Quality Benchmark] ⚠️ 경고: {model_id} 실측 추론 실패 — 건너뜀")
+                continue
+        else:
+            print(f"[Quality Benchmark] ⚠️ 경고: 라이브 서버 미활성 — {model_id} 벤치마크 건너뜀 (FR-007: 목업 데이터 사용 금지)")
+            continue
 
         # Evaluate response quality using QualityEvaluator
         m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_id, model_resp)
@@ -228,10 +187,10 @@ def run_benchmark(force_real_inference: bool = False) -> List[ComprehensiveQuali
             is_oom=False
         ))
 
-    return reports
+    return reports, gpu_metadata
 
 
-def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], output_path: str):
+def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], output_path: str, gpu_metadata: Optional[Dict] = None):
     """Generates 3D Markdown Comparison Report."""
     if not reports:
         print("[Quality Benchmark] ⚠️ 경고: 수집된 벤치마크 결과 리스트가 비어 있습니다. (모든 모델 다운로드/로드 실패 또는 스킵)")
@@ -258,7 +217,12 @@ def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], ou
 
 ---
 
-## 1. Executive Summary & Recommended Model Presets
+"""
+
+    if gpu_metadata:
+        content += f"""\n## 0. GPU Hardware Environment\n\n| Property | Value |\n|----------|-------|\n| GPU | `{gpu_metadata['gpu_name']}` |\n| Total VRAM | `{gpu_metadata['total_vram_mb']} MB` |\n| CUDA Version | `{gpu_metadata.get('cuda_version', 'N/A')}` |\n| CUDA Available | `{gpu_metadata['is_cuda_available']}` |\n\n---\n\n"""
+
+    content += """## 1. Executive Summary & Recommended Model Presets
 
 | Evaluation Aspect | Recommended Model Preset | Metric Value | Rationale |
 |-------------------|--------------------------|--------------|-----------|
@@ -324,6 +288,19 @@ def run_real_benchmark_loop(
     pm = ProcessManager(port=8081)
     reports: List[ComprehensiveQualityReportMetric] = []
 
+    # FR-005: GPU 검증 결과 메타데이터 수집
+    gpu_metadata = None
+    try:
+        gpu_info = check_gpu_availability()
+        gpu_metadata = {
+            "gpu_name": gpu_info.name,
+            "total_vram_mb": gpu_info.total_vram_mb,
+            "cuda_version": gpu_info.cuda_version,
+            "is_cuda_available": gpu_info.is_cuda_available,
+        }
+    except GpuAccelerationError as e:
+        print(f"[Quality Benchmark] ⚠️ GPU 검증 실패: {e}")
+
     print(f"[Quality Benchmark] Mode: ONE-STOP AUTO-DOWNLOAD + REAL GPU INFERENCE")
     print(f"[Quality Benchmark] Models: {len(MODELS_CATALOG)} models in catalog")
 
@@ -357,31 +334,7 @@ def run_real_benchmark_loop(
 
         if spawn_state.status == ProcessStatusEnum.ERROR:
             print(f"[Step 2] ❌ 프로세스 개설 실패: {spawn_state.error_message}")
-            print(f"[Step 2] ⏭️ {model_name} 건너뛰기 (fallback 프로파일링 사용)")
-            # Fallback to static profiling for this model
-            tpot = item["base_tpot"]
-            ttft = item["base_ttft"]
-            vram_mb = item["base_vram"]
-            model_resp = item["fallback_response"]
-
-            m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_name, model_resp)
-            m2 = evaluator.evaluate_response("BTEAM-REVIEW-01", model_name, model_resp)
-            avg_quality = round((m1.final_quality_score + m2.final_quality_score) / 2.0, 2)
-            quality_per_speed = round(avg_quality / (tpot * 0.1), 2)
-            quality_per_vram = round(avg_quality / (vram_mb / 1024.0), 2)
-
-            reports.append(ComprehensiveQualityReportMetric(
-                model_id=model_name,
-                quant_type=item["quant_type"],
-                load_time_sec=0.0,
-                ttft_ms=ttft,
-                tpot_tok_per_sec=tpot,
-                peak_vram_mb=vram_mb,
-                avg_quality_score=avg_quality,
-                quality_per_speed_index=quality_per_speed,
-                quality_per_vram_index=quality_per_vram,
-                is_oom=True,
-            ))
+            print(f"[Step 2] ⏭️ {model_name} 건너뛰기 (FR-007: 목업 데이터 사용 금지)")
             continue
 
         # Step 3: HTTP 헬스체크 대기
@@ -417,11 +370,10 @@ def run_real_benchmark_loop(
             vram_mb = item["base_vram"]  # 실측 VRAM은 nvtop에서 확인
             print(f"[Step 4] ✅ 추론 완료 (TPOT={tpot} tok/s, TTFT={ttft}ms)")
         else:
-            print(f"[Step 4] ⚠️ 추론 실패, fallback 사용")
-            model_resp = item["fallback_response"]
-            tpot = item["base_tpot"]
-            ttft = item["base_ttft"]
-            vram_mb = item["base_vram"]
+            print(f"[Step 4] ⚠️ 실측 추론 실패 — {model_name} 건너뛰기 (FR-007: 목업 데이터 사용 금지)")
+            asyncio.get_event_loop().run_until_complete(pm.stop_process())
+            time.sleep(1.0)
+            continue
 
         # Step 5: 품질 평가
         m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_name, model_resp)
@@ -449,7 +401,7 @@ def run_real_benchmark_loop(
         time.sleep(1.0)  # VRAM 해제 안정화 대기
         print(f"[Step 6] ✅ VRAM 해제 완료")
 
-    return reports
+    return reports, gpu_metadata
 
 
 if __name__ == "__main__":
@@ -458,10 +410,10 @@ if __name__ == "__main__":
 
     if auto_download or force_live:
         # FR-005: 원스톱 자동 다운로드 + 실측 벤치마크 모드
-        report_list = run_real_benchmark_loop(auto_download=auto_download)
+        report_list, gpu_metadata = run_real_benchmark_loop(auto_download=auto_download)
     else:
         # 정적 프로파일링 모드 (CI/CD 빠른 검증)
-        report_list = run_benchmark(force_real_inference=force_live)
+        report_list, gpu_metadata = run_benchmark(force_real_inference=force_live)
 
     report_file_path = os.path.join("specs", "008-response-quality-eval", "analysis_report_quality.md")
-    generate_markdown_report(report_list, report_file_path)
+    generate_markdown_report(report_list, report_file_path, gpu_metadata=gpu_metadata)

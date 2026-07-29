@@ -33,3 +33,17 @@ async def test_spawn_process_mock_llama_server_gpu_allowed():
         assert pm.state.status == ProcessStatusEnum.UNLOADED
     finally:
         os.environ.pop("MOCK_LLAMA_SERVER", None)
+
+def test_verify_vram_released_success():
+    pm = ProcessManager(port=8081)
+    pm.vram_total = 24000
+    with patch("shutil.which", return_value="/usr/bin/nvidia-smi"):
+        mock_result = MagicMock()
+        mock_result.stdout = "23900\n"
+        with patch("subprocess.run", return_value=mock_result):
+            assert pm.verify_vram_released(baseline_free_vram_mb=24000, tolerance_mb=200) is True
+
+def test_verify_vram_released_nvidia_smi_missing():
+    pm = ProcessManager(port=8081)
+    with patch("shutil.which", return_value=None):
+        assert pm.verify_vram_released(baseline_free_vram_mb=24000) is True

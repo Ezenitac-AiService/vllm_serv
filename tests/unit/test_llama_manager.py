@@ -4,6 +4,8 @@ from src.core.llama_manager import LlamaManager, ServerState
 from src.core.config_manager import ConfigManager
 from src.core.process_manager import ProcessManager, ProcessStatusEnum, ProcessState
 from src.core.event_broadcaster import EventBroadcaster, EventPayload
+from src.core.gpu_detector import GpuDeviceInfo, VramOffloadStatus
+import json
 
 @pytest.mark.asyncio
 async def test_llama_manager_initial_state():
@@ -55,3 +57,47 @@ async def test_event_broadcaster_bounded_queue():
     # Queue should be bounded without exception
     assert q.qsize() <= 2
     eb.unsubscribe(q)
+
+@pytest.mark.asyncio
+async def test_get_status_event_with_gpu_info():
+    cm = ConfigManager()
+    lm = LlamaManager(cm)
+    lm._gpu_info = GpuDeviceInfo(
+        gpu_id=0,
+        name="RTX 4090",
+        total_vram_mb=24000,
+        free_vram_mb=12000,
+        is_cuda_available=True,
+        cuda_version="12.1"
+    )
+    lm._vram_offload_status = VramOffloadStatus(
+        model_id="qwen3.5-2b",
+        is_fully_offloaded=True,
+        total_layers=32,
+        offloaded_layers=32,
+        estimated_vram_usage_mb=12000
+    )
+    
+    event = lm.get_status_event()
+    data = json.loads(event["data"])
+    
+    assert data["gpu_cuda_available"] is True
+    assert data["vram_offloaded_100pct"] is True
+    assert data["gpu_info"] is not None
+    assert data["gpu_info"]["total_vram_mb"] == 24000
+    assert data["offload_status"] is not None
+    assert data["offload_status"]["is_fully_offloaded"] is True
+    assert data["vram_used"] == 12000
+
+@pytest.mark.asyncio
+async def test_get_status_event_without_gpu_info():
+    cm = ConfigManager()
+    lm = LlamaManager(cm)
+    
+    event = lm.get_status_event()
+    data = json.loads(event["data"])
+    
+    assert data["gpu_cuda_available"] is False
+    assert data["vram_offloaded_100pct"] is False
+    assert data["gpu_info"] is None
+    assert data["offload_status"] is None

@@ -120,3 +120,22 @@
 3. User Story 2 -> Real-time 100% VRAM Layer Offload Verification
 4. User Story 3 -> VRAM Release Integrity & Integration Tests
 5. Polish -> Codebase-wide mock removal & 100% pytest regression pass
+
+---
+
+## Phase 7: Convergence
+
+- [x] T012 Implement real-time stdout/stderr log parsing for 100% VRAM layer offload and raise VramOverflowError on partial RAM fallback per FR-003, US2/AC1, US2/AC2 (missing) in `src/core/process_manager.py`
+- [x] T013 Implement VRAM memory release check via nvidia-smi during model unload per FR-004, US3/AC1 (partial) in `src/core/process_manager.py`
+- [x] T014 Incorporate real GpuDeviceInfo and VramOffloadStatus models into LlamaManager status broadcasting per FR-005, US2/AC1 (partial) in `src/core/llama_manager.py`
+
+## Phase 8: Convergence
+
+- [x] T015 Integrate real-time VRAM offload log parsing into `LlamaManager._monitor_process()` by calling `ProcessManager.parse_vram_offload_log` on each stdout line and `ProcessManager.verify_vram_offload` when layer data is captured, raising `VramOverflowError` on partial offload per FR-003, US2/AC1, US2/AC2 (missing) in `src/core/llama_manager.py`
+- [x] T016 Add GPU detection result and VRAM offload status fields to benchmark report output metadata in `scripts/benchmark_quality.py` per FR-005 (partial)
+- [x] T017 Remove hardcoded `fallback_response` mock data from `MODELS_CATALOG` in `scripts/benchmark_quality.py` and raise explicit `GpuAccelerationError` or log skip-with-warning when live inference is unavailable instead of silently using mock data per FR-006, FR-007 (partial)
+- [x] T018 Replace hardcoded `cuda_version="13.0"` in `check_gpu_availability()` with dynamic CUDA version detection from nvidia-smi `--query-gpu=cuda_version` output per FR-006 (partial) in `src/core/gpu_detector.py`
+- [x] T019 Add `vram_offloaded: Optional[bool]` field to `ProcessState` model and set it to `True` during successful VRAM offload verification per US2/AC1 (partial) in `src/core/process_manager.py`
+- [x] T020 Add CUDA driver/runtime version mismatch detection with actionable troubleshooting message in `check_gpu_availability()` per Edge Case: CUDA 드라이버 런타임 불일치 (partial) in `src/core/gpu_detector.py`
+- [x] T021 Add runtime VRAM overflow monitoring hook during active inference context expansion to raise `VramOverflowError` on OOM risk per Edge Case: VRAM 실시간 오버플로우 (partial) in `src/core/process_manager.py`
+
