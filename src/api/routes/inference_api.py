@@ -1,12 +1,12 @@
+import time
 import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
-from starlette.background import BackgroundTask
 from src.core.llama_manager import llama_manager
+from src.core.config_manager import ConfigManager
+from src.core.model_downloader import ModelDownloader
 
 router = APIRouter()
-
-from src.core.config_manager import ConfigManager
 
 def _get_llama_server_config():
     """FR-009: 서버 포트 및 호스트를 config/server_config.json 또는 환경변수에서 동적 로드."""
@@ -23,9 +23,8 @@ _port, _host = _get_llama_server_config()
 LLAMA_SERVER_PORT = _port
 LLAMA_SERVER_URL = f"http://{_host}:{LLAMA_SERVER_PORT}"
 
-# Fallback client for direct testing if app.state.http_client is not set
 def _build_default_client():
-    """FR-010: 커넥션 풀 설정을 config/server_config.json에서 동적 로드."""
+    """FR-005 & FR-009: 커넥션 풀 설정을 config/server_config.json에서 동적 로드하여 싱글톤 구성."""
     try:
         cm = ConfigManager()
         server_cfg = cm.get_server_config()
@@ -45,7 +44,6 @@ def _build_default_client():
 _default_client = _build_default_client()
 
 async def check_llama_status():
-    # from src.core.llama_manager import llama_manager
     return llama_manager.is_ready()
 
 def _get_http_client(request: Request) -> httpx.AsyncClient:
@@ -56,31 +54,22 @@ def _get_http_client(request: Request) -> httpx.AsyncClient:
 
 @router.get("/v1/models")
 async def list_models(request: Request):
-    """FR-007: OpenAI API 표준 GET /v1/models 동적 모델 카탈로그 엔드포인트.
+    """FR-001 & FR-007: OpenAI API 표준 GET /v1/models 동적 모델 카탈로그 엔드포인트.
     
-    PRESET_CATALOG 기반 전체 모델 6종의 정보, 다운로드 상태, 현재 활성화 여부를
+    ConfigManager 기반 전체 지원 모델 정보, 다운로드 상태, 현재 활성화 여부를
     OpenAI 규격 JSON ({"object": "list", "data": [...]})으로 동적 반환합니다.
     """
-    import time
-    from src.core.config_manager import ConfigManager
-    from src.core.model_downloader import ModelDownloader, MODEL_DOWNLOAD_CATALOG
-
-    # FR-008: 외부 JSON 카탈로그 또는 하드코딩 카탈로그에서 모델 목록 조회
-    try:
-        cm = ConfigManager()
-        catalog = cm.get_model_catalog()
-        if not catalog:
-            catalog = MODEL_DOWNLOAD_CATALOG
-    except Exception:
-        catalog = MODEL_DOWNLOAD_CATALOG
-
-    downloader = ModelDownloader()
+    cm = ConfigManager()
+    catalog = cm.get_model_catalog()
+    downloader = ModelDownloader(config_manager=cm)
+    
     current_model = None
     try:
         cfg = llama_manager.config_manager.get_config()
         current_model = cfg.get("current_model")
     except Exception:
         pass
+
 
     created_ts = int(time.time())
     models_data = []
@@ -102,10 +91,7 @@ async def list_models(request: Request):
 
 @router.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
 async def reverse_proxy(request: Request, path: str):
-    """
-    Reverse proxy for /v1 requests. Forwards to the llama-server subprocess.
-    Returns 503 if the server is not ready (loading, unloaded).
-    """
+    """FR-009: RAG 및 Agent 마이크로서비스 요청을 비동기 싱글톤 커넥션 풀로 역방향 프록시 처리."""
     if path in ("chat/completions", "completions") and not await check_llama_status():
         raise HTTPException(
             status_code=503,
@@ -135,14 +121,13 @@ async def reverse_proxy(request: Request, path: str):
         raise HTTPException(status_code=500, detail=str(e))
 
     async def stream_generator():
-        """FR-006 & FR-010: Streaming generator with disconnect check and try...finally aclose cleanup."""
+        """RAG 및 Agent 마이크로서비스 전용 SSE 스트리밍 제너레이터."""
         try:
             async for chunk in r.aiter_raw():
                 if await request.is_disconnected():
                     break
                 yield chunk
         finally:
-            # FR-010: Prevent connection pool pollution by guaranteeing response stream closure
             await r.aclose()
 
     return StreamingResponse(

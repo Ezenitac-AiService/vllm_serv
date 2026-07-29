@@ -17,10 +17,11 @@ import time
 from enum import Enum
 from typing import Optional, Dict, List, Callable
 from pydantic import BaseModel, ConfigDict, Field
+from src.core.config_manager import ConfigManager
 
 
 # ---------------------------------------------------------------------------
-# T001: Pydantic v2 데이터 모델 정의
+# Pydantic v2 데이터 모델 정의
 # ---------------------------------------------------------------------------
 
 class DownloadStatusEnum(str, Enum):
@@ -29,7 +30,7 @@ class DownloadStatusEnum(str, Enum):
     DOWNLOADING = "DOWNLOADING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
-    SKIPPED = "SKIPPED"  # 이미 존재
+    SKIPPED = "SKIPPED"
 
 
 class ModelDownloadTask(BaseModel):
@@ -46,68 +47,19 @@ class ModelDownloadTask(BaseModel):
     error_message: Optional[str] = Field(default=None, description="에러 메시지")
 
 
-# ---------------------------------------------------------------------------
-# HuggingFace Hub 모델 카탈로그
-# ---------------------------------------------------------------------------
-
-MODEL_DOWNLOAD_CATALOG: Dict[str, Dict] = {
-    "qwen3.5-2b": {
-        "repo_id": "unsloth/Qwen3.5-2B-GGUF",
-        "filename": "Qwen3.5-2B-Q4_K_M.gguf",
-        "clip_filename": None,
-        "target_dir": "models/qwen3.5-2b",
-    },
-    "qwen3.5-4b": {
-        "repo_id": "unsloth/Qwen3.5-4B-GGUF",
-        "filename": "Qwen3.5-4B-Q4_K_M.gguf",
-        "clip_filename": None,
-        "target_dir": "models/qwen3.5-4b",
-    },
-    "qwen3.5-9b": {
-        "repo_id": "unsloth/Qwen3.5-9B-GGUF",
-        "filename": "Qwen3.5-9B-Q4_K_M.gguf",
-        "clip_filename": None,
-        "target_dir": "models/qwen3.5-9b",
-    },
-    "gemma4-e2b": {
-        "repo_id": "lmstudio-community/gemma-4-E2B-it-GGUF",
-        "filename": "gemma-4-E2B_q4_0-it.gguf",
-        "clip_filename": "gemma-4-E2B-it-mmproj.gguf",
-        "target_dir": "models/gemma4-2b",
-    },
-    "gemma4-e4b": {
-        "repo_id": "lmstudio-community/gemma-4-E4B-it-GGUF",
-        "filename": "gemma-4-E4B_q4_0-it.gguf",
-        "clip_filename": "gemma-4-E4B-it-mmproj.gguf",
-        "target_dir": "models/gemma4-4b",
-    },
-    "gemma4-12b": {
-        "repo_id": "lmstudio-community/gemma-4-12b-it-GGUF",
-        "filename": "gemma-4-12b-it-qat-q4_0.gguf",
-        "clip_filename": "mmproj-gemma-4-12b-it-qat-q4_0.gguf",
-        "target_dir": "models/gemma4-12b",
-    },
-}
+# Backward compatibility alias for tests
+MODEL_DOWNLOAD_CATALOG: Dict[str, Dict] = ConfigManager().get_model_catalog()
 
 
 # ---------------------------------------------------------------------------
-# T002: HuggingFace Hub 다운로드 엔진 (FR-001, FR-002)
+# HuggingFace Hub 다운로드 엔진 (FR-001, FR-002, FR-003)
 # ---------------------------------------------------------------------------
 
 class ModelDownloader:
-    """HuggingFace Hub 기반 GGUF 및 mmproj CLIP 자동 다운로더.
 
-    FR-001: huggingface_hub API를 통해 GGUF 가중치 및 mmproj CLIP 가중치를 자동 다운로드.
-    FR-002: 다운로드 진행 상황(속도, %, 바이트)을 터미널에 시각화.
-    FR-003: 모델 로드 요청 시 로컬 가중치 미존재를 탐지하고 자동 다운로드 수행.
-    """
+    """HuggingFace Hub 기반 GGUF 및 mmproj CLIP 자동 다운로더."""
 
-    def __init__(self, base_dir: Optional[str] = None, config_manager=None):
-        """초기화.
-
-        Args:
-            base_dir: 프로젝트 루트 디렉토리. None이면 자동 감지.
-        """
+    def __init__(self, base_dir: Optional[str] = None, config_manager: Optional[ConfigManager] = None):
         if base_dir is None:
             self.base_dir = os.path.dirname(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -116,31 +68,21 @@ class ModelDownloader:
             self.base_dir = base_dir
 
         self._tasks: Dict[str, ModelDownloadTask] = {}
-
-        # FR-008: 외부 JSON 카탈로그에서 다운로드 카탈로그 동적 로드
-        self._config_manager = config_manager
-        if config_manager is not None:
-            ext_catalog = config_manager.get_model_catalog()
-            if ext_catalog:
-                self._external_catalog = {}
-                for model_id, entry in ext_catalog.items():
-                    self._external_catalog[model_id] = {
-                        "repo_id": entry.get("repo_id", ""),
-                        "filename": entry.get("filename", ""),
-                        "clip_filename": entry.get("clip_filename"),
-                        "target_dir": entry.get("target_dir", ""),
-                    }
-            else:
-                self._external_catalog = None
-        else:
-            self._external_catalog = None
+        self.config_manager = config_manager or ConfigManager()
 
     @property
     def catalog(self) -> Dict[str, Dict]:
-        """다운로드 가능 모델 카탈로그 반환."""
-        if self._external_catalog is not None:
-            return self._external_catalog
-        return MODEL_DOWNLOAD_CATALOG
+        """FR-001: ConfigManager 단일 진실 소스(Single Source of Truth)에서 다운로드 모델 카탈로그 반환."""
+        ext_catalog = self.config_manager.get_model_catalog()
+        res = {}
+        for model_id, entry in ext_catalog.items():
+            res[model_id] = {
+                "repo_id": entry.get("repo_id", ""),
+                "filename": entry.get("filename", ""),
+                "clip_filename": entry.get("clip_filename"),
+                "target_dir": entry.get("target_dir", f"models/{model_id}"),
+            }
+        return res
 
     def get_task(self, model_id: str) -> Optional[ModelDownloadTask]:
         """특정 모델의 다운로드 상태 조회."""
@@ -186,16 +128,7 @@ class ModelDownloader:
         progress_callback: Optional[Callable[[str, float], None]] = None,
         force: bool = False,
     ) -> ModelDownloadTask:
-        """단일 모델의 GGUF 가중치(및 CLIP mmproj)를 HuggingFace Hub에서 다운로드.
-
-        Args:
-            model_id: 모델 식별자 (예: 'qwen3.5-2b', 'gemma4-e2b')
-            progress_callback: 진행률 콜백 함수 (model_id, progress_pct)
-            force: True일 경우 이미 존재해도 재다운로드
-
-        Returns:
-            ModelDownloadTask: 다운로드 결과 상태
-        """
+        """단일 모델의 GGUF 가중치(및 CLIP mmproj)를 HuggingFace Hub에서 다운로드."""
         catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             task = ModelDownloadTask(
@@ -223,7 +156,6 @@ class ModelDownloader:
         target_file = os.path.join(target_dir_abs, catalog_entry["filename"])
         clip_path = os.path.join(target_dir_abs, catalog_entry["clip_filename"]) if catalog_entry.get("clip_filename") else None
 
-        # FR-003: 로컬 파일 미존재 탐지 (메인 GGUF 및 MMProj 프로젝터 검증)
         main_exists = os.path.isfile(target_file)
         clip_exists = not clip_path or os.path.isfile(clip_path)
 
@@ -235,17 +167,14 @@ class ModelDownloader:
                 progress_callback(model_id, 100.0)
             return task
 
-        # 디렉토리 생성
         os.makedirs(target_dir_abs, exist_ok=True)
 
         task.status = DownloadStatusEnum.DOWNLOADING
         print(f"[ModelDownloader] {model_id}: 다운로드 시작 → {catalog_entry['repo_id']}/{catalog_entry['filename']}")
 
         try:
-            # huggingface_hub 동적 임포트 (런타임 의존성)
             from huggingface_hub import hf_hub_download
 
-            # FR-001/FR-002: 메인 GGUF 가중치 다운로드
             t_start = time.time()
             downloaded_path = hf_hub_download(
                 repo_id=catalog_entry["repo_id"],
@@ -263,7 +192,6 @@ class ModelDownloader:
             if progress_callback:
                 progress_callback(model_id, task.download_progress_pct)
 
-            # FR-001/FR-002: CLIP mmproj 프로젝터 다운로드 (Gemma 4 전용)
             if catalog_entry.get("clip_filename"):
                 t_clip_start = time.time()
                 clip_downloaded = hf_hub_download(
@@ -288,7 +216,7 @@ class ModelDownloader:
             task.status = DownloadStatusEnum.FAILED
             task.error_message = (
                 "huggingface_hub 패키지가 설치되어 있지 않습니다. "
-                "'uv add huggingface_hub' 또는 'pip install huggingface_hub'을 실행하세요."
+                "'uv add huggingface_hub' 실행 권장."
             )
             print(f"[ModelDownloader] {model_id}: ❌ {task.error_message}")
         except Exception as e:
@@ -304,16 +232,6 @@ class ModelDownloader:
         progress_callback: Optional[Callable[[str, float], None]] = None,
         skip_existing: bool = True,
     ) -> Dict[str, ModelDownloadTask]:
-        """복수 모델 순차 다운로드.
-
-        Args:
-            model_ids: 다운로드 대상 모델 ID 목록. None이면 전체 카탈로그.
-            progress_callback: 진행률 콜백 함수.
-            skip_existing: True면 이미 존재하는 파일 건너뛰기.
-
-        Returns:
-            모델별 다운로드 결과 맵.
-        """
         targets = model_ids or list(self.catalog.keys())
         results: Dict[str, ModelDownloadTask] = {}
 
@@ -331,18 +249,6 @@ class ModelDownloader:
         model_id: str,
         progress_callback: Optional[Callable[[str, float], None]] = None,
     ) -> str:
-        """모델이 로컬에 존재하는지 확인하고, 없으면 자동 다운로드 후 경로 반환 (FR-003).
-
-        Args:
-            model_id: 모델 식별자
-
-        Returns:
-            GGUF 가중치 파일 절대 경로
-
-        Raises:
-            FileNotFoundError: 다운로드 실패 시
-            ValueError: 알 수 없는 model_id
-        """
         catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             raise ValueError(f"Unknown model_id: {model_id}")
@@ -351,15 +257,11 @@ class ModelDownloader:
             self.base_dir, catalog_entry["target_dir"], catalog_entry["filename"]
         )
 
-        # 이미 존재하면 즉시 반환
         if os.path.isfile(target_path):
             return target_path
 
-        # 자동 다운로드 시도
         task = self.download_model(model_id, progress_callback=progress_callback)
-        if task.status == DownloadStatusEnum.COMPLETED:
-            return target_path
-        elif task.status == DownloadStatusEnum.SKIPPED:
+        if task.status in (DownloadStatusEnum.COMPLETED, DownloadStatusEnum.SKIPPED):
             return target_path
         else:
             raise FileNotFoundError(

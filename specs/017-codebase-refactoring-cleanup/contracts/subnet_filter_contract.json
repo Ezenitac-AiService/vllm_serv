@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SubnetFilterMiddlewareResponse",
+  "type": "object",
+  "properties": {
+    "detail": {
+      "type": "string",
+      "example": "Access forbidden: Client IP 203.0.113.5 is not in allowed subnets ['127.0.0.1', '192.168.0.0/24']."
+    }
+  },
+  "required": ["detail"]
+}
