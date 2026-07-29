@@ -25,7 +25,7 @@
 
 **Purpose**: Define Pydantic models for model download tasks and process states
 
-- [ ] T001 Define `ModelDownloadTask` and `ServerProcessState` Pydantic v2 models in `src/core/model_downloader.py`
+- [x] T001 Define `ModelDownloadTask` and `ServerProcessState` Pydantic v2 models in `src/core/model_downloader.py`
 
 ---
 
@@ -33,8 +33,8 @@
 
 **Purpose**: Implement HuggingFace Hub download engine and dynamic process switching with VRAM cleanup
 
-- [ ] T002 Implement HuggingFace Hub GGUF and mmproj CLIP download engine with resume & progress reporting (FR-001, FR-002) in `src/core/model_downloader.py`
-- [ ] T003 Implement dynamic `llama-server` process switching with SIGTERM/SIGKILL escalation & VRAM cleanup (FR-004) in `src/core/process_manager.py`
+- [x] T002 Implement HuggingFace Hub GGUF and mmproj CLIP download engine with resume & progress reporting (FR-001, FR-002) in `src/core/model_downloader.py`
+- [x] T003 Implement dynamic `llama-server` process switching with SIGTERM/SIGKILL escalation & VRAM cleanup (FR-004) in `src/core/process_manager.py`
 
 ---
 
@@ -46,8 +46,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [P] [US1] Implement automatic missing GGUF weight detection and downloader integration (FR-003) in `src/core/model_downloader.py`
-- [ ] T005 [US1] Add unit tests for HuggingFace model downloader and download task state tracking in `tests/unit/test_model_downloader.py`
+- [x] T004 [P] [US1] Implement automatic missing GGUF weight detection and downloader integration (FR-003) in `src/core/model_downloader.py`
+- [x] T005 [US1] Add unit tests for HuggingFace model downloader and download task state tracking in `tests/unit/test_model_downloader.py`
 
 **Checkpoint**: User Story 1 complete - Automatic GGUF weight downloader verified.
 
@@ -61,8 +61,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T006 [P] [US2] Implement HTTP health check client (/v1/models polling) and ready state transition in `src/core/llama_manager.py`
-- [ ] T007 [US2] Add integration tests for dynamic process switching and VRAM release in `tests/integration/test_serving_switch.py`
+- [x] T006 [P] [US2] Implement HTTP health check client (/v1/models polling) and ready state transition in `src/core/llama_manager.py`
+- [x] T007 [US2] Add integration tests for dynamic process switching and VRAM release in `tests/integration/test_serving_switch.py`
 
 **Checkpoint**: User Story 2 complete - Dynamic server switching and HTTP health check verified.
 
@@ -76,7 +76,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T008 [US3] Integrate one-stop auto-download + real inference server loop (`--auto-download --real`) (FR-005) in `scripts/benchmark_quality.py`
+- [x] T008 [US3] Integrate one-stop auto-download + real inference server loop (`--auto-download --real`) (FR-005) in `scripts/benchmark_quality.py`
 
 **Checkpoint**: User Story 3 complete - One-stop real GPU inference benchmark automation verified.
 
@@ -86,8 +86,8 @@
 
 **Purpose**: Final pytest regression suite pass and quickstart scenario validation
 
-- [ ] T009 [P] Execute full pytest regression test suite (`uv run pytest`) and verify 100% test pass rate
-- [ ] T010 Validate end-to-end quickstart scenarios in `specs/009-auto-model-download-serving/quickstart.md`
+- [x] T009 [P] Execute full pytest regression test suite (`uv run pytest`) and verify 100% test pass rate
+- [x] T010 Validate end-to-end quickstart scenarios in `specs/009-auto-model-download-serving/quickstart.md`
 
 ---
 

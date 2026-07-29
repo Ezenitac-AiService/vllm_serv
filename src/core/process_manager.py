@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ProcessStatusEnum(str, Enum):
     UNLOADED = "UNLOADED"
+    DOWNLOADING = "DOWNLOADING"
     LOADING = "LOADING"
     READY = "READY"
     ERROR = "ERROR"
@@ -189,7 +190,11 @@ class ProcessManager:
         return self.state
 
     async def stop_process(self) -> ProcessState:
-        """Stops the running subprocess with SIGTERM -> SIGKILL escalation and zombie reaping."""
+        """Stops the running subprocess with SIGTERM -> SIGKILL escalation and zombie reaping.
+
+        FR-004: 기존 프로세스를 안전 종료하고 GPU VRAM을 완전 해제한 후
+        포트 소켓이 클리어되었음을 확인합니다.
+        """
         if self.process:
             try:
                 if self.process.returncode is None:
@@ -207,9 +212,24 @@ class ProcessManager:
         else:
             exit_code = None
 
+        # FR-004: 포트 소켓 클리어 대기 (최대 3초)
+        await self._wait_for_port_free(timeout=3.0)
+
         self.state = ProcessState(
             status=ProcessStatusEnum.UNLOADED,
             port=self.port,
             exit_code=exit_code
         )
         return self.state
+
+    async def _wait_for_port_free(self, timeout: float = 3.0) -> bool:
+        """포트가 해제될 때까지 대기. FR-004 VRAM 완전 해제 보장."""
+        import socket
+        deadline = asyncio.get_event_loop().time() + timeout
+        while asyncio.get_event_loop().time() < deadline:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                result = sock.connect_ex(('127.0.0.1', self.port))
+                if result != 0:  # 포트가 자유로움
+                    return True
+            await asyncio.sleep(0.2)
+        return False

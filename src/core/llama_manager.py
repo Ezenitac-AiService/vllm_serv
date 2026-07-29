@@ -1,9 +1,12 @@
 import asyncio
 import json
+import time
 from typing import Optional, Dict, Any
+import httpx
 from src.core.config_manager import ConfigManager
 from src.core.process_manager import ProcessManager, ProcessStatusEnum, ProcessState
 from src.core.event_broadcaster import EventBroadcaster
+from src.core.model_downloader import ModelDownloader
 
 # Alias ServerState to ProcessStatusEnum for 100% backward compatibility
 ServerState = ProcessStatusEnum
@@ -16,6 +19,7 @@ class LlamaManager:
         self.port = port
         self.process_manager = ProcessManager(port=port)
         self.broadcaster = EventBroadcaster(queue_maxsize=100)
+        self.model_downloader = ModelDownloader()
         self._error_msg = ""
         self._lock = asyncio.Lock()
 
@@ -126,10 +130,96 @@ class LlamaManager:
             self._notify_listeners()
 
     async def load_model(self, model_id: str, n_ctx: int):
+        """모델 로드. 로컬 가중치 미존재 시 자동 다운로드 후 서빙 프로세스 개설."""
         async with self._lock:
             await self._unload_model_internal()
             self.config_manager.update_config(current_model=model_id, current_n_ctx=n_ctx)
             asyncio.create_task(self._start_server_subprocess(model_id, n_ctx))
+
+    async def load_model_with_download(self, model_id: str, n_ctx: int) -> ProcessState:
+        """FR-003: 모델 로드 시 로컬 가중치 미존재를 탐지하고 자동 다운로드 수행 후 서빙 프로세스 개설.
+
+        Args:
+            model_id: 모델 식별자 (예: 'qwen3.5-2b', 'gemma4-e2b')
+            n_ctx: 컨텍스트 크기
+
+        Returns:
+            ProcessState: 최종 프로세스 상태
+        """
+        async with self._lock:
+            await self._unload_model_internal()
+
+            # FR-003: 로컬 파일 미존재 탐지 및 자동 다운로드
+            if not self.model_downloader.is_model_available(model_id):
+                print(f"[LlamaManager] 모델 {model_id} 로컬 미존재 → 자동 다운로드 시작")
+                self.process_manager.state = ProcessState(
+                    status=ProcessStatusEnum.DOWNLOADING,
+                    model_id=model_id,
+                    port=self.port,
+                )
+                self._notify_listeners()
+
+                try:
+                    self.model_downloader.ensure_model_available(model_id)
+                except (FileNotFoundError, ValueError) as e:
+                    self._error_msg = str(e)
+                    self.process_manager.state = ProcessState(
+                        status=ProcessStatusEnum.ERROR,
+                        model_id=model_id,
+                        port=self.port,
+                        error_message=self._error_msg,
+                    )
+                    self._notify_listeners()
+                    return self.process_manager.state
+
+            self.config_manager.update_config(current_model=model_id, current_n_ctx=n_ctx)
+            await self._start_server_subprocess(model_id, n_ctx)
+
+            # T006: HTTP 헬스체크 폴링으로 READY 상태 대기
+            ready = await self._wait_for_ready(timeout=30.0)
+            if not ready and self.process_manager.state.status == ProcessStatusEnum.LOADING:
+                self._error_msg = f"서빙 프로세스 헬스체크 타임아웃 (30초)"
+                self.process_manager.state = ProcessState(
+                    status=ProcessStatusEnum.ERROR,
+                    model_id=model_id,
+                    port=self.port,
+                    error_message=self._error_msg,
+                )
+                self._notify_listeners()
+
+            return self.process_manager.state
+
+    async def _wait_for_ready(self, timeout: float = 30.0) -> bool:
+        """T006: HTTP GET /v1/models 폴링으로 서빙 프로세스 READY 상태 대기.
+
+        Args:
+            timeout: 최대 대기 시간 (초)
+
+        Returns:
+            True면 READY 상태 도달, False면 타임아웃
+        """
+        url = f"http://127.0.0.1:{self.port}/v1/models"
+        deadline = time.time() + timeout
+
+        while time.time() < deadline:
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=2.0)
+                    if resp.status_code == 200:
+                        self.process_manager.state = ProcessState(
+                            status=ProcessStatusEnum.READY,
+                            model_id=self.process_manager.state.model_id,
+                            port=self.port,
+                            pid=self.process_manager.state.pid,
+                        )
+                        self._notify_listeners()
+                        print(f"[LlamaManager] ✅ 서빙 프로세스 READY (HTTP 200 확인)")
+                        return True
+            except Exception:
+                pass
+            await asyncio.sleep(0.5)
+
+        return False
 
     async def unload_model(self):
         async with self._lock:

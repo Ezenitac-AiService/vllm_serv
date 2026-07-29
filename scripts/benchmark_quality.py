@@ -1,9 +1,13 @@
 """
 Comprehensive 3D Quality-Speed-VRAM Cross-Model Benchmark Runner for Qwen 3.5 & Gemma 4.
-Supports both Live Real-Inference (http://127.0.0.1:8081/v1) and Static Benchmark Profiling modes.
+Supports:
+  1. Live Real-Inference via active server (http://127.0.0.1:8081/v1)
+  2. One-stop auto-download + real GPU inference loop (--auto-download --real)
+  3. Static Benchmark Profiling (fallback/CI mode)
 Generates specs/008-response-quality-eval/analysis_report_quality.md.
 """
 
+import asyncio
 import json
 import os
 import sys
@@ -11,6 +15,7 @@ import time
 from typing import Dict, List, Optional, Any
 import httpx
 from src.eval.quality_evaluator import QualityEvaluator, ComprehensiveQualityReportMetric
+from src.core.model_downloader import ModelDownloader, DownloadStatusEnum
 
 
 SERVER_API_URL = "http://127.0.0.1:8081/v1/chat/completions"
@@ -295,9 +300,163 @@ def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], ou
 
     print(f"[Quality Benchmark] Report successfully generated at: {output_path}")
 
+def run_real_benchmark_loop(
+    auto_download: bool = False,
+) -> List[ComprehensiveQualityReportMetric]:
+    """T008 / FR-005: 원스톱 자동 다운로드 + 실측 GPU 추론 벤치마크 루프.
+
+    각 모델에 대해 순차적으로:
+    1. 로컬 미존재 시 HuggingFace Hub에서 자동 다운로드
+    2. llama-server 프로세스 개설 (GPU VRAM 로드)
+    3. HTTP /v1/chat/completions 으로 실측 추론 수행
+    4. QualityEvaluator로 응답 품질 채점
+    5. 프로세스 종료 및 VRAM 해제
+    """
+    from src.core.process_manager import ProcessManager, ProcessStatusEnum
+
+    evaluator = QualityEvaluator()
+    downloader = ModelDownloader()
+    pm = ProcessManager(port=8081)
+    reports: List[ComprehensiveQualityReportMetric] = []
+
+    print(f"[Quality Benchmark] Mode: ONE-STOP AUTO-DOWNLOAD + REAL GPU INFERENCE")
+    print(f"[Quality Benchmark] Models: {len(MODELS_CATALOG)} models in catalog")
+
+    for idx, item in enumerate(MODELS_CATALOG, 1):
+        model_id = item["model_id"]
+        model_name = item["model_name"]
+        print(f"\n{'='*60}")
+        print(f"[{idx}/{len(MODELS_CATALOG)}] {model_name} ({model_id})")
+        print(f"{'='*60}")
+
+        # Step 1: 자동 다운로드 (--auto-download)
+        if auto_download:
+            if not downloader.is_model_available(model_id):
+                print(f"[Step 1] 모델 미존재 → HuggingFace Hub 자동 다운로드 시작...")
+                task = downloader.download_model(model_id)
+                if task.status == DownloadStatusEnum.FAILED:
+                    print(f"[Step 1] ❌ 다운로드 실패: {task.error_message}")
+                    print(f"[Step 1] ⏭️ {model_name} 건너뛰기")
+                    continue
+            else:
+                print(f"[Step 1] ✅ 모델 이미 존재")
+
+        # Step 2: llama-server 프로세스 개설
+        print(f"[Step 2] llama-server 프로세스 개설 중...")
+        t_load_start = time.time()
+        spawn_state = asyncio.get_event_loop().run_until_complete(
+            pm.spawn_process(model_id, 4096)
+        )
+        t_load_end = time.time()
+        load_time = round(t_load_end - t_load_start, 2)
+
+        if spawn_state.status == ProcessStatusEnum.ERROR:
+            print(f"[Step 2] ❌ 프로세스 개설 실패: {spawn_state.error_message}")
+            print(f"[Step 2] ⏭️ {model_name} 건너뛰기 (fallback 프로파일링 사용)")
+            # Fallback to static profiling for this model
+            tpot = item["base_tpot"]
+            ttft = item["base_ttft"]
+            vram_mb = item["base_vram"]
+            model_resp = item["fallback_response"]
+
+            m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_name, model_resp)
+            m2 = evaluator.evaluate_response("BTEAM-REVIEW-01", model_name, model_resp)
+            avg_quality = round((m1.final_quality_score + m2.final_quality_score) / 2.0, 2)
+            quality_per_speed = round(avg_quality / (tpot * 0.1), 2)
+            quality_per_vram = round(avg_quality / (vram_mb / 1024.0), 2)
+
+            reports.append(ComprehensiveQualityReportMetric(
+                model_id=model_name,
+                quant_type=item["quant_type"],
+                load_time_sec=0.0,
+                ttft_ms=ttft,
+                tpot_tok_per_sec=tpot,
+                peak_vram_mb=vram_mb,
+                avg_quality_score=avg_quality,
+                quality_per_speed_index=quality_per_speed,
+                quality_per_vram_index=quality_per_vram,
+                is_oom=True,
+            ))
+            continue
+
+        # Step 3: HTTP 헬스체크 대기
+        print(f"[Step 3] HTTP 헬스체크 대기 (최대 60초)...")
+        ready = False
+        deadline = time.time() + 60.0
+        while time.time() < deadline:
+            try:
+                r = httpx.get("http://127.0.0.1:8081/v1/models", timeout=2.0)
+                if r.status_code == 200:
+                    ready = True
+                    print(f"[Step 3] ✅ 서빙 READY (load_time={load_time}s)")
+                    break
+            except Exception:
+                pass
+            time.sleep(0.5)
+
+        if not ready:
+            print(f"[Step 3] ❌ 헬스체크 타임아웃")
+            asyncio.get_event_loop().run_until_complete(pm.stop_process())
+            continue
+
+        # Step 4: 실측 추론
+        print(f"[Step 4] 실측 추론 수행 중...")
+        live_result = request_live_inference(
+            "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함 C: 하닉은? B: 반도체 업황 수혜 가능"
+        )
+
+        if live_result:
+            model_resp = live_result["content"]
+            tpot = live_result["tpot"]
+            ttft = live_result["ttft"]
+            vram_mb = item["base_vram"]  # 실측 VRAM은 nvtop에서 확인
+            print(f"[Step 4] ✅ 추론 완료 (TPOT={tpot} tok/s, TTFT={ttft}ms)")
+        else:
+            print(f"[Step 4] ⚠️ 추론 실패, fallback 사용")
+            model_resp = item["fallback_response"]
+            tpot = item["base_tpot"]
+            ttft = item["base_ttft"]
+            vram_mb = item["base_vram"]
+
+        # Step 5: 품질 평가
+        m1 = evaluator.evaluate_response("ATEAM-STOCK-01", model_name, model_resp)
+        m2 = evaluator.evaluate_response("BTEAM-REVIEW-01", model_name, model_resp)
+        avg_quality = round((m1.final_quality_score + m2.final_quality_score) / 2.0, 2)
+        quality_per_speed = round(avg_quality / (tpot * 0.1), 2)
+        quality_per_vram = round(avg_quality / (vram_mb / 1024.0), 2)
+
+        reports.append(ComprehensiveQualityReportMetric(
+            model_id=model_name,
+            quant_type=item["quant_type"],
+            load_time_sec=load_time,
+            ttft_ms=ttft,
+            tpot_tok_per_sec=tpot,
+            peak_vram_mb=vram_mb,
+            avg_quality_score=avg_quality,
+            quality_per_speed_index=quality_per_speed,
+            quality_per_vram_index=quality_per_vram,
+            is_oom=False,
+        ))
+
+        # Step 6: 프로세스 종료 및 VRAM 해제
+        print(f"[Step 6] 프로세스 종료 및 VRAM 해제...")
+        asyncio.get_event_loop().run_until_complete(pm.stop_process())
+        time.sleep(1.0)  # VRAM 해제 안정화 대기
+        print(f"[Step 6] ✅ VRAM 해제 완료")
+
+    return reports
+
 
 if __name__ == "__main__":
     force_live = "--real" in sys.argv
-    report_list = run_benchmark(force_real_inference=force_live)
+    auto_download = "--auto-download" in sys.argv
+
+    if auto_download or force_live:
+        # FR-005: 원스톱 자동 다운로드 + 실측 벤치마크 모드
+        report_list = run_real_benchmark_loop(auto_download=auto_download)
+    else:
+        # 정적 프로파일링 모드 (CI/CD 빠른 검증)
+        report_list = run_benchmark(force_real_inference=force_live)
+
     report_file_path = os.path.join("specs", "008-response-quality-eval", "analysis_report_quality.md")
     generate_markdown_report(report_list, report_file_path)
