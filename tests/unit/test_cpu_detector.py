@@ -133,7 +133,7 @@ def test_build_flags_generation_legacy(monkeypatch):
         assert "-DGGML_F16C=OFF" in flags.cmake_args_list
         assert "-DGGML_FMA=OFF" in flags.cmake_args_list
         assert "-DCMAKE_CUDA_ARCHITECTURES=61" in flags.cmake_args_list
-        assert "-DGGML_AVX=OFF" in flags.cmake_args_str
+        assert "-DGGML_F16C=OFF -DGGML_FMA=OFF" in flags.cmake_args_str
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -161,10 +161,12 @@ def test_build_flags_generation_modern(monkeypatch):
         assert "-DGGML_CUDA=ON" in flags.cmake_args_list
         assert "-DGGML_AVX=ON" in flags.cmake_args_list
         assert "-DGGML_AVX2=ON" in flags.cmake_args_list
+        assert "-DGGML_F16C=ON -DGGML_FMA=ON" in flags.cmake_args_str
         assert "-DCMAKE_CUDA_ARCHITECTURES=86" in flags.cmake_args_list
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
 
 
 def test_cli_output(capsys):
@@ -177,21 +179,47 @@ def test_cli_output(capsys):
 
 
 def test_match_platform_profile(monkeypatch):
-    """T005: Verifies match_platform_profile returns legacy or dev profile ID based on compute capability."""
-    from src.core.cpu_detector import match_platform_profile, GpuCapabilityInfo
+    """T008 & T010: Verifies match_platform_profile returns correct profile ID based on GPU compute capability & CPU AVX2."""
+    from src.core.cpu_detector import match_platform_profile, GpuCapabilityInfo, CpuFeatureInfo
 
+    # Case 1: sm_61 + AVX2 CPU (e.g. Haswell Xeon E3-1231 v3 + GTX 1080 Ti)
     monkeypatch.setattr(
         "src.core.cpu_detector.detect_gpu_capability",
         lambda: GpuCapabilityInfo(
-            gpu_name="GeForce GTX 1070",
+            gpu_name="GeForce GTX 1080 Ti",
             compute_capability="6.1",
             cuda_arch_code="61",
-            total_vram_mb=8192
+            total_vram_mb=11264
         )
     )
-    profile_id = match_platform_profile()
-    assert profile_id == "legacy-i7-930-gtx1070"
+    monkeypatch.setattr(
+        "src.core.cpu_detector.detect_cpu_features",
+        lambda cpuinfo_path="/proc/cpuinfo": CpuFeatureInfo(
+            model_name="Intel Xeon E3-1231 v3",
+            architecture="x86_64",
+            supports_avx=True,
+            supports_avx2=True,
+            supports_f16c=True,
+            supports_fma=True
+        )
+    )
+    assert match_platform_profile() == "pascal-avx2-gtx1080ti"
 
+    # Case 2: sm_61 + Legacy CPU (no AVX, e.g. i7 930)
+    monkeypatch.setattr(
+        "src.core.cpu_detector.detect_cpu_features",
+        lambda cpuinfo_path="/proc/cpuinfo": CpuFeatureInfo(
+            model_name="Intel Core i7 930",
+            architecture="x86_64",
+            supports_avx=False,
+            supports_avx2=False,
+            supports_f16c=False,
+            supports_fma=False
+        )
+    )
+    assert match_platform_profile() == "legacy-i7-930-gtx1070"
+
+    # Case 3: sm_86 + Modern CPU
     monkeypatch.setattr(
         "src.core.cpu_detector.detect_gpu_capability",
         lambda: GpuCapabilityInfo(
@@ -201,8 +229,17 @@ def test_match_platform_profile(monkeypatch):
             total_vram_mb=12288
         )
     )
-    profile_id = match_platform_profile()
-    assert profile_id == "dev-rtx3060"
+    monkeypatch.setattr(
+        "src.core.cpu_detector.detect_cpu_features",
+        lambda cpuinfo_path="/proc/cpuinfo": CpuFeatureInfo(
+            model_name="Modern x86_64 CPU",
+            architecture="x86_64",
+            supports_avx=True,
+            supports_avx2=True
+        )
+    )
+    assert match_platform_profile() == "dev-rtx3060"
+
 
 
 def test_check_hardware_preflight():

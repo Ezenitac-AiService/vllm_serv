@@ -61,6 +61,8 @@ class TargetPlatformProfile(BaseModel):
     compute_capability: str
     os_name: str
     expected_avx: bool
+    expected_avx2: bool = True
+
 
 
 def detect_cpu_features(cpuinfo_path: str = "/proc/cpuinfo") -> CpuFeatureInfo:
@@ -216,7 +218,8 @@ def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildF
 def match_platform_profile(cpuinfo_path: str = "/proc/cpuinfo") -> str:
     """
     FR-001 & FR-003: Matches detected hardware against config/platform_profiles.json profiles.
-    Returns matching profile_id string (e.g. 'legacy-i7-930-gtx1070', 'dev-rtx3060').
+    Evaluates both GPU Compute Capability and CPU AVX/AVX2 support.
+    Returns matching profile_id string (e.g. 'pascal-avx2-gtx1080ti', 'legacy-i7-930-gtx1070', 'dev-rtx3060').
     """
     try:
         from src.core.config_manager import ConfigManager
@@ -232,14 +235,34 @@ def match_platform_profile(cpuinfo_path: str = "/proc/cpuinfo") -> str:
     except Exception:
         cc = "unknown"
 
+    # 1. Exact match: GPU Compute Capability + CPU AVX2/AVX flags
+    for pid, profile in profiles.items():
+        prof_cc = str(profile.get("compute_capability", ""))
+        prof_avx2 = profile.get("expected_avx2", True)
+        prof_avx = profile.get("expected_avx", True)
+
+        if prof_cc and prof_cc == cc:
+            if cpu_info.supports_avx2 == prof_avx2 and cpu_info.supports_avx == prof_avx:
+                return pid
+
+    # 2. Fallback match by Compute Capability and AVX2 availability
     for pid, profile in profiles.items():
         prof_cc = str(profile.get("compute_capability", ""))
         if prof_cc and prof_cc == cc:
-            return pid
+            prof_avx2 = profile.get("expected_avx2", False)
+            if cpu_info.supports_avx2 == prof_avx2:
+                return pid
 
-    if not cpu_info.supports_avx:
+    # 3. Default fallback heuristic
+    if cc == "6.1" and cpu_info.supports_avx2:
+        return "pascal-avx2-gtx1080ti"
+    elif cc == "6.1" and not cpu_info.supports_avx:
         return "legacy-i7-930-gtx1070"
-    return "dev-rtx3060"
+    elif cc == "8.6":
+        return "dev-rtx3060"
+
+    return "custom-hardware-profile"
+
 
 
 def check_hardware_preflight(cpuinfo_path: str = "/proc/cpuinfo") -> Dict[str, Any]:

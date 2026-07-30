@@ -100,8 +100,9 @@ log_info "✓ NVIDIA GPU 감지 완료: $GPU_NAME (총 VRAM: $VRAM_TOTAL)"
 log_info "CPU 명령어 세트, GPU Compute Capability 및 플랫폼 프로필 감지 수행 중..."
 uv run python -m src.core.cpu_detector --report || true
 
-MATCHED_PROFILE=$(uv run python -m src.core.cpu_detector --match-profile 2>/dev/null || echo "legacy-i7-930-gtx1070")
+MATCHED_PROFILE=$(uv run python -m src.core.cpu_detector --match-profile 2>/dev/null || echo "unknown-hardware-profile")
 log_info "✓ 감지 및 매칭된 타겟 플랫폼 프로필: $MATCHED_PROFILE"
+
 
 DETECTED_CMAKE_ARGS=$(uv run python -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF")
 log_info "적용할 동적 CMAKE_ARGS: $DETECTED_CMAKE_ARGS"

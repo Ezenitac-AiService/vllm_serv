@@ -155,11 +155,11 @@ log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이�
 
 
 log_info "\n[타 시스템 멀티 플랫폼 마이그레이션 안내]"
-log_info "  1. 타겟 서버(예: 레거시 i7-930 + GTX 1070 또는 개발 머신)로 $OUTPUT_PATH 파일 이관"
+log_info "  1. 타겟 서버(예: Xeon E3 / 레거시 서버 또는 개발 머신)로 $OUTPUT_PATH 파일 이관"
 if [ "$USE_ZIP" -eq 1 ]; then
     log_info "  2. unzip $OUTPUT_PATH -d vllm_serv && cd vllm_serv"
 else
     log_info "  2. mkdir -p vllm_serv && tar -xzf $(basename "$OUTPUT_PATH") -C vllm_serv && cd vllm_serv"
 fi
-log_info "  3. ./setup.sh 실행 (하드웨어 자동 감지 & platform_profiles.json 기반 동적 CMAKE_ARGS 컴파일)"
+log_info "  3. ./setup.sh 실행 (하드웨어 자동 감지 & platform_profiles.json 기반 동적 CMAKE_ARGS 강제 재설치)"
 log_info "  4. ./start_server.sh 실행 (사전 하드웨어 가속 점검 & 백그라운드 서빙 구동)\n"
