@@ -19,7 +19,7 @@
 
 **Purpose**: Project initialization and specification structure verification
 
-- [ ] T001 Verify specification structure and contract alignments in `specs/039-seed-pack-sudo-firewall-migration/`
+- [x] T001 Verify specification structure and contract alignments in `specs/039-seed-pack-sudo-firewall-migration/`
 
 ---
 
@@ -29,8 +29,8 @@
 
 **⚠️ CRITICAL**: Foundational tasks must be completed before implementing user stories
 
-- [ ] T002 [P] Create `scripts/configure_firewall.sh` template script header with error handling in `scripts/configure_firewall.sh`
-- [ ] T003 [P] Extend `FirewallStatusInfo` dataclass and firewall system types in `src/core/firewall_manager.py`
+- [x] T002 [P] Create `scripts/configure_firewall.sh` template script header with error handling in `scripts/configure_firewall.sh`
+- [x] T003 [P] Extend `FirewallStatusInfo` dataclass and firewall system types in `src/core/firewall_manager.py`
 
 **Checkpoint**: Core foundational data structures and script templates ready.
 

@@ -70,3 +70,98 @@ def test_setup_sh_failure_categories():
     assert "GPU_OFFLOAD_FALSE" in content
     assert "SHARED_LIB_IMPORT_ERROR" in content
 
+
+# ==============================================================================
+# 039-seed-pack-sudo-firewall-migration (FR-001, FR-002, FR-004, FR-007)
+# ==============================================================================
+
+def test_setup_sh_sudo_keepalive_daemon_pattern():
+    """T004 [US1]: Verifies setup.sh contains sudo keepalive daemon loop pattern with background PID tracking.
+
+    Real file content inspection per Constitution v1.4.0 Anti-Mock Discipline.
+    Checks: sudo -v, sudo -n true, sleep 50, SUDO_KEEPALIVE_PID, trap, kill.
+    """
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # FR-001: sudo -v interactive elevation at script start
+    assert "sudo -v" in content, "setup.sh must contain 'sudo -v' for interactive elevation"
+
+    # FR-002: Background keepalive daemon pattern
+    assert "sudo -n true" in content, "setup.sh must contain 'sudo -n true' for non-interactive keepalive"
+    assert "sleep 50" in content or "sleep 45" in content, "setup.sh must contain keepalive sleep interval"
+    assert "SUDO_KEEPALIVE_PID" in content, "setup.sh must track keepalive daemon PID"
+
+    # FR-002: Trap for cleanup on exit
+    assert "trap" in content, "setup.sh must register trap for daemon cleanup"
+    assert "kill" in content, "setup.sh must kill keepalive daemon on exit"
+
+
+def test_setup_sh_tty_detection():
+    """T004 [US1]: Verifies setup.sh contains TTY detection logic ([ -t 0 ]) for interactive vs non-interactive branching."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "-t 0" in content, "setup.sh must detect TTY via [ -t 0 ] or [[ -t 0 ]]"
+
+
+def test_setup_sh_ownership_correction_sudo_user():
+    """T005 [US1]: Verifies setup.sh contains SUDO_USER detection and chown ownership remediation logic.
+
+    Real file content inspection per Constitution v1.4.0 Anti-Mock Discipline.
+    """
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # FR-007: SUDO_USER detection
+    assert "SUDO_USER" in content, "setup.sh must detect $SUDO_USER environment variable"
+
+    # FR-007: chown -R remediation
+    assert "chown" in content, "setup.sh must use chown for ownership remediation"
+
+
+def test_setup_sh_noninteractive_fallback_banner():
+    """T005 [US1]: Verifies setup.sh generates warning banner and configure_firewall.sh for non-interactive environments (FR-004)."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # FR-004: Warning banner output per contract
+    assert "configure_firewall.sh" in content, "setup.sh must reference configure_firewall.sh fallback script"
+    assert "방화벽" in content, "setup.sh must contain Korean firewall warning text"
+
+
+def test_configure_firewall_sh_syntax():
+    """T004/T005 [US1]: Verify configure_firewall.sh shell script syntax is valid via bash -n."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "configure_firewall.sh")
+    assert os.path.exists(script_path), f"Script missing: {script_path}"
+
+    res = subprocess.run(["bash", "-n", script_path], capture_output=True, text=True)
+    assert res.returncode == 0, f"configure_firewall.sh has syntax errors: {res.stderr}"
+
+
+def test_configure_firewall_sh_root_check():
+    """T005 [US1]: Verify configure_firewall.sh checks for root privileges."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "configure_firewall.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "EUID" in content, "configure_firewall.sh must check EUID for root privilege verification"
+    assert "exit 1" in content, "configure_firewall.sh must exit 1 when not running as root"
+
+
+def test_configure_firewall_sh_multi_os_detection():
+    """T005 [US1]: Verify configure_firewall.sh contains multi-OS firewall detection (ufw, firewalld, nftables, iptables)."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "configure_firewall.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "ufw" in content, "configure_firewall.sh must support ufw"
+    assert "firewall-cmd" in content, "configure_firewall.sh must support firewalld"
+    assert "nft" in content, "configure_firewall.sh must support nftables"
+    assert "iptables" in content, "configure_firewall.sh must support iptables"
+
+

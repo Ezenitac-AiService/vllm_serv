@@ -54,7 +54,7 @@
 - **DoD-002**: `ufw`, `firewalld`, `iptables`, `nftables` 자동 감지 및 8081/8089 포트 개방 스크립트 작성
 - **DoD-003**: 비대화형 환경을 위한 방화벽 자동 구성 전용 헬퍼 스크립트 (`scripts/configure_firewall.sh`) 생성 파이프라인 구축
 - **DoD-004**: `sudo ./setup.sh` 직접 실행 시 `$SUDO_USER` 계정 소유권 자동 보정(`chown -R`) 로직 구현
-- **DoD-005**: 시드 팩 번들 빌드 스크립트(`scripts/make_seed_pack.py`) 내 권한/방화벽 구성 요소 반영 및 100% 오프라인 실측 검증 통과
+- **DoD-005**: 시드 팩 번들 빌드 스크립트(`scripts/make_seed_pack.sh`) 내 권한/방화벽 구성 요소 반영 및 100% 오프라인 실측 검증 통과
 
 ---
 
@@ -66,8 +66,8 @@
 - **FR-002**: `setup.sh` 실행 도중 sudo 세션이 만료되지 않도록 스크립트가 실행되는 동안 백그라운드 타임스탬프 갱신 루프(`while true; do sudo -n true; sleep 50; ...`)를 유지해야 한다.
 - **FR-003**: `setup.sh`는 타겟 OS 방화벽 엔진(`ufw`, `firewalld`, `nftables`, `iptables`)을 감지하고 `8081/tcp` (대시보드/OpenAI API) 및 `8089/tcp` (백엔드 포트) 허용 규칙을 자동 등록해야 한다.
 - **FR-004**: 비대화형 환경(CI/CD)으로 인해 sudo 권한을 확보하지 못하는 경우, 관리자가 직접 구동 가능한 쉘 스크립트(`scripts/configure_firewall.sh`)를 자동 생성하고 터미널에 뚜렷한 복구 명령어를 표출해야 한다.
-- **FR-005**: 시드 팩 압축 생성 시(`scripts/make_seed_pack.py`) 최신 방화벽 제어 모듈과 권한 검증 스크립트가 누락 없이 번들링되어 100% 오프라인 마이그레이션이 가능해야 한다.
-- **FR-006**: 헌장 v1.3.1 (실체적 테스트 및 Anti-Mock)에 따라 테스트 수트는 목업 없이 실제 OS 소켓 바인딩 및 방화벽 룰셋(`ufw status`, `firewall-cmd --list-ports`) 파싱을 통해 실측 검증해야 한다.
+- **FR-005**: 시드 팩 압축 생성 시(`scripts/make_seed_pack.sh`) 최신 방화벽 제어 모듈과 권한 검증 스크립트가 누락 없이 번들링되어 100% 오프라인 마이그레이션이 가능해야 한다.
+- **FR-006**: 헌장 v1.4.0 (실체적 테스트 및 Anti-Mock)에 따라 테스트 수트는 목업 없이 실제 OS 소켓 바인딩 및 방화벽 룰셋(`ufw status`, `firewall-cmd --list-ports`) 파싱을 통해 실측 검증해야 한다.
 - **FR-007**: 사용자가 `sudo ./setup.sh`로 직접 실행한 경우, 스크립트 종료 시 `$SUDO_USER`를 감지하여 `.venv/`, `logs/`, `config/` 및 소스 파일 소유권을 일반 사용자 계정으로 자동 환원(`chown -R $SUDO_USER:$SUDO_USER .`)해야 한다.
 
 ---
