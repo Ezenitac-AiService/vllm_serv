@@ -44,8 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
         adminModal: document.getElementById('admin-modal'),
         adminSecretInput: document.getElementById('admin-secret-input'),
         modalLoginBtn: document.getElementById('modal-login-btn'),
-        modalCloseBtn: document.getElementById('modal-close-btn'),
         pgModelSelect: document.getElementById('pg-model-select'),
+        pgApiKey: document.getElementById('pg-api-key'),
+        pgApiKeyBadge: document.getElementById('pg-api-key-badge'),
         pgSystemPrompt: document.getElementById('pg-system-prompt'),
         pgTemp: document.getElementById('pg-temp'),
         pgTempVal: document.getElementById('pg-temp-val'),
@@ -276,6 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (caps.current_model && elements.pgActiveModel) {
                     elements.pgActiveModel.textContent = `Model: ${caps.current_model}`;
                 }
+            }
+
+            if (elements.pgApiKeyBadge && caps.api_key_enabled !== undefined) {
+                elements.pgApiKeyBadge.textContent = caps.api_key_enabled ? '(Required in Security Mode)' : '(Optional)';
+                elements.pgApiKeyBadge.style.color = caps.api_key_enabled ? '#f87171' : '#9ca3af';
             }
 
             // Populate Presets Grid
@@ -631,11 +637,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let thinkDetailsElem = null;
         let thinkContentElem = null;
 
+        const apiKeyVal = elements.pgApiKey ? elements.pgApiKey.value.trim() : '';
+
         try {
             const res = await fetch('/dashboard/api/playground/stream', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(apiKeyVal ? { 'X-API-Key': apiKeyVal } : {})
+                },
                 body: JSON.stringify({
+                    api_key: apiKeyVal || undefined,
                     model: (elements.pgModelSelect && elements.pgModelSelect.value) || elements.modelSelect.value || 'qwen3.5-4b',
                     system_prompt: elements.pgSystemPrompt.value,
                     prompt: prompt,
@@ -647,6 +659,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!res.ok) {
+                if (res.status === 401) {
+                    contentDiv.innerHTML = '<span style="color: #f87171;">🔑 <strong>401 Unauthorized:</strong> API Key is required because Security Mode is enabled. Please enter a valid API Key in the settings panel.</span>';
+                    return;
+                }
                 contentDiv.textContent = `[HTTP Error ${res.status}] Failed to start stream.`;
                 return;
             }

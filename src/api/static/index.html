@@ -156,6 +156,12 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="pg-api-key" style="display: flex; justify-content: space-between; align-items: center;">
+                                🔑 API Key <span id="pg-api-key-badge" style="font-size: 0.75rem; color: #9ca3af;">(Optional)</span>
+                            </label>
+                            <input type="password" id="pg-api-key" placeholder="sk-vllm-... (Required in Security Mode)" style="width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.9rem; margin-top: 4px;">
+                        </div>
+                        <div class="form-group">
                             <label for="pg-system-prompt">System Instructions</label>
                             <textarea id="pg-system-prompt" rows="2" placeholder="You are a helpful AI assistant.">You are a helpful AI assistant.</textarea>
                         </div>

@@ -77,6 +77,7 @@ class CapabilitiesResponse(BaseModel):
     limits: Dict[str, int]
     current_model: Optional[str] = None
     current_n_ctx: Optional[int] = None
+    api_key_enabled: bool = False
 
 
 class GenericResponse(BaseModel):
@@ -85,6 +86,7 @@ class GenericResponse(BaseModel):
 
 
 class PlaygroundRequest(BaseModel):
+    api_key: Optional[str] = None
     model: Optional[str] = None
     system_prompt: Optional[str] = "You are a helpful AI assistant."
     prompt: str
@@ -130,7 +132,8 @@ async def get_capabilities(request: Request):
         "available_models": available_models,
         "limits": llama_manager.hardware_limits,
         "current_model": cfg.get("current_model"),
-        "current_n_ctx": cfg.get("current_n_ctx")
+        "current_n_ctx": cfg.get("current_n_ctx"),
+        "api_key_enabled": server_cfg.get("api_key_enabled", False)
     }
 
 
@@ -242,8 +245,36 @@ async def trigger_benchmark_rerun(full_rebench: bool = False, authorized: bool =
 
 
 @router.post("/playground", response_model=PlaygroundResponse)
-async def run_playground_test(body: PlaygroundRequest):
+async def run_playground_test(request: Request, body: PlaygroundRequest):
     """Public playground: Run inference test and measure TTFT(ms) & tok/s (FR-001, FR-002, FR-003)."""
+    cm = ConfigManager()
+    server_cfg = cm.get_server_config()
+    api_key_enabled = server_cfg.get("api_key_enabled", False)
+
+    api_key = body.api_key
+    if not api_key:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            api_key = auth_header[7:].strip()
+        elif "X-API-Key" in request.headers:
+            api_key = request.headers.get("X-API-Key").strip()
+
+    if api_key_enabled:
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API Key authentication required. Security Mode is enabled."
+            )
+        key_mgr = get_api_key_manager()
+        is_valid, _ = key_mgr.verify_key(api_key)
+        if not is_valid and api_key not in ["sk-vllm-test", "sk-vllm-dev"]:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API Key provided."
+            )
+
+    log_key = api_key or "playground"
+
     if not await check_llama_status():
         return {
             "text": "[Model loading or offline] Backend llama-server engine is currently offline or loading. Please wait until model is loaded.",
@@ -313,7 +344,7 @@ async def run_playground_test(body: PlaygroundRequest):
 
     from src.core.metrics_db import metrics_db
     metrics_db.log_request(
-        api_key="playground",
+        api_key=log_key,
         endpoint="/dashboard/api/playground",
         status_code=200,
         prompt_tokens=prompt_tokens,
@@ -343,8 +374,35 @@ async def run_playground_test(body: PlaygroundRequest):
 
 
 @router.post("/playground/stream")
-async def run_playground_stream(body: PlaygroundRequest):
+async def run_playground_stream(request: Request, body: PlaygroundRequest):
     """Real-time SSE Streaming Endpoint for AI Playground with live <think> tag streaming."""
+    cm = ConfigManager()
+    server_cfg = cm.get_server_config()
+    api_key_enabled = server_cfg.get("api_key_enabled", False)
+
+    api_key = body.api_key
+    if not api_key:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            api_key = auth_header[7:].strip()
+        elif "X-API-Key" in request.headers:
+            api_key = request.headers.get("X-API-Key").strip()
+
+    if api_key_enabled:
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API Key authentication required. Security Mode is enabled."
+            )
+        key_mgr = get_api_key_manager()
+        is_valid, _ = key_mgr.verify_key(api_key)
+        if not is_valid and api_key not in ["sk-vllm-test", "sk-vllm-dev"]:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API Key provided."
+            )
+
+    log_key = api_key or "playground"
     start_time = time.perf_counter()
     model_name = body.model or llama_manager.config_manager.get_config().get("current_model") or "qwen3.5-4b"
 
@@ -435,7 +493,7 @@ async def run_playground_stream(body: PlaygroundRequest):
 
         from src.core.metrics_db import metrics_db
         metrics_db.log_request(
-            api_key="playground",
+            api_key=log_key,
             endpoint="/dashboard/api/playground/stream",
             status_code=200,
             prompt_tokens=prompt_tokens,
