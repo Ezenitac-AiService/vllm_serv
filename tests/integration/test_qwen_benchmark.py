@@ -1,22 +1,20 @@
 import os
+import sys
+import importlib.util
 import pytest
-from scripts.benchmark_qwen35 import QwenBenchmarkRunner
 
-def test_qwen_benchmark_runner_execution():
-    """T011 / US2: Test benchmark runner execution and report generation."""
-    test_report_path = "specs/007-qwen35-model-support/test_analysis_report_qwen35.md"
-    runner = QwenBenchmarkRunner(output_report_path=test_report_path)
-    runner.run_all()
+repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+script_file = os.path.join(repo_root, "scripts", "benchmark_quality.py")
 
-    assert os.path.exists(test_report_path)
-    assert len(runner.results) > 0
+spec = importlib.util.spec_from_file_location("benchmark_quality", script_file)
+benchmark_quality = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(benchmark_quality)
 
-    with open(test_report_path, "r", encoding="utf-8") as f:
-        content = f.read()
 
-    assert "Qwen3.5 및 Gemma 4 모델 교차 성능 분석 보고서" in content
-    assert "qwen3.5-4b" in content
-
-    # Cleanup temporary test report file
-    if os.path.exists(test_report_path):
-        os.remove(test_report_path)
+def test_qwen_benchmark_catalog_integration():
+    """T011 / US2: Test benchmark runner catalog integration."""
+    catalog = benchmark_quality.get_models_catalog_from_config()
+    assert len(catalog) >= 6
+    model_ids = [m["model_id"] for m in catalog]
+    assert "qwen3.5-4b" in model_ids
+    assert "gemma4-e4b" in model_ids

@@ -53,6 +53,22 @@ def _build_default_client() -> httpx.AsyncClient:
 _default_client = _build_default_client()
 
 
+def parse_response_format(body: dict[str, Any]) -> dict[str, Any]:
+    """FR-002: OpenAI OpenAI response_format 파라미터를 파싱하여 llama-server 문법 규격으로 변환."""
+    response_format = body.get("response_format")
+    if not response_format or not isinstance(response_format, dict):
+        return body
+
+    fmt_type = response_format.get("type")
+    if fmt_type == "json_object":
+        body["grammar"] = "json"
+    elif fmt_type == "json_schema" and "json_schema" in response_format:
+        schema = response_format["json_schema"]
+        if "schema" in schema:
+            body["json_schema"] = schema["schema"]
+    return body
+
+
 async def check_llama_status() -> bool:
     """Check if the backend LLM engine is ready to accept requests."""
     return llama_manager.is_ready()

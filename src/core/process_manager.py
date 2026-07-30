@@ -50,6 +50,15 @@ class RealGpuBenchmarkSession(BaseModel):
     vram_safety_threshold_mb: int = Field(default=11264, description="VRAM 안전 임계치 MB")
 
 
+class SpeculativeDecodingConfig(BaseModel):
+    """FR-003: Speculative Decoding 가속 설정 데이터 모델."""
+    model_config = ConfigDict(frozen=True)
+
+    enabled: bool = Field(default=False, description="Speculative Decoding 활성화 여부")
+    draft_model_id: Optional[str] = Field(default=None, description="초경량 드래프트 모델 ID")
+    draft_max_tokens: int = Field(default=16, description="드래프트 모델 샘플링 깊이")
+
+
 class ProcessState(BaseModel):
     model_config = ConfigDict(frozen=True)
 

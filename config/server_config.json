@@ -9,5 +9,13 @@
         "max_connections": 100
     },
     "vram_max_capacity_mb": 11264,
-    "graceful_drain_timeout_s": 5.0
+    "graceful_drain_timeout_s": 5.0,
+    "speculative_decoding": {
+        "enabled": false,
+        "draft_model": "qwen3.5-2b"
+    },
+    "structured_output": {
+        "enabled": true,
+        "strict_json_schema": true
+    }
 }

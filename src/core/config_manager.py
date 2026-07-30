@@ -23,6 +23,8 @@ class ServerConfig(BaseModel):
     api_key_enabled: bool = False
     api_keys: List[Dict[str, Any]] = Field(default_factory=list)
     admin_secret: str = "admin1234"
+    speculative_decoding: Dict[str, Any] = Field(default_factory=lambda: {"enabled": False, "draft_model": "qwen3.5-2b"})
+    structured_output: Dict[str, Any] = Field(default_factory=lambda: {"enabled": True, "strict_json_schema": True})
 
 
     @field_validator("port", "backend_port")
