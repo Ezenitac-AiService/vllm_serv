@@ -195,18 +195,39 @@ fi
 log_info "서빙 포트 설정: $SERVER_PORT/tcp"
 
 if command -v ufw &> /dev/null; then
-    if sudo -n ufw status 2>/dev/null | grep -q "Status: active"; then
-        log_info "ufw 방화벽 포트 $SERVER_PORT/tcp 허용 규칙 등록 중..."
-        sudo -n ufw allow "$SERVER_PORT/tcp" &>/dev/null || log_warn "sudo 비밀번호 필요: 수동으로 'sudo ufw allow $SERVER_PORT/tcp' 명령을 실행하세요."
+    log_info "ufw 방화벽 상태 및 포트 $SERVER_PORT/tcp 규칙 확인 중..."
+    if [ -t 1 ]; then
+        log_info "대화형 TTY 감지: 방화벽 포트 $SERVER_PORT/tcp 및 8089/tcp 개방 승격 시도..."
+        sudo ufw allow "$SERVER_PORT/tcp" || true
+        sudo ufw allow 8089/tcp || true
     else
-        log_info "ufw 방화벽 설정 확인 완료. (포트: $SERVER_PORT/tcp)"
+        if ! sudo -n ufw allow "$SERVER_PORT/tcp" &>/dev/null; then
+            echo -e "${COLOR_YELLOW}"
+            echo "========================================================================"
+            echo "⚠️ OS 방화벽(ufw) 포트 개방 권한 안내"
+            echo "------------------------------------------------------------------------"
+            echo "비대화형 sudo 권한 제한으로 포트 포워딩 규칙이 자동으로 등록되지 못했습니다."
+            echo "동일 내부망(10.0.0.x)의 다른 컴퓨터에서 대시보드 및 API를 접속하려면"
+            echo "아래 명령을 직접 실행하여 방화벽 포트를 개방해 주세요:"
+            echo ""
+            echo "    sudo ufw allow $SERVER_PORT/tcp"
+            echo "    sudo ufw allow 8089/tcp"
+            echo "========================================================================"
+            echo -e "${COLOR_NC}"
+        fi
     fi
 elif command -v firewall-cmd &> /dev/null; then
     log_info "firewalld 방화벽 포트 $SERVER_PORT/tcp 등록 확인..."
-    sudo -n firewall-cmd --add-port="$SERVER_PORT/tcp" --permanent &>/dev/null || log_warn "sudo 비밀번호 필요: 수동으로 'sudo firewall-cmd --add-port=$SERVER_PORT/tcp --permanent' 실행 권장."
+    if [ -t 1 ]; then
+        sudo firewall-cmd --add-port="$SERVER_PORT/tcp" --permanent || true
+        sudo firewall-cmd --reload || true
+    else
+        sudo -n firewall-cmd --add-port="$SERVER_PORT/tcp" --permanent &>/dev/null || log_warn "sudo 비밀번호 필요: 'sudo firewall-cmd --add-port=$SERVER_PORT/tcp --permanent' 실행 필요"
+    fi
 else
     log_info "기본 OS 방화벽 패키지(ufw/firewalld) 미감지 또는 수동 개설 권장. (포트: $SERVER_PORT/tcp)"
 fi
+
 
 log_step "4. 서버 구동/종료/상태 제어 쉘 스크립트 생성"
 

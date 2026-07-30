@@ -41,6 +41,20 @@ if ! uv run python -m src.core.cpu_detector --check-preflight; then
 fi
 echo -e "${COLOR_GREEN}[SERVER] ✓ 하드웨어 가속 사전 점검 완료 (GPU CUDA 가속 활성)${COLOR_NC}"
 
+echo -e "${COLOR_CYAN}[SERVER] OS 네트워크 방화벽(ufw) 8081/tcp 개방 사전 점검 중...${COLOR_NC}"
+if command -v ufw &> /dev/null; then
+    if [ -t 1 ]; then
+        sudo ufw allow 8081/tcp &>/dev/null || true
+        sudo ufw allow 8089/tcp &>/dev/null || true
+    else
+        if ! sudo -n ufw allow 8081/tcp &>/dev/null; then
+            echo -e "${COLOR_YELLOW}[SERVER WARN] OS 방화벽 8081/tcp 포트 자동 개방 비대화형 권한 거부${COLOR_NC}"
+            echo -e "${COLOR_YELLOW}[SERVER WARN] 동일 내부망(10.0.0.x)에서 접속하려면 'sudo ufw allow 8081/tcp' 명령을 수동 실행하세요.${COLOR_NC}"
+        fi
+    fi
+fi
+
+
 echo -e "${COLOR_GREEN}[SERVER] 1. llama-server 바이너리 빌드 상태 및 모델 가중치 자동 다운로드 파이프라인 가동${COLOR_NC}"
 echo -e "${COLOR_GREEN}[SERVER] 2. 기본 VRAM 상주 서빙 모델(qwen3.5-4b) VRAM 100% 오프로드 검증 수행${COLOR_NC}"
 echo -e "${COLOR_GREEN}[SERVER] 3. 로그 파일 경로: $LOG_FILE${COLOR_NC}"
