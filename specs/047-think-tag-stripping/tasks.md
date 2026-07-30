@@ -116,3 +116,9 @@
 3. User Story 2 완료 (Audit Payload 뷰어 아코디언 지원)
 4. User Story 3 완료 (`strip_think_tags` 토글 옵션)
 5. Phase 6 Polish 전체 회귀 검증 완료
+
+---
+
+## Phase 7: Convergence
+
+- [x] T016 [US1] Update HTML input `#pg-max-tokens` default value from 256 to 1024 in `src/api/static/index.html` per FR-007 (partial)
