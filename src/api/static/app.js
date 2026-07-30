@@ -378,6 +378,19 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.pgTemp.addEventListener('input', (e) => elements.pgTempVal.textContent = e.target.value);
     elements.pgTopP.addEventListener('input', (e) => elements.pgTopPVal.textContent = e.target.value);
 
+    const chatThreadContainer = document.getElementById('chat-thread-container');
+    const clearChatBtn = document.getElementById('clear-chat-btn');
+
+    if (clearChatBtn && chatThreadContainer) {
+        clearChatBtn.addEventListener('click', () => {
+            chatThreadContainer.innerHTML = `
+                <div class="chat-bubble assistant-bubble" style="background: rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%;">
+                    <strong>🤖 Assistant:</strong> Chat history cleared. How can I help you next?
+                </div>
+            `;
+        });
+    }
+
     elements.pgSubmitBtn.addEventListener('click', async () => {
         const prompt = elements.pgPromptInput.value.trim();
         if (!prompt) {
@@ -385,7 +398,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        elements.pgOutputText.textContent = 'Sending inference request to active model...';
+        // Append User Bubble
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble user-bubble';
+        userBubble.style.cssText = 'background: rgba(59, 130, 246, 0.25); border: 1px solid rgba(59, 130, 246, 0.4); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%; margin-left: auto; text-align: right;';
+        userBubble.innerHTML = `<strong>👤 User:</strong> ${prompt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+        chatThreadContainer.appendChild(userBubble);
+
+        // Append Assistant Streaming Bubble Placeholder
+        const assistantBubble = document.createElement('div');
+        assistantBubble.className = 'chat-bubble assistant-bubble';
+        assistantBubble.style.cssText = 'background: rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%;';
+        assistantBubble.innerHTML = `<strong>🤖 Assistant:</strong> <span class="assistant-content">Thinking...</span>`;
+        chatThreadContainer.appendChild(assistantBubble);
+        chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
+
+        elements.pgPromptInput.value = '';
         elements.pgSubmitBtn.disabled = true;
 
         try {
@@ -404,22 +432,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.ok) {
                 const data = await res.json();
-                elements.pgOutputText.textContent = data.text;
+                const contentSpan = assistantBubble.querySelector('.assistant-content');
+                contentSpan.textContent = data.text;
+
                 elements.pgMetricTtft.textContent = `${data.ttft_ms} ms`;
                 elements.pgMetricSpeed.textContent = `${data.token_speed_tok_s} tok/s`;
                 elements.pgMetricLatency.textContent = `${data.total_latency_s} s`;
                 elements.pgMetricTokens.textContent = `${data.prompt_tokens} in / ${data.completion_tokens} out`;
 
-                // Update Header Summary
                 elements.statSpeed.textContent = `${data.token_speed_tok_s} tok/s`;
                 elements.statTtft.textContent = `TTFT: ${data.ttft_ms} ms`;
             } else {
-                elements.pgOutputText.textContent = 'Error executing playground inference.';
+                assistantBubble.querySelector('.assistant-content').textContent = 'Error executing playground inference.';
             }
         } catch (e) {
-            elements.pgOutputText.textContent = `Failed: ${e}`;
+            assistantBubble.querySelector('.assistant-content').textContent = `Failed: ${e}`;
         } finally {
             elements.pgSubmitBtn.disabled = false;
+            chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
         }
     });
 
@@ -484,7 +514,7 @@ print(response.choices[0].message.content)`;
         setTimeout(() => elements.copyCodeBtn.textContent = '📋 Copy Code', 2000);
     });
 
-    // --- 7. Audit Log Timeline Loader (FR-004) ---
+    // --- 7. Audit Log Timeline Loader & Payload Inspector (FR-004, 044-llm-response-payload-viewer) ---
     async function loadAuditLogs() {
         try {
             const res = await fetch('/dashboard/api/audit');
@@ -497,21 +527,61 @@ print(response.choices[0].message.content)`;
                 return;
             }
 
-            data.logs.forEach(log => {
+            data.logs.forEach((log, index) => {
+                const logId = index + 1;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
+                    <td>#${logId}</td>
                     <td>${log.timestamp}</td>
                     <td><code>${log.client_ip}</code></td>
-                    <td><span class="live-indicator">Allowed Subnet</span></td>
                     <td><code>${log.endpoint}</code></td>
                     <td><span class="badge ${log.status_code < 400 ? 'badge-info' : 'warning-badge'}">${log.status_code}</span></td>
-                    <td>${log.process_time_ms} ms</td>
+                    <td>
+                        <button class="primary-btn view-payload-btn" data-id="${logId}" style="padding: 2px 8px; font-size: 0.8em;">👁️ View Payload</button>
+                    </td>
                 `;
                 elements.auditListBody.appendChild(tr);
+            });
+
+            // Bind Payload Inspector Modal
+            document.querySelectorAll('.view-payload-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const payloadModal = document.getElementById('payload-modal');
+                    const promptView = document.getElementById('payload-prompt-view');
+                    const respView = document.getElementById('payload-response-view');
+                    
+                    promptView.textContent = 'Loading prompt payload...';
+                    respView.textContent = 'Loading LLM response completion payload...';
+                    payloadModal.classList.remove('hidden');
+
+                    try {
+                        const pRes = await fetch(`/dashboard/api/audit/payload/${id}`);
+                        if (pRes.ok) {
+                            const pData = await pRes.json();
+                            const p = pData.payload;
+                            promptView.textContent = p.prompt_text || '(No prompt text recorded)';
+                            respView.textContent = p.completion_text || '(No completion text recorded)';
+                        } else {
+                            promptView.textContent = 'Payload log entry not found in metrics DB.';
+                            respView.textContent = 'N/A';
+                        }
+                    } catch (err) {
+                        promptView.textContent = `Failed loading payload: ${err}`;
+                        respView.textContent = 'N/A';
+                    }
+                });
             });
         } catch (e) {
             elements.auditListBody.innerHTML = '<tr><td colspan="6" class="table-placeholder">Error loading audit logs.</td></tr>';
         }
+    }
+
+    const closePayloadModalBtn = document.getElementById('close-payload-modal-btn');
+    if (closePayloadModalBtn) {
+        closePayloadModalBtn.addEventListener('click', () => {
+            document.getElementById('payload-modal').classList.add('hidden');
+        });
     }
 
     elements.refreshAuditBtn.addEventListener('click', loadAuditLogs);

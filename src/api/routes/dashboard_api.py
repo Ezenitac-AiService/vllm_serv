@@ -254,6 +254,20 @@ async def run_playground_test(body: PlaygroundRequest):
     total_latency_s = round(time.perf_counter() - start_time, 3)
     token_speed_tok_s = round(completion_tokens / max(total_latency_s - (ttft_ms / 1000.0), 0.05), 1)
 
+    from src.core.metrics_db import metrics_db
+    metrics_db.log_request(
+        api_key="playground",
+        endpoint="/dashboard/api/playground",
+        status_code=200,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        ttft_ms=ttft_ms,
+        tps=token_speed_tok_s,
+        is_error=False,
+        prompt_text=body.prompt,
+        completion_text=sample_output
+    )
+
     return {
         "text": sample_output,
         "ttft_ms": ttft_ms,
@@ -341,4 +355,14 @@ async def export_keys_metrics_csv():
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=api_key_metrics.csv"}
     )
+
+
+@router.get("/audit/payload/{log_id}")
+async def get_audit_payload(log_id: int):
+    """Returns prompt_text and completion_text payload inspector details (FR-003, 044-llm-response-payload-viewer)."""
+    from src.core.metrics_db import metrics_db
+    payload = metrics_db.get_payload_by_id(log_id)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Audit log payload not found")
+    return {"status": "success", "payload": payload}
 

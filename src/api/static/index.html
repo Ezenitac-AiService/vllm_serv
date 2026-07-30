@@ -128,14 +128,14 @@
                 </section>
             </div>
 
-            <!-- Tab 3: AI Playground (FR-007, FR-008, FR-009) -->
+            <!-- Tab 3: AI Playground (FR-007, FR-008, FR-009, 044-llm-response-payload-viewer) -->
             <div id="tab-playground" class="tab-panel">
                 <div class="playground-layout">
                     <!-- Playground Settings Panel -->
                     <div class="glass-panel playground-settings">
-                        <h3>Playground Parameters</h3>
+                        <h3>⚙️ Model Parameters</h3>
                         <div class="form-group">
-                            <label for="pg-system-prompt">System Prompt</label>
+                            <label for="pg-system-prompt">System Instructions</label>
                             <textarea id="pg-system-prompt" rows="3" placeholder="You are a helpful AI assistant.">You are a helpful AI assistant.</textarea>
                         </div>
                         <div class="form-group">
@@ -150,29 +150,39 @@
                             <label for="pg-max-tokens">Max Tokens</label>
                             <input type="number" id="pg-max-tokens" value="256" min="16" max="4096">
                         </div>
-                        <button type="button" id="code-export-btn" class="secondary-btn">💻 Code Export (cURL/Python)</button>
+                        <button type="button" id="code-export-btn" class="secondary-btn" style="width: 100%; margin-top: 10px;">💻 Code Export (cURL/Python)</button>
                     </div>
 
-                    <!-- Playground Interaction Canvas -->
+                    <!-- Google AI Studio 2026 Style Chat Thread Canvas -->
                     <div class="glass-panel playground-canvas">
-                        <div class="panel-header">
-                            <h3>LLM Prompt Test</h3>
+                        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>💬 Multi-Turn Chat Thread</h3>
                             <span class="badge badge-info" id="pg-active-model">Model: qwen3.5-4b</span>
                         </div>
-                        <div class="form-group">
-                            <textarea id="pg-prompt-input" rows="4" placeholder="Enter your prompt here... (e.g. Write a python quicksort script)"></textarea>
+
+                        <!-- Chat Bubbles Thread Container -->
+                        <div id="chat-thread-container" style="height: 380px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 15px;">
+                            <div class="chat-bubble assistant-bubble" style="background: rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%;">
+                                <strong>🤖 Assistant:</strong> Hello! How can I assist you with LLM inference today?
+                            </div>
                         </div>
-                        <button type="button" id="pg-submit-btn" class="primary-btn">🚀 Send Inference Request</button>
+
+                        <div class="form-group">
+                            <textarea id="pg-prompt-input" rows="3" placeholder="Type message to assistant... (e.g. Explain quantum computing in 2 sentences)"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button type="button" id="pg-submit-btn" class="primary-btn" style="flex: 1;">🚀 Send Message (SSE Streaming)</button>
+                            <button type="button" id="clear-chat-btn" class="secondary-btn">🧹 Clear Thread</button>
+                        </div>
 
                         <!-- Response & Performance Metrics Card -->
-                        <div class="pg-response-card">
-                            <div class="pg-metrics-bar">
+                        <div class="pg-response-card" style="margin-top: 15px;">
+                            <div class="pg-metrics-bar" style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <span class="metric-chip">TTFT: <strong id="pg-metric-ttft">-- ms</strong></span>
                                 <span class="metric-chip">Speed: <strong id="pg-metric-speed">-- tok/s</strong></span>
                                 <span class="metric-chip">Total Time: <strong id="pg-metric-latency">-- s</strong></span>
                                 <span class="metric-chip">Tokens: <strong id="pg-metric-tokens">0 in / 0 out</strong></span>
                             </div>
-                            <pre id="pg-output-text" class="pg-output-code">Awaiting inference test submission...</pre>
                         </div>
                     </div>
                 </div>
@@ -236,12 +246,12 @@
                     <table class="data-table">
                         <thead>
                             <tr>
+                                <th>Log ID</th>
                                 <th>Timestamp</th>
                                 <th>Client IP</th>
-                                <th>Subnet Status</th>
                                 <th>Endpoint</th>
                                 <th>Status Code</th>
-                                <th>Latency</th>
+                                <th>Action Payload</th>
                             </tr>
                         </thead>
                         <tbody id="audit-list-body">
@@ -280,6 +290,24 @@
             <div class="modal-actions">
                 <button type="button" id="copy-code-btn" class="primary-btn">📋 Copy Code</button>
                 <button type="button" id="close-code-btn" class="secondary-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payload Inspector Modal (044-llm-response-payload-viewer) -->
+    <div id="payload-modal" class="overlay hidden">
+        <div class="glass-panel modal-card" style="max-width: 700px; width: 90%;">
+            <h2>👁️ LLM Request & Response Payload Inspector</h2>
+            <p class="modal-desc" id="payload-modal-title">Log Entry Details</p>
+            <div style="text-align: left; margin: 15px 0;">
+                <label style="font-weight: 600; color: #a0aec0;">📥 Input Prompt Text:</label>
+                <pre id="payload-prompt-view" style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; max-height: 150px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; margin-top: 5px;"></pre>
+                
+                <label style="font-weight: 600; color: #a0aec0; margin-top: 15px; display: block;">🤖 LLM Completion Response Text:</label>
+                <pre id="payload-response-view" style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; max-height: 200px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; margin-top: 5px;"></pre>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="close-payload-modal-btn" class="secondary-btn">Close Payload</button>
             </div>
         </div>
     </div>
