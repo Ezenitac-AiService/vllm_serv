@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target === 'audit') {
                 loadAuditLogs();
             }
+            if (target === 'control' || target === 'playground') {
+                loadCapabilities();
+            }
         });
     });
 

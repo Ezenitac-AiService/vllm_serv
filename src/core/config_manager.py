@@ -144,18 +144,19 @@ class ConfigManager:
 
     def get_model_catalog(self) -> Dict[str, Any]:
         """FR-001: config/model_catalog.json에서 모델 카탈로그를 로드하고 캐싱합니다."""
-        if self._model_catalog_cache is not None:
+        if self._model_catalog_cache:
             return self._model_catalog_cache.copy()
 
         catalog_path = os.path.join(os.path.dirname(self.config_path), "model_catalog.json")
         try:
             with open(catalog_path, "r", encoding="utf-8") as f:
                 catalog = json.load(f)
-            self._model_catalog_cache = catalog
-            return catalog.copy()
+            if catalog:
+                self._model_catalog_cache = catalog
+                return catalog.copy()
+            return {}
         except (FileNotFoundError, json.JSONDecodeError, Exception) as e:
-            print(f"[ConfigManager] ⚠️ model_catalog.json 로드 실패 (fallback 사용): {e}")
-            self._model_catalog_cache = {}
+            print(f"[ConfigManager] ⚠️ model_catalog.json 로드 실패: {e}")
             return {}
 
     MODEL_KEY_ALIASES = {
