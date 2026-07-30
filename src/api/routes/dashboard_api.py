@@ -301,11 +301,12 @@ async def run_playground_test(body: PlaygroundRequest):
         finish_reason = "offline"
 
     thinking_process = None
-    if body.strip_think_tags and completion_text:
+    if completion_text:
         from src.core.think_tag_parser import parse_think_tags
         clean_text, think_text = parse_think_tags(completion_text)
-        completion_text = clean_text
         thinking_process = think_text
+        if body.strip_think_tags:
+            completion_text = clean_text
 
     token_speed_tok_s = round(completion_tokens / max(total_latency_s - (ttft_ms / 1000.0), 0.05), 1)
 

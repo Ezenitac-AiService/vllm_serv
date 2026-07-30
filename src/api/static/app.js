@@ -408,10 +408,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!thinkingProcess || mode === 'off') return '';
         const cleanProcess = thinkingProcess.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         if (mode === 'show') {
-            return `<div class="think-block"><strong>🧠 Thinking Process:</strong><br>${cleanProcess}</div>`;
+            return `<details class="think-accordion" open>
+                <summary class="think-summary">🧠 Thinking Process (Visible - Click to toggle)</summary>
+                <div class="think-accordion-content">${cleanProcess}</div>
+            </details>`;
         } else {
+            // mode === 'collapse'
             return `<details class="think-accordion">
-                <summary class="think-summary">🧠 Thinking Process</summary>
+                <summary class="think-summary">🧠 Thinking Process (Collapsed - Click to expand)</summary>
                 <div class="think-accordion-content">${cleanProcess}</div>
             </details>`;
         }
