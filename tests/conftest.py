@@ -24,11 +24,11 @@ def test_mode(request):
 def is_real_network(request):
     return request.config.getoption("--real-network") or os.environ.get("REAL_NETWORK_TEST") == "1"
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def target_host_ip():
     return os.environ.get("HOST_IP", "10.0.0.41")
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def base_url(target_host_ip):
     return f"http://{target_host_ip}:8081"
 

@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminModal: document.getElementById('admin-modal'),
         adminSecretInput: document.getElementById('admin-secret-input'),
         modalLoginBtn: document.getElementById('modal-login-btn'),
+        modalCloseBtn: document.getElementById('modal-close-btn'),
         pgModelSelect: document.getElementById('pg-model-select'),
         pgApiKey: document.getElementById('pg-api-key'),
         pgApiKeyBadge: document.getElementById('pg-api-key-badge'),
@@ -327,30 +328,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 5. Admin Authentication & State-Mutating Actions (FR-006) ---
-    elements.adminLoginBtn.addEventListener('click', () => {
-        elements.adminModal.classList.remove('hidden');
+    elements.adminLoginBtn?.addEventListener('click', () => {
+        elements.adminModal?.classList.remove('hidden');
     });
-    elements.modalCloseBtn.addEventListener('click', () => {
-        elements.adminModal.classList.add('hidden');
+    elements.modalCloseBtn?.addEventListener('click', () => {
+        elements.adminModal?.classList.add('hidden');
     });
-    elements.modalLoginBtn.addEventListener('click', () => {
-        const secret = elements.adminSecretInput.value.trim();
+    elements.modalLoginBtn?.addEventListener('click', () => {
+        const secret = elements.adminSecretInput?.value?.trim();
         if (secret) {
             state.adminSecret = secret;
             sessionStorage.setItem('adminSecret', secret);
-            elements.adminModal.classList.add('hidden');
-            elements.adminLoginBtn.textContent = '✅ Authenticated';
-            elements.adminLoginBtn.className = 'secondary-btn ready';
+            elements.adminModal?.classList.add('hidden');
+            if (elements.adminLoginBtn) {
+                elements.adminLoginBtn.textContent = '✅ Authenticated';
+                elements.adminLoginBtn.className = 'secondary-btn ready';
+            }
         }
     });
 
     async function applyPreset(modelId, nCtx) {
         if (!state.adminSecret) {
-            elements.adminModal.classList.remove('hidden');
+            elements.adminModal?.classList.remove('hidden');
             return;
         }
 
-        elements.loadingOverlay.classList.remove('hidden');
+        elements.loadingOverlay?.classList.remove('hidden');
         try {
             const res = await fetch('/dashboard/api/apply', {
                 method: 'POST',
@@ -365,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('401 Unauthorized: Invalid Admin Secret password!');
                 state.adminSecret = '';
                 sessionStorage.removeItem('adminSecret');
-                elements.adminModal.classList.remove('hidden');
+                elements.adminModal?.classList.remove('hidden');
             } else if (res.ok) {
                 const data = await res.json();
                 console.log('Apply success:', data);
@@ -373,34 +376,38 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             alert('Failed to apply configuration: ' + e);
         } finally {
-            setTimeout(() => elements.loadingOverlay.classList.add('hidden'), 1000);
+            setTimeout(() => elements.loadingOverlay?.classList.add('hidden'), 1000);
         }
     }
 
-    elements.manualForm.addEventListener('submit', (e) => {
+    elements.manualForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        applyPreset(elements.modelSelect.value, parseInt(elements.ctxInput.value, 10));
+        applyPreset(elements.modelSelect?.value, parseInt(elements.ctxInput?.value, 10));
     });
 
-    elements.unloadBtn.addEventListener('click', async () => {
+    elements.unloadBtn?.addEventListener('click', async () => {
         if (!state.adminSecret) {
-            elements.adminModal.classList.remove('hidden');
+            elements.adminModal?.classList.remove('hidden');
             return;
         }
-        elements.loadingOverlay.classList.remove('hidden');
+        elements.loadingOverlay?.classList.remove('hidden');
         try {
             await fetch('/dashboard/api/unload', {
                 method: 'POST',
                 headers: { 'X-Admin-Secret': state.adminSecret }
             });
         } finally {
-            setTimeout(() => elements.loadingOverlay.classList.add('hidden'), 1000);
+            setTimeout(() => elements.loadingOverlay?.classList.add('hidden'), 1000);
         }
     });
 
     // --- 6. AI Playground & Real-time Benchmark (FR-007, FR-008, FR-009) ---
-    elements.pgTemp.addEventListener('input', (e) => elements.pgTempVal.textContent = e.target.value);
-    elements.pgTopP.addEventListener('input', (e) => elements.pgTopPVal.textContent = e.target.value);
+    elements.pgTemp?.addEventListener('input', (e) => {
+        if (elements.pgTempVal) elements.pgTempVal.textContent = e.target.value;
+    });
+    elements.pgTopP?.addEventListener('input', (e) => {
+        if (elements.pgTopPVal) elements.pgTopPVal.textContent = e.target.value;
+    });
 
     const chatThreadContainer = document.getElementById('chat-thread-container');
     const clearChatBtn = document.getElementById('clear-chat-btn');
