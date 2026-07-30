@@ -22,11 +22,12 @@ def test_firewall_status_info_dataclass():
 
 
 def test_firewall_manager_graceful_permission_denied():
-    """Verify FirewallManager logs warning and returns requires_sudo=True when ufw requires sudo."""
+    """Verify FirewallManager logs warning and returns requires_sudo=True when firewall requires sudo."""
     fm = FirewallManager()
-    with patch("subprocess.run") as mock_run:
-        # Simulate ufw requiring sudo / failing with returncode 1
-        mock_run.return_value = MagicMock(returncode=1, stderr="Permission denied (you must be root)")
-        status = fm.allow_port(8081)
-        assert status.requires_sudo is True
-        assert "sudo ufw allow 8081/tcp" in status.guide_message
+    with patch.object(FirewallManager, "detect_firewall_system", return_value="ufw"):
+        with patch("subprocess.run") as mock_run:
+            # Simulate ufw requiring sudo / failing with returncode 1
+            mock_run.return_value = MagicMock(returncode=1, stderr="Permission denied (you must be root)")
+            status = fm.allow_port(8081)
+            assert status.requires_sudo is True
+            assert "sudo ufw allow 8081/tcp" in status.guide_message

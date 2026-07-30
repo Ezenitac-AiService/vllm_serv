@@ -83,9 +83,9 @@
 
 **Purpose**: Documentation updates, full quickstart validation, and regression test suite execution
 
-- [ ] T015 [P] Update documentation in `README.md` for seed pack sudo elevation and multi-OS firewall setup options
-- [ ] T016 Execute end-to-end quickstart validation scenarios defined in `specs/039-seed-pack-sudo-firewall-migration/quickstart.md`
-- [ ] T017 Run complete pytest suite with `uv run pytest` to ensure zero regressions across unit and real-execution tests
+- [x] T015 [P] Update documentation in `README.md` for seed pack sudo elevation and multi-OS firewall setup options
+- [x] T016 Execute end-to-end quickstart validation scenarios defined in `specs/039-seed-pack-sudo-firewall-migration/quickstart.md`
+- [x] T017 Run complete pytest suite with `uv run pytest` to ensure zero regressions across unit and real-execution tests
 
 ---
 
