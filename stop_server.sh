@@ -1,0 +1,1 @@
+/home/dev/storage/vllm_serv/scripts/stop_server.sh

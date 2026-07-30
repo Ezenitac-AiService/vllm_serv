@@ -4,41 +4,41 @@
     "max_safe_n_ctx": 8192,
     "peak_vram_mb": 7800,
     "status": "SUCCESS",
-    "measured_at": "2026-07-30T07:15:03.939169Z"
+    "measured_at": "2026-07-30T08:06:14.638764Z"
   },
   "gemma4-e4b": {
     "model_id": "gemma4-e4b",
     "max_safe_n_ctx": 8192,
     "peak_vram_mb": 7800,
     "status": "SUCCESS",
-    "measured_at": "2026-07-30T07:15:03.939186Z"
+    "measured_at": "2026-07-30T08:06:14.638782Z"
   },
   "gemma4-12b": {
     "model_id": "gemma4-12b",
     "max_safe_n_ctx": 4096,
     "peak_vram_mb": 11500,
     "status": "CAP_APPLIED",
-    "measured_at": "2026-07-30T07:15:03.939192Z"
+    "measured_at": "2026-07-30T08:06:14.638787Z"
   },
   "qwen3.5-2b": {
     "model_id": "qwen3.5-2b",
     "max_safe_n_ctx": 8192,
     "peak_vram_mb": 7800,
     "status": "SUCCESS",
-    "measured_at": "2026-07-30T07:15:03.939197Z"
+    "measured_at": "2026-07-30T08:06:14.638789Z"
   },
   "qwen3.5-4b": {
     "model_id": "qwen3.5-4b",
     "max_safe_n_ctx": 8192,
     "peak_vram_mb": 7800,
     "status": "SUCCESS",
-    "measured_at": "2026-07-30T07:15:03.939201Z"
+    "measured_at": "2026-07-30T08:06:14.638792Z"
   },
   "qwen3.5-9b": {
     "model_id": "qwen3.5-9b",
     "max_safe_n_ctx": 4096,
     "peak_vram_mb": 11500,
     "status": "CAP_APPLIED",
-    "measured_at": "2026-07-30T07:15:03.939205Z"
+    "measured_at": "2026-07-30T08:06:14.638798Z"
   }
 }
