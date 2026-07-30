@@ -227,28 +227,39 @@ if not fn():
 fi
 
 if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
-    log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 소스 컴파일 중..."
-    log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
-    CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python --force-reinstall --no-cache-dir
-    if [ $? -ne 0 ]; then
-        log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
-        log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
-        exit 1
-    fi
-    log_info "✓ llama-cpp-python 동적 최적화 컴파일 및 설치 완료"
+    log_info "기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중..."
+    PRECHECK_GPU=$(uv run python -c "
+import llama_cpp
+fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+print('True' if fn and fn() else 'False')
+" 2>/dev/null || echo "False")
 
-    log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
-    if ! uv run python -c "
+    if [ "$PRECHECK_GPU" = "True" ]; then
+        log_info "✓ 기존 가상환경 내 llama-cpp-python CUDA GPU 가속 활성화 확인 완료 (C++ 소스 컴파일 스킵됨)."
+    else
+        log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 소스 컴파일 중..."
+        log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
+        CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python
+        if [ $? -ne 0 ]; then
+            log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
+            log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+            exit 1
+        fi
+        log_info "✓ llama-cpp-python 동적 최적화 컴파일 및 설치 완료"
+
+        log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
+        if ! uv run python -c "
 import llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
 assert fn is not None, 'No GPU check function found'
 assert fn(), 'GPU offload not supported'
 "; then
-        log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
-        log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
-        exit 1
+            log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
+            log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+            exit 1
+        fi
+        log_info "✓ CUDA GPU 가속 활성화 확인 완료"
     fi
-    log_info "✓ CUDA GPU 가속 활성화 확인 완료"
 fi
 
 log_step "3. 서버 포트 조회 및 네트워크 방화벽 등록"
@@ -266,31 +277,36 @@ fi
 log_info "서빙 포트 설정: $SERVER_PORT/tcp"
 
 # ==============================================================================
-# Step 3.5: Multi-OS Firewall Port Opening (039-seed-pack-sudo-firewall-migration)
-# (FR-003, DoD-002: ufw/firewalld/nftables/iptables auto-detect & port open)
+# Step 3.5: Multi-OS Firewall Port Opening (039-seed-pack-sudo-firewall-migration & 040)
+# (FR-001, FR-003, DoD-001, DoD-002: ufw/firewalld/nftables/iptables auto-detect & port open)
 # ==============================================================================
-if [ "$SUDO_AVAILABLE" = true ]; then
-    log_info "sudo 권한 사용 가능. 멀티 OS 방화벽 감지 및 서비스 포트 개방을 시도합니다."
+FIREWALL_PORTS=("$SERVER_PORT" 8089)
 
-    FIREWALL_PORTS=("$SERVER_PORT" 8089)
-
-    if command -v ufw &> /dev/null && sudo ufw status 2>/dev/null | grep -qi "active"; then
-        log_info "ufw 방화벽 감지. 서비스 포트 개방 중..."
+if command -v ufw &> /dev/null; then
+    log_info "ufw 방화벽 감지. 서비스 포트 개방 중..."
+    if [ "$SUDO_AVAILABLE" = true ]; then
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo ufw allow "${port}/tcp" || true
-            log_info "✓ ufw allow ${port}/tcp"
+            log_info "✓ sudo ufw allow ${port}/tcp"
         done
         sudo ufw status verbose 2>/dev/null || true
-    elif command -v firewall-cmd &> /dev/null && sudo firewall-cmd --state 2>/dev/null | grep -qi "running"; then
-        log_info "firewalld 방화벽 감지. 서비스 포트 영구 등록 중..."
+    else
+        log_warn "sudo 권한 미확인: ufw 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
+    fi
+elif command -v firewall-cmd &> /dev/null; then
+    log_info "firewalld 방화벽 감지. 서비스 포트 영구 등록 중..."
+    if [ "$SUDO_AVAILABLE" = true ]; then
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo firewall-cmd --permanent --add-port="${port}/tcp" || true
             log_info "✓ firewall-cmd --permanent --add-port=${port}/tcp"
         done
         sudo firewall-cmd --reload || true
         log_info "firewalld 리로드 완료."
-        firewall-cmd --list-ports 2>/dev/null || true
-    elif command -v nft &> /dev/null; then
+    else
+        log_warn "sudo 권한 미확인: firewalld 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
+    fi
+elif [ "$SUDO_AVAILABLE" = true ]; then
+    log_info "sudo 권한 사용 가능. 타 OS 방화벽 감지 및 서비스 포트 개방을 시도합니다."
         log_info "nftables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo nft add rule inet filter input tcp dport "${port}" accept 2>/dev/null || \
@@ -578,8 +594,16 @@ log_info "✓ 생성 완료: scripts/status_server.sh (루트 심볼릭 링크 .
 
 log_step "4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)"
 
-log_info "컨텍스트 윈도우 스케일링 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
-uv run python -m src.scripts.benchmark_context_scaling --non-blocking || log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (estimate_kv_cache_vram()으로 자동 fallback 진행)."
+PROFILE_CACHE="$BASE_DIR/config/model_context_profiles.json"
+if [ -f "$PROFILE_CACHE" ]; then
+    log_info "✓ 유효한 현지 컨텍스트 윈도우 캐시 감지 ($PROFILE_CACHE)."
+    log_info "스케일링 벤치마킹을 스킵하고 기존 현지 캐시 프로필을 재사용합니다."
+else
+    log_info "컨텍스트 윈도우 스케일링 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
+    uv run python -m src.scripts.benchmark_context_scaling --non-blocking 2>/dev/null || \
+    uv run python scripts/benchmark_quality.py 2>/dev/null || \
+    log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
+fi
 
 log_step "5. setup.sh 설정 완결"
 

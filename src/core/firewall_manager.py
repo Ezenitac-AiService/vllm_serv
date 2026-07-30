@@ -58,15 +58,19 @@ class FirewallManager:
                     ["ufw", "status"],
                     capture_output=True, text=True, timeout=5
                 )
+                if "Status: active" in res.stdout:
+                    return "ufw"
                 if res.returncode != 0:
                     res = subprocess.run(
                         ["sudo", "-n", "ufw", "status"],
                         capture_output=True, text=True, timeout=5
                     )
-                if "Status: active" in res.stdout:
-                    return "ufw"
+                    if "Status: active" in res.stdout:
+                        return "ufw"
+                # Default to ufw if binary is present on Debian/Ubuntu system even if non-root
+                return "ufw"
             except Exception:
-                pass
+                return "ufw"
         # 2. firewalld (RHEL/CentOS/Rocky/Fedora)
         if shutil.which("firewall-cmd"):
             try:
@@ -76,8 +80,15 @@ class FirewallManager:
                 )
                 if res.returncode == 0 and "running" in res.stdout.strip():
                     return "firewalld"
+                res = subprocess.run(
+                    ["sudo", "-n", "firewall-cmd", "--state"],
+                    capture_output=True, text=True, timeout=5
+                )
+                if res.returncode == 0 and "running" in res.stdout.strip():
+                    return "firewalld"
+                return "firewalld"
             except Exception:
-                pass
+                return "firewalld"
         # 3. nftables (modern kernel)
         if shutil.which("nft"):
             try:
@@ -107,7 +118,12 @@ class FirewallManager:
                     ["ufw", "status"],
                     capture_output=True, text=True, timeout=5
                 )
-                if res.returncode == 0 and "Status: active" in res.stdout:
+                if res.returncode != 0:
+                    res = subprocess.run(
+                        ["sudo", "-n", "ufw", "status"],
+                        capture_output=True, text=True, timeout=5
+                    )
+                if "Status: active" in res.stdout:
                     target_token = f"{port}/{protocol}"
                     for line in res.stdout.splitlines():
                         if target_token in line and "ALLOW" in line.upper():

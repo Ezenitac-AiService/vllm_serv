@@ -637,6 +637,37 @@ def _get_active_feature_report_path() -> str:
     return os.path.join("data", "reports", "analysis_report_quality.md")
 
 
+def save_context_profiles_cache(reports: List[ComprehensiveQualityReportMetric], gpu_metadata: Dict[str, Any]) -> str:
+    """Saves generated context scaling metrics to config/model_context_profiles.json cache."""
+    cache_path = os.path.join("config", "model_context_profiles.json")
+    os.makedirs("config", exist_ok=True)
+    profiles = {}
+    for rep in reports:
+        m_id = rep.model_id
+        max_ctx = 4096
+        if rep.context_scaling_metrics:
+            valid_ctxs = [c.n_ctx for c in rep.context_scaling_metrics if not c.is_oom]
+            if valid_ctxs:
+                max_ctx = max(valid_ctxs)
+        profiles[m_id] = {
+            "max_context_length": max_ctx,
+            "recommended_context_length": max(2048, max_ctx // 2),
+            "peak_vram_mb": rep.peak_vram_mb,
+            "tpot_tok_per_sec": rep.tpot_tok_per_sec,
+            "scaling_tested": True,
+            "last_tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        }
+    payload = {
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "system_hardware": gpu_metadata,
+        "profiles": profiles
+    }
+    with open(cache_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    print(f"✓ Context window profile cache saved to {cache_path}")
+    return cache_path
+
+
 if __name__ == "__main__":
     force_live = "--real" in sys.argv or "--real-inference" in sys.argv
     auto_download = "--auto-download" in sys.argv
@@ -650,6 +681,7 @@ if __name__ == "__main__":
 
     report_file_path = _get_active_feature_report_path()
     generate_markdown_report(report_list, report_file_path, gpu_metadata=gpu_metadata)
+    save_context_profiles_cache(report_list, gpu_metadata)
 
     # 표준 저장 경로 data/reports에도 지속 보존
     standard_report_path = os.path.join("data", "reports", "analysis_report_quality.md")

@@ -183,6 +183,59 @@ async def get_audit_logs(limit: int = 50):
 
 
 
+@router.get("/benchmark/profiles")
+async def get_benchmark_profiles():
+    """Public read-only: Retrieve cached context window scaling profiles (FR-012)."""
+    cache_path = os.path.abspath("config/model_context_profiles.json")
+    if not os.path.exists(cache_path):
+        return {
+            "status": "not_found",
+            "message": "Context window profile cache not yet generated. Click re-run benchmark to initialize.",
+            "profiles": {}
+        }
+    try:
+        with open(cache_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {
+            "status": "success",
+            "data": data
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to read context profile cache: {e}"
+        )
+
+
+_BENCHMARK_RUNNING_TASK = None
+
+@router.post("/benchmark/rerun")
+async def trigger_benchmark_rerun(full_rebench: bool = False, authorized: bool = Depends(verify_admin_secret_auth)):
+    """Admin-only: Trigger asynchronous context scaling benchmark re-run (FR-012, FR-013)."""
+    global _BENCHMARK_RUNNING_TASK
+    if _BENCHMARK_RUNNING_TASK and not _BENCHMARK_RUNNING_TASK.done():
+        return {
+            "status": "running",
+            "message": "Context window benchmark task is already running in background.",
+            "task_id": "bench-active"
+        }
+
+    async def _run_benchmark_async():
+        proc = await asyncio.create_subprocess_exec(
+            "uv", "run", "python", "scripts/benchmark_quality.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await proc.communicate()
+
+    _BENCHMARK_RUNNING_TASK = asyncio.create_task(_run_benchmark_async())
+    return {
+        "status": "accepted",
+        "message": "Background context window benchmark re-run task initiated successfully.",
+        "task_id": f"bench-{int(time.time())}"
+    }
+
+
 @router.post("/playground", response_model=PlaygroundResponse)
 async def run_playground_test(body: PlaygroundRequest):
     """Public playground: Run inference test and measure TTFT(ms) & tok/s (FR-007, FR-008, FR-009)."""
