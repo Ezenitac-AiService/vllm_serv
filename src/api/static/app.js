@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminSecretInput: document.getElementById('admin-secret-input'),
         modalLoginBtn: document.getElementById('modal-login-btn'),
         modalCloseBtn: document.getElementById('modal-close-btn'),
-        // Playground
+        pgModelSelect: document.getElementById('pg-model-select'),
         pgSystemPrompt: document.getElementById('pg-system-prompt'),
         pgTemp: document.getElementById('pg-temp'),
         pgTempVal: document.getElementById('pg-temp-val'),
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.platformProfileSub.textContent = `Platform Profile: ${caps.platform_profile} (${caps.vram_total}MB VRAM)`;
             elements.statProfile.textContent = `Profile: ${caps.platform_profile}`;
 
-            // Populate Model Dropdown
+            // Populate Model Dropdown (Control Tab)
             elements.modelSelect.innerHTML = '';
             caps.available_models.forEach(model => {
                 const opt = document.createElement('option');
@@ -262,6 +262,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (model === caps.current_model) opt.selected = true;
                 elements.modelSelect.appendChild(opt);
             });
+
+            // Populate Playground Model Dropdown (#pg-model-select)
+            if (elements.pgModelSelect) {
+                elements.pgModelSelect.innerHTML = '';
+                caps.available_models.forEach(model => {
+                    const opt = document.createElement('option');
+                    opt.value = model;
+                    opt.textContent = model;
+                    if (model === caps.current_model) opt.selected = true;
+                    elements.pgModelSelect.appendChild(opt);
+                });
+                if (caps.current_model && elements.pgActiveModel) {
+                    elements.pgActiveModel.textContent = `Model: ${caps.current_model}`;
+                }
+            }
 
             // Populate Presets Grid
             elements.presetsGrid.innerHTML = '';
@@ -546,6 +561,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    if (elements.pgModelSelect) {
+        elements.pgModelSelect.addEventListener('change', (e) => {
+            if (elements.pgActiveModel) {
+                elements.pgActiveModel.textContent = `Model: ${e.target.value}`;
+            }
+        });
+    }
+
     const newChatBtn = document.getElementById('new-chat-btn');
     if (newChatBtn) newChatBtn.addEventListener('click', startNewChat);
 
@@ -613,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: elements.modelSelect.value || 'qwen3.5-4b',
+                    model: (elements.pgModelSelect && elements.pgModelSelect.value) || elements.modelSelect.value || 'qwen3.5-4b',
                     system_prompt: elements.pgSystemPrompt.value,
                     prompt: prompt,
                     temperature: parseFloat(elements.pgTemp.value),
@@ -664,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (dataStr === '[DONE]') break;
 
                         try {
-                            const parsed = JSON.loads ? JSON.parse(dataStr) : {};
+                            const parsed = JSON.parse(dataStr);
                             
                             // 1. Thinking Delta Streaming
                             if (parsed.think) {
