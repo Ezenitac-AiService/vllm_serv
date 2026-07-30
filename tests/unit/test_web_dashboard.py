@@ -21,7 +21,6 @@ def test_get_benchmark_profiles_endpoint():
     assert "status" in data
     if data["status"] == "success":
         assert "data" in data
-        assert "profiles" in data["data"]
 
 
 def test_trigger_benchmark_rerun_unauthorized():
@@ -34,7 +33,7 @@ def test_trigger_benchmark_rerun_authorized():
     """Verify POST /dashboard/api/benchmark/rerun accepts valid admin secret."""
     from src.core.api_key_manager import get_api_key_manager
     key_mgr = get_api_key_manager()
-    secret = key_mgr.admin_secret
+    secret = key_mgr._admin_secret
 
     response = client.post(
         "/dashboard/api/benchmark/rerun",

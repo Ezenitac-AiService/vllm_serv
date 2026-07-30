@@ -140,8 +140,11 @@ fi
 
 log_info "uv 버전: $(uv --version)"
 
-log_info "가상환경 패키지 동기화 중 (uv sync)..."
-uv sync
+log_info "가상환경 고속 동기화 중 (uv sync --frozen)..."
+if ! uv sync --frozen 2>/dev/null; then
+    log_info "락파일(uv.lock) 불일치 감지 또는 가상환경 수립 필요: 일반 uv sync 동기화로 Fallback 진행 중..."
+    uv sync
+fi
 
 # FR-005 / T006: CUDA Toolkit (nvcc) 존재 여부 fail-fast 검증
 log_info "NVIDIA CUDA Toolkit (nvcc) 빌드 환경 검증 중..."
