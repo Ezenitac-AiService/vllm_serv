@@ -60,6 +60,9 @@ def test_make_seed_pack_default_tarball(tmp_path):
             assert not n.startswith("logs/") and "/logs/" not in n, f"Excluded directory logs/ found in archive: {n}"
             assert not n.startswith("__pycache__/") and "/__pycache__/" not in n, f"Excluded __pycache__ found in archive: {n}"
             assert not n.startswith(".git/") and "/.git/" not in n, f"Excluded .git/ found in archive: {n}"
+            assert not n.startswith(".legacy/") and "/.legacy/" not in n and n != ".legacy", f"Excluded .legacy/ found in archive: {n}"
+            assert "model_context_profiles.json" not in n, f"Excluded model_context_profiles.json found in archive: {n}"
+            assert "benchmark_results.json" not in n, f"Excluded benchmark_results.json found in archive: {n}"
 
 
 def test_make_seed_pack_zip_format(tmp_path):
@@ -85,3 +88,7 @@ def test_make_seed_pack_zip_format(tmp_path):
         for n in normalized_names:
             assert not n.startswith("models/") and "/models/" not in n, f"Excluded directory models/ found in zip: {n}"
             assert not n.startswith(".venv/") and "/.venv/" not in n, f"Excluded directory .venv/ found in zip: {n}"
+            assert not n.startswith(".legacy/") and "/.legacy/" not in n and n != ".legacy", f"Excluded .legacy/ found in zip: {n}"
+            assert "model_context_profiles.json" not in n, f"Excluded model_context_profiles.json found in zip: {n}"
+            assert "benchmark_results.json" not in n, f"Excluded benchmark_results.json found in zip: {n}"
+
