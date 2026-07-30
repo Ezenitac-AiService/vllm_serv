@@ -120,13 +120,18 @@ def run_benchmark():
     print("  환경: NVIDIA GTX 1080 Ti (11GB VRAM)")
     print("=" * 70)
 
-    model_ids = ["gemma4-2b", "gemma4-4b", "gemma4-12b"]
+    from src.core.config_manager import ConfigManager
+    cm = ConfigManager()
+    catalog = cm.get_model_catalog()
+    model_ids = [mid for mid in catalog.keys() if mid.startswith("gemma4")]
     prompt_types = ["short", "medium", "long"]
     results: List[BenchmarkResult] = []
 
     for model_id in model_ids:
         # 모델 디렉토리 존재 확인
-        model_dir = os.path.join(MODELS_DIR, model_id)
+        cfg = cm.get_model_config(model_id)
+        rel_target = cfg.get("target_dir", f"models/{model_id}") if cfg else f"models/{model_id}"
+        model_dir = cm.get_absolute_path(rel_target) or os.path.join(MODELS_DIR, model_id)
         if not os.path.isdir(model_dir):
             print(f"\n⚠️  {model_id}: 모델 디렉토리 없음 → 건너뜁니다.")
             for pt in prompt_types:

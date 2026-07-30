@@ -14,13 +14,13 @@ def test_gemma4_preset_catalog_bindings():
     pm = ProcessManager()
     
     assert "gemma4-e2b" in pm.model_presets
-    assert pm.model_presets["gemma4-e2b"]["clip"] == "models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf"
+    assert pm.model_presets["gemma4-e2b"]["clip"] == "models/gemma4-e2b/mmproj-gemma-4-E2B-it-BF16.gguf"
     
     assert "gemma4-e4b" in pm.model_presets
-    assert pm.model_presets["gemma4-e4b"]["clip"] == "models/gemma4-4b/gemma-4-E4B-it-mmproj.gguf"
+    assert pm.model_presets["gemma4-e4b"]["clip"] == "models/gemma4-e4b/mmproj-gemma-4-E4B-it-BF16.gguf"
     
     assert "gemma4-12b" in pm.model_presets
-    assert pm.model_presets["gemma4-12b"]["clip"] == "models/gemma4-12b/mmproj-gemma-4-12b-it-qat-q4_0.gguf"
+    assert pm.model_presets["gemma4-12b"]["clip"] == "models/gemma4-12b/mmproj-gemma-4-12B-it-BF16.gguf"
 
 
 @pytest.mark.asyncio
@@ -52,7 +52,7 @@ async def test_spawn_process_injects_mmproj_cli_arg_standalone():
         # Verify --mmproj is in CLI args
         assert "--mmproj" in cmd
         mmproj_idx = cmd.index("--mmproj")
-        assert cmd[mmproj_idx + 1].endswith("models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf")
+        assert cmd[mmproj_idx + 1].endswith("models/gemma4-e2b/mmproj-gemma-4-E2B-it-BF16.gguf")
 
 
 @pytest.mark.asyncio
@@ -84,7 +84,7 @@ async def test_spawn_process_injects_clip_model_path_cli_arg_python_fallback():
         # Verify --clip_model_path is in CLI args
         assert "--clip_model_path" in cmd
         clip_idx = cmd.index("--clip_model_path")
-        assert cmd[clip_idx + 1].endswith("models/gemma4-2b/gemma-4-E2B-it-mmproj.gguf")
+        assert cmd[clip_idx + 1].endswith("models/gemma4-e2b/mmproj-gemma-4-E2B-it-BF16.gguf")
 
 
 # T009 / US2: CMake -DGGML_CUDA=ON flag injection verification

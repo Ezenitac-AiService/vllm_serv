@@ -177,13 +177,10 @@ def main():
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     
     # Needs to be imported after sys.path update if run directly
-    try:
-        from src.core.config import SUPPORTED_MODELS
-    except ImportError:
-        print("Failed to import SUPPORTED_MODELS. Make sure you are running from project root via `PYTHONPATH=. python3 src/scripts/benchmark_context_scaling.py`")
-        sys.exit(1)
-        
-    models_to_test = ["gemma4-2b", "gemma4-4b", "gemma4-12b"]
+    from src.core.config_manager import ConfigManager
+    cm = ConfigManager()
+    catalog = cm.get_model_catalog()
+    models_to_test = [m for m in catalog.keys() if m.startswith("gemma4")]
     logger = BenchmarkLogger("specs/003-context-scaling/results.jsonl")
     
     for model_id in models_to_test:

@@ -27,10 +27,12 @@ def run_128k_benchmark():
     print("  환경: NVIDIA GTX 1080 Ti (11GB VRAM)")
     print("=" * 70)
 
-    model_id = "gemma4-2b"
-    # Ensure n_ctx is 128000
-    config = SUPPORTED_MODELS[model_id]
-    config.n_ctx = 128000
+    from src.core.config_manager import ConfigManager
+    cm = ConfigManager()
+    model_id = cm.resolve_model_id("gemma4-e2b")
+    config = SUPPORTED_MODELS.get(model_id)
+    if config:
+        config.n_ctx = 128000
 
     mgr = LlamaManager()
     print(f"🔄 모델 로드: {model_id} (n_ctx=128000)")

@@ -116,7 +116,7 @@ class TestModelDownloader:
     def test_get_model_path_returns_path_when_exists(self):
         """모델 파일 존재 시 절대 경로 반환."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            target_dir = os.path.join(tmpdir, "models", "gemma4-2b")
+            target_dir = os.path.join(tmpdir, "models", "gemma4-e2b")
             os.makedirs(target_dir, exist_ok=True)
             fake_gguf = os.path.join(target_dir, "gemma-4-E2B_q4_0-it.gguf")
             with open(fake_gguf, "wb") as f:
@@ -126,6 +126,10 @@ class TestModelDownloader:
             result = downloader.get_model_path("gemma4-e2b")
             assert result is not None
             assert result.endswith("gemma-4-E2B_q4_0-it.gguf")
+
+            # Test alias resolution
+            alias_result = downloader.get_model_path("gemma4-2b")
+            assert alias_result == result
 
     def test_download_unknown_model_returns_failed(self):
         """알 수 없는 model_id로 다운로드 시 FAILED 상태 반환."""
@@ -210,7 +214,7 @@ def test_gemma4_mmproj_availability_check():
     """Verify that is_model_available requires BOTH main GGUF and MMProj files for Gemma 4."""
     with tempfile.TemporaryDirectory() as tmpdir:
         downloader = ModelDownloader(base_dir=tmpdir)
-        target_dir = os.path.join(tmpdir, "models", "gemma4-2b")
+        target_dir = os.path.join(tmpdir, "models", "gemma4-e2b")
         os.makedirs(target_dir, exist_ok=True)
         
         main_gguf = os.path.join(target_dir, "gemma-4-E2B_q4_0-it.gguf")
@@ -228,5 +232,6 @@ def test_gemma4_mmproj_availability_check():
         with open(mmproj_gguf, "wb") as f:
             f.write(b"MMPROJ_GGUF")
         assert downloader.is_model_available("gemma4-e2b") is True
+
 
 

@@ -19,7 +19,7 @@ async def test_gemma4_e2b_serving_with_mmproj(test_mode):
     pm = ProcessManager(port=8089)
     try:
         # Check if model file exists before attempting live run
-        if test_mode == "real" and not os.path.exists("models/gemma4-2b/gemma-4-E2B_q4_0-it.gguf"):
+        if test_mode == "real" and not os.path.exists("models/gemma4-e2b/gemma-4-E2B_q4_0-it.gguf"):
             pytest.skip("Gemma 4 E2B model file not present locally. Skipping real integration test.")
 
         state = await pm.spawn_process("gemma4-e2b", n_ctx=2048)

@@ -29,3 +29,19 @@ def test_config_manager_get_model_catalog():
         model_entry = ModelCatalogEntry(**entry)
         assert model_entry.name == "Qwen 3.5 4B"
         assert model_entry.quant_type == "q4_k_m"
+
+def test_config_manager_alias_resolution_and_path():
+    cm = ConfigManager()
+    assert cm.resolve_model_id("gemma4-2b") == "gemma4-e2b"
+    assert cm.resolve_model_id("gemma4-4b") == "gemma4-e4b"
+    assert cm.resolve_model_id("gemma4-e2b") == "gemma4-e2b"
+
+    cfg = cm.get_model_config("gemma4-2b")
+    assert cfg is not None
+    assert cfg["name"] == "Gemma 4 E2B"
+    assert cfg["target_dir"] == "models/gemma4-e2b"
+
+    abs_path = cm.get_absolute_path("config/model_catalog.json")
+    assert abs_path.endswith("config/model_catalog.json")
+    assert abs_path.startswith("/")
+

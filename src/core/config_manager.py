@@ -19,6 +19,10 @@ class ServerConfig(BaseModel):
     healthcheck_timeout_s: int = 120
     graceful_drain_timeout_s: float = 5.0
     connection_pool: ConnectionPoolConfig = Field(default_factory=ConnectionPoolConfig)
+    api_key_enabled: bool = False
+    api_keys: List[Dict[str, Any]] = Field(default_factory=list)
+    admin_secret: str = "admin1234"
+
 
     @field_validator("port", "backend_port")
     @classmethod
@@ -55,14 +59,22 @@ class ConfigManager:
     def __init__(self, config_path: str = "config/model_config.json"):
         self.config_path = config_path
         self._cache: Optional[Dict[str, Any]] = None
+        self._server_config_cache: Optional[Dict[str, Any]] = None
+        self._model_catalog_cache: Optional[Dict[str, Any]] = None
+        self._platform_profiles_cache: Optional[Dict[str, Any]] = None
         self._ensure_config_exists()
+
 
     def _ensure_config_exists(self) -> None:
         dir_name = os.path.dirname(self.config_path)
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
         if not os.path.exists(self.config_path):
-            self.save_config(self.DEFAULT_CONFIG)
+            if self.config_path.endswith("server_config.json"):
+                self.save_config(ServerConfig().model_dump())
+            else:
+                self.save_config(self.DEFAULT_CONFIG)
+
 
     def get_config(self) -> dict:
         """Returns cached configuration if available, otherwise reads from file."""
@@ -101,11 +113,21 @@ class ConfigManager:
                 os.remove(temp_name)
             raise
 
+    def get(self, key: str, default: Any = None) -> Any:
+        cfg = self.get_config()
+        return cfg.get(key, default)
+
+    def set(self, key: str, val: Any) -> None:
+        cfg = self.get_config()
+        cfg[key] = val
+        self.save_config(cfg)
+
     def update_config(self, **kwargs) -> dict:
         current = self.get_config()
         current.update(kwargs)
         self.save_config(current)
         return current.copy()
+
 
     def invalidate_cache(self) -> None:
         """Explicitly invalidates memory cache."""
@@ -132,6 +154,33 @@ class ConfigManager:
             self._model_catalog_cache = {}
             return {}
 
+    MODEL_KEY_ALIASES = {
+        "gemma4-2b": "gemma4-e2b",
+        "gemma4-4b": "gemma4-e4b",
+        "gemma-4-2b": "gemma4-e2b",
+        "gemma-4-4b": "gemma4-e4b",
+        "gemma-4-12b": "gemma4-12b",
+    }
+
+    def resolve_model_id(self, model_id: str) -> str:
+        """Resolves legacy or alternate model ID keys to standard catalog keys."""
+        return self.MODEL_KEY_ALIASES.get(model_id, model_id)
+
+    def get_model_config(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """Returns catalog configuration dictionary for a given model ID or alias."""
+        resolved_id = self.resolve_model_id(model_id)
+        catalog = self.get_model_catalog()
+        return catalog.get(resolved_id)
+
+    def get_absolute_path(self, path: Optional[str]) -> Optional[str]:
+        """Converts a relative path to absolute path relative to project root."""
+        if not path:
+            return None
+        if os.path.isabs(path):
+            return path
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.abspath(os.path.join(project_root, path))
+
     # -------------------------------------------------------------------------
     # FR-002: Server Config JSON 외부화 및 Pydantic v2 로더
     # -------------------------------------------------------------------------
@@ -145,7 +194,11 @@ class ConfigManager:
         if self._server_config_cache is not None:
             return self._server_config_cache.copy()
 
-        server_config_path = os.path.join(os.path.dirname(self.config_path), "server_config.json")
+        if self.config_path.endswith("server_config.json"):
+            server_config_path = self.config_path
+        else:
+            server_config_path = os.path.join(os.path.dirname(self.config_path), "server_config.json")
+
         raw_config = {}
         try:
             with open(server_config_path, "r", encoding="utf-8") as f:
@@ -167,12 +220,36 @@ class ConfigManager:
             except ValueError:
                 pass
 
-        env_host = os.environ.get("LLAMA_HOST")
-        if env_host is not None:
-            config["host"] = env_host
-
         self._server_config_cache = config
         return config.copy()
+
+    def _write_atomic_server_config(self, config: dict, **kwargs) -> None:
+        """Saves server_config.json atomically."""
+        config.update(kwargs)
+        if self.config_path.endswith("server_config.json"):
+            server_config_path = self.config_path
+        else:
+            server_config_path = os.path.join(os.path.dirname(self.config_path), "server_config.json")
+
+        target_dir = os.path.dirname(server_config_path) or "."
+        os.makedirs(target_dir, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile("w", dir=target_dir, delete=False, encoding="utf-8") as tf:
+            temp_name = tf.name
+            json.dump(config, tf, indent=4)
+            tf.flush()
+            os.fsync(tf.fileno())
+
+        try:
+            os.chmod(temp_name, 0o600)
+            os.replace(temp_name, server_config_path)
+        except Exception:
+            if os.path.exists(temp_name):
+                os.remove(temp_name)
+            raise
+
+        self._server_config_cache = config.copy()
+
 
     def invalidate_all_caches(self) -> None:
         """모든 설정 캐시를 무효화합니다."""

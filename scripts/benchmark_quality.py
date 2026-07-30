@@ -33,62 +33,33 @@ SERVER_PORT = _server_cfg.get("port", 8081)
 SERVER_BASE_URL = f"http://{SERVER_HOST}:{SERVER_PORT}"
 SERVER_API_URL = f"{SERVER_BASE_URL}/v1/chat/completions"
 
-MODELS_CATALOG = [
-    {
-        "model_id": "gemma4-e2b",
-        "model_name": "Gemma 4 E2B",
-        "quant_type": "q4_0",
-        "size_gb": 1.8,
-        "base_tpot": 44.1,
-        "base_ttft": 128.0,
-        "base_vram": 2680,
-    },
-    {
-        "model_id": "gemma4-e4b",
-        "model_name": "Gemma 4 E4B",
-        "quant_type": "q4_0",
-        "size_gb": 3.1,
-        "base_tpot": 33.8,
-        "base_ttft": 156.0,
-        "base_vram": 4210,
-    },
-    {
-        "model_id": "gemma4-12b",
-        "model_name": "Gemma 4 12B",
-        "quant_type": "qat_q4_0",
-        "size_gb": 7.4,
-        "base_tpot": 17.6,
-        "base_ttft": 285.0,
-        "base_vram": 8900,
-    },
-    {
-        "model_id": "qwen3.5-2b",
-        "model_name": "Qwen 3.5 2B",
-        "quant_type": "q4_k_m",
-        "size_gb": 1.6,
-        "base_tpot": 48.5,
-        "base_ttft": 115.0,
-        "base_vram": 2450,
-    },
-    {
-        "model_id": "qwen3.5-4b",
-        "model_name": "Qwen 3.5 4B",
-        "quant_type": "q4_k_m",
-        "size_gb": 2.8,
-        "base_tpot": 36.2,
-        "base_ttft": 142.0,
-        "base_vram": 3950,
-    },
-    {
-        "model_id": "qwen3.5-9b",
-        "model_name": "Qwen 3.5 9B",
-        "quant_type": "q4_k_m",
-        "size_gb": 5.8,
-        "base_tpot": 22.4,
-        "base_ttft": 210.0,
-        "base_vram": 7120,
+def get_models_catalog_from_config() -> List[Dict[str, Any]]:
+    """FR-001: ConfigManager 단일 진실 소스(SSOT)에서 모델 카탈로그를 동적으로 로드합니다."""
+    catalog = ConfigManager().get_model_catalog()
+    catalog_list = []
+    baselines = {
+        "gemma4-e2b": {"base_tpot": 44.1, "base_ttft": 128.0, "base_vram": 2680},
+        "gemma4-e4b": {"base_tpot": 33.8, "base_ttft": 156.0, "base_vram": 4210},
+        "gemma4-12b": {"base_tpot": 17.6, "base_ttft": 285.0, "base_vram": 8900},
+        "qwen3.5-2b": {"base_tpot": 48.5, "base_ttft": 115.0, "base_vram": 2450},
+        "qwen3.5-4b": {"base_tpot": 36.2, "base_ttft": 142.0, "base_vram": 3950},
+        "qwen3.5-9b": {"base_tpot": 22.4, "base_ttft": 210.0, "base_vram": 7120},
     }
-]
+    for model_id, entry in catalog.items():
+        base_info = baselines.get(model_id, {"base_tpot": 30.0, "base_ttft": 150.0, "base_vram": entry.get("vram_est_mb", 5000)})
+        catalog_list.append({
+            "model_id": model_id,
+            "model_name": entry.get("name", model_id),
+            "quant_type": entry.get("quant_type", "q4_0"),
+            "size_gb": entry.get("size_gb", 2.0),
+            "base_tpot": base_info["base_tpot"],
+            "base_ttft": base_info["base_ttft"],
+            "base_vram": base_info["base_vram"],
+        })
+    return catalog_list
+
+MODELS_CATALOG = get_models_catalog_from_config()
+
 
 
 def check_live_server() -> bool:

@@ -94,32 +94,66 @@ class ModelDownloader:
 
     def is_model_available(self, model_id: str) -> bool:
         """로컬에 해당 모델의 GGUF 가중치 및 MMProj CLIP 프로젝터 파일이 모두 존재하는지 확인."""
+        model_id = self.config_manager.resolve_model_id(model_id)
         catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             return False
-        target_path = os.path.join(
-            self.base_dir, catalog_entry["target_dir"], catalog_entry["filename"]
-        )
-        if not os.path.isfile(target_path):
-            return False
-        if catalog_entry.get("clip_filename"):
-            clip_path = os.path.join(
-                self.base_dir, catalog_entry["target_dir"], catalog_entry["clip_filename"]
-            )
-            if not os.path.isfile(clip_path):
-                return False
-        return True
+
+        dirs_to_check = [catalog_entry["target_dir"]]
+        if "e2b" in model_id:
+            dirs_to_check.append("models/gemma4-2b")
+        elif "e4b" in model_id:
+            dirs_to_check.append("models/gemma4-4b")
+
+        for rel_dir in dirs_to_check:
+            abs_dir = os.path.join(self.base_dir, rel_dir)
+            if not os.path.isdir(abs_dir):
+                continue
+
+            exact_main = os.path.join(abs_dir, catalog_entry["filename"])
+            has_main = os.path.isfile(exact_main)
+            if not has_main:
+                has_main = any(f.endswith(".gguf") and "mmproj" not in f for f in os.listdir(abs_dir))
+
+            if not has_main:
+                continue
+
+            clip_name = catalog_entry.get("clip_filename")
+            if clip_name:
+                exact_clip = os.path.join(abs_dir, clip_name)
+                has_clip = os.path.isfile(exact_clip)
+                if not has_clip:
+                    has_clip = any(f.endswith(".gguf") and "mmproj" in f for f in os.listdir(abs_dir))
+                if not has_clip:
+                    continue
+
+            return True
+        return False
 
     def get_model_path(self, model_id: str) -> Optional[str]:
         """모델의 로컬 GGUF 파일 절대 경로 반환. 미존재 시 None."""
+        model_id = self.config_manager.resolve_model_id(model_id)
         catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             return None
-        target_path = os.path.join(
-            self.base_dir, catalog_entry["target_dir"], catalog_entry["filename"]
-        )
-        if os.path.isfile(target_path):
-            return target_path
+
+        dirs_to_check = [catalog_entry["target_dir"]]
+        if "e2b" in model_id:
+            dirs_to_check.append("models/gemma4-2b")
+        elif "e4b" in model_id:
+            dirs_to_check.append("models/gemma4-4b")
+
+        for rel_dir in dirs_to_check:
+            abs_dir = os.path.join(self.base_dir, rel_dir)
+            if not os.path.isdir(abs_dir):
+                continue
+            exact_main = os.path.join(abs_dir, catalog_entry["filename"])
+            if os.path.isfile(exact_main):
+                return exact_main
+            for f in os.listdir(abs_dir):
+                if f.endswith(".gguf") and "mmproj" not in f:
+                    return os.path.join(abs_dir, f)
+
         return None
 
     def download_model(
@@ -129,6 +163,7 @@ class ModelDownloader:
         force: bool = False,
     ) -> ModelDownloadTask:
         """단일 모델의 GGUF 가중치(및 CLIP mmproj)를 HuggingFace Hub에서 다운로드."""
+        model_id = self.config_manager.resolve_model_id(model_id)
         catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             task = ModelDownloadTask(
@@ -175,11 +210,13 @@ class ModelDownloader:
         try:
             from huggingface_hub import hf_hub_download
 
+            hf_token = os.environ.get("HF_TOKEN")
             t_start = time.time()
             downloaded_path = hf_hub_download(
                 repo_id=catalog_entry["repo_id"],
                 filename=catalog_entry["filename"],
                 local_dir=target_dir_abs,
+                token=hf_token,
                 resume_download=True,
             )
             t_elapsed = max(0.001, time.time() - t_start)
@@ -198,6 +235,7 @@ class ModelDownloader:
                     repo_id=catalog_entry["repo_id"],
                     filename=catalog_entry["clip_filename"],
                     local_dir=target_dir_abs,
+                    token=hf_token,
                     resume_download=True,
                 )
                 t_clip_elapsed = max(0.001, time.time() - t_clip_start)
@@ -249,6 +287,7 @@ class ModelDownloader:
         model_id: str,
         progress_callback: Optional[Callable[[str, float], None]] = None,
     ) -> str:
+        model_id = self.config_manager.resolve_model_id(model_id)
         catalog_entry = self.catalog.get(model_id)
         if not catalog_entry:
             raise ValueError(f"Unknown model_id: {model_id}")

@@ -296,7 +296,8 @@ class ProcessManager:
 
     def estimate_vram_usage(self, model_id: str, n_ctx: int) -> int:
         """FR-010: Dry-run VRAM calculation based on model base VRAM and context scaling."""
-        preset = self.model_presets.get(model_id)
+        resolved_id = self._config_manager.resolve_model_id(model_id)
+        preset = self.model_presets.get(resolved_id)
         base_vram = preset.get("vram_est_mb", 6000) if preset else 6000
         extra_ctx_vram = max(0, int((n_ctx - 4096) * 0.5))
         return base_vram + extra_ctx_vram
@@ -397,6 +398,7 @@ class ProcessManager:
         # FR-001: Detect zombie collision after stop_process and _wait_for_port_free if port is still occupied
         self.detect_zombie_collision()
 
+        model_id = self._config_manager.resolve_model_id(model_id)
         target_preset = self.model_presets.get(model_id)
         if not target_preset:
             self.state = ProcessState(
@@ -408,7 +410,12 @@ class ProcessManager:
             return self.state
 
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        model_file = os.path.join(base_dir, target_preset["model"])
+        model_rel = target_preset["model"]
+        model_file = self._config_manager.get_absolute_path(model_rel) or os.path.join(base_dir, model_rel)
+
+        # Ensure target_dir exists
+        target_dir = os.path.dirname(model_file)
+        os.makedirs(target_dir, exist_ok=True)
 
         # FR-012 / T002: Pre-flight GGUF + KV Cache VRAM estimator
         kv_vram_mb = estimate_kv_cache_vram(n_ctx=n_ctx)
@@ -453,8 +460,8 @@ class ProcessManager:
         clip_file = None
         clip_rel = target_preset.get("clip")
         if clip_rel:
-            candidate_clip = os.path.join(base_dir, clip_rel) if not os.path.isabs(clip_rel) else clip_rel
-            if os.path.exists(candidate_clip):
+            candidate_clip = self._config_manager.get_absolute_path(clip_rel) or os.path.join(base_dir, clip_rel)
+            if candidate_clip and os.path.exists(candidate_clip):
                 clip_file = candidate_clip
             elif os.path.exists(clip_rel):
                 clip_file = clip_rel

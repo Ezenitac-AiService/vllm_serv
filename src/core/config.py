@@ -1,7 +1,9 @@
 import os
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from src.core.config_manager import ConfigManager
 
 # Load .env from project root
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -15,38 +17,29 @@ class ModelConfig(BaseModel):
     n_ctx: int = 8192
 
 
-def get_hf_token() -> str:
-    """Retrieve HF_TOKEN from environment (loaded via .env). Raises if missing."""
-    token = os.environ.get("HF_TOKEN")
-    if not token:
-        raise EnvironmentError(
-            "HF_TOKEN 환경변수가 설정되지 않았습니다. "
-            "프로젝트 루트의 .env 파일에 HF_TOKEN=hf_... 형태로 추가하세요."
+def get_hf_token() -> Optional[str]:
+    """Retrieve HF_TOKEN from environment if set (loaded via .env). Returns None if missing."""
+    return os.environ.get("HF_TOKEN")
+
+
+# Single Source of Truth (SSOT) derived from ConfigManager
+_cm = ConfigManager()
+
+def get_supported_models() -> dict:
+    """Dynamically builds SUPPORTED_MODELS dictionary from model_catalog.json SSOT."""
+    catalog = _cm.get_model_catalog()
+    models = {}
+    for model_id, entry in catalog.items():
+        models[model_id] = ModelConfig(
+            model_id=model_id,
+            repo_id=entry.get("repo_id", ""),
+            filename=entry.get("filename", ""),
+            n_ctx=entry.get("default_n_ctx", 4096),
         )
-    return token
+    return models
 
 
-# Define the models we want to support
-SUPPORTED_MODELS = {
-    "gemma4-2b": ModelConfig(
-        model_id="gemma4-2b",
-        repo_id="google/gemma-4-E2B-it-qat-q4_0-gguf",
-        filename="",
-        n_ctx=128000
-    ),
-    "gemma4-4b": ModelConfig(
-        model_id="gemma4-4b",
-        repo_id="google/gemma-4-E4B-it-qat-q4_0-gguf",
-        filename="",
-        n_ctx=128000
-    ),
-    "gemma4-12b": ModelConfig(
-        model_id="gemma4-12b",
-        repo_id="google/gemma-4-12B-it-qat-q4_0-gguf",
-        filename="",
-        n_ctx=256000
-    )
-}
+SUPPORTED_MODELS = get_supported_models()
 
 MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "models")
 os.makedirs(MODELS_DIR, exist_ok=True)

@@ -14,7 +14,9 @@ from src.core.llama_manager import llama_manager
 from src.core.config_manager import ConfigManager
 from src.api.routes.inference_api import router as inference_router
 from src.api.routes.dashboard_api import router as dashboard_router
+from src.api.routes.admin_api import router as admin_router
 from src.api.middleware.subnet_filter import SubnetFilterMiddleware
+from src.api.middleware.client_access_logger import ClientAccessLogMiddleware
 
 
 @asynccontextmanager
@@ -51,14 +53,20 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
+    # FR-001 / FR-002: 클라이언트 요청 및 감사 로깅 미들웨어 장착
+    app.add_middleware(ClientAccessLogMiddleware)
+
     # FR-008: 사설 내부망 CIDR 접근제어 미들웨어 장착
     cm = ConfigManager()
     server_cfg = cm.get_server_config()
     allowed_subnets = server_cfg.get("allowed_subnets", ["127.0.0.1", "192.168.0.0/24"])
     app.add_middleware(SubnetFilterMiddleware, allowed_subnets=allowed_subnets)
 
+    app.include_router(admin_router)
     app.include_router(inference_router)
     app.include_router(dashboard_router)
+
+
 
     # Mount static dashboard files if static dir exists
     static_dir = os.path.join(os.path.dirname(__file__), "static")

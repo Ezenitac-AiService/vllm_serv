@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vLLM Control Center</title>
+    <title>vLLM Control Center & API Key Manager</title>
     <link rel="stylesheet" href="/dashboard/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -12,7 +12,10 @@
     <div class="container">
         <header>
             <h1>vLLM Control Center</h1>
-            <div id="status-badge" class="status-badge loading">Connecting...</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button id="admin-login-btn" class="secondary-btn" style="padding: 6px 14px; font-size: 13px;">🔒 Admin Login</button>
+                <div id="status-badge" class="status-badge loading">Connecting...</div>
+            </div>
         </header>
 
         <main>
@@ -60,6 +63,30 @@
                 </form>
             </section>
 
+            <section class="glass-panel apikey-section">
+                <h2>🔑 API Key Management</h2>
+                <div id="apikey-controls">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" id="new-key-name" placeholder="Client Name (e.g. App-Bot-1)" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;">
+                        <button type="button" id="create-key-btn" class="primary-btn">+ Create API Key</button>
+                    </div>
+                    <div id="new-key-alert" class="warning-text hidden" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-family: monospace;"></div>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: #8a99ad;">
+                                <th style="padding: 10px;">Name</th>
+                                <th style="padding: 10px;">Masked Key</th>
+                                <th style="padding: 10px;">Created At</th>
+                                <th style="padding: 10px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apikey-list-body">
+                            <tr><td colspan="4" style="padding: 15px; text-align: center; color: #8a99ad;">🔒 Please authenticate with Admin Secret to view keys</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <section class="glass-panel status-section">
                 <h2>System Status</h2>
                 <div class="status-grid">
@@ -82,6 +109,19 @@
                 <div id="error-message" class="error-banner hidden"></div>
             </section>
         </main>
+    </div>
+
+    <!-- Admin Auth Modal -->
+    <div id="admin-modal" class="overlay hidden">
+        <div class="glass-panel" style="max-width: 400px; width: 100%; padding: 30px; text-align: center;">
+            <h2>🔒 Admin Authentication</h2>
+            <p style="color: #8a99ad; margin-bottom: 20px; font-size: 14px;">Enter your Admin Secret to manage API Keys</p>
+            <input type="password" id="admin-secret-input" placeholder="Admin Secret Password" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white;">
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" id="modal-login-btn" class="primary-btn" style="flex: 1;">Login</button>
+                <button type="button" id="modal-close-btn" class="secondary-btn" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- Loading Overlay -->
