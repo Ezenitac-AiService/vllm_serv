@@ -44,14 +44,14 @@
 
 ### Tests for User Story 1 (Constitution v1.3.1 Real Verification)
 
-- [ ] T004 [P] [US1] Create unit test for sudo keepalive daemon trap and TTY detection in `tests/unit/test_shell_scripts.py`
-- [ ] T005 [P] [US1] Create unit test for ownership correction logic (`SUDO_USER` detection and `chown`) in `tests/unit/test_shell_scripts.py`
+- [x] T004 [P] [US1] Create unit test for sudo keepalive daemon trap and TTY detection in `tests/unit/test_shell_scripts.py`
+- [x] T005 [P] [US1] Create unit test for ownership correction logic (`SUDO_USER` detection and `chown`) in `tests/unit/test_shell_scripts.py`
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Implement TTY check, `sudo -v` interactive elevation, and background keepalive daemon (`while true; do sudo -n true; sleep 50; done &`) with trap signal handler in `scripts/setup.sh`
-- [ ] T007 [US1] Implement non-interactive sudo restriction check and warning banner output with `scripts/configure_firewall.sh` auto-generation in `scripts/setup.sh`
-- [ ] T008 [US1] Implement `$SUDO_USER` detection and automatic ownership remediation (`chown -R "$SUDO_USER:$SUDO_USER"`) for `.venv`, `logs`, `config` in `scripts/setup.sh`
+- [x] T006 [US1] Implement TTY check, `sudo -v` interactive elevation, and background keepalive daemon (`while true; do sudo -n true; sleep 50; done &`) with trap signal handler in `scripts/setup.sh`
+- [x] T007 [US1] Implement non-interactive sudo restriction check and warning banner output with `scripts/configure_firewall.sh` auto-generation in `scripts/setup.sh`
+- [x] T008 [US1] Implement `$SUDO_USER` detection and automatic ownership remediation (`chown -R "$SUDO_USER:$SUDO_USER"`) for `.venv`, `logs`, `config` in `scripts/setup.sh`
 
 **Checkpoint**: User Story 1 fully functional and testable independently (MVP ready).
 
@@ -65,15 +65,15 @@
 
 ### Tests for User Story 2 (Constitution v1.3.1 Anti-Mock Tests)
 
-- [ ] T009 [P] [US2] Create non-mocked real OS firewall state inspection test in `tests/unit/test_firewall_manager_real.py`
-- [ ] T010 [P] [US2] Create shell script syntax and firewall port opening validation tests in `tests/unit/test_shell_scripts.py`
+- [x] T009 [P] [US2] Create non-mocked real OS firewall state inspection test in `tests/unit/test_firewall_manager_real.py`
+- [x] T010 [P] [US2] Create shell script syntax and firewall port opening validation tests in `tests/unit/test_shell_scripts.py`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] Implement multi-OS firewall detection (`ufw`, `firewalld`, `nftables`, `iptables`) and rule application in `scripts/configure_firewall.sh`
-- [ ] T012 [US2] Implement `generate_fallback_script` method and multi-OS firewall support (`firewalld`, `nftables`, `iptables`) in `src/core/firewall_manager.py`
-- [ ] T013 [US2] Integrate multi-OS firewall detection logic and port opening call (`8081`, `8089`) into `scripts/setup.sh`
-- [ ] T014 [US2] Update seed pack bundler script to include `configure_firewall.sh` and updated modules in `scripts/make_seed_pack.sh`
+- [x] T011 [P] [US2] Implement multi-OS firewall detection (`ufw`, `firewalld`, `nftables`, `iptables`) and rule application in `scripts/configure_firewall.sh`
+- [x] T012 [US2] Implement `generate_fallback_script` method and multi-OS firewall support (`firewalld`, `nftables`, `iptables`) in `src/core/firewall_manager.py`
+- [x] T013 [US2] Integrate multi-OS firewall detection logic and port opening call (`8081`, `8089`) into `scripts/setup.sh`
+- [x] T014 [US2] Update seed pack bundler script to include `configure_firewall.sh` and updated modules in `scripts/make_seed_pack.sh`
 
 **Checkpoint**: User Stories 1 AND 2 fully functional and independently testable.
 

@@ -199,6 +199,12 @@ if ! echo "$ARCHIVE_FILES" | grep -q "platform_profiles.json"; then
 fi
 log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이브 수록 검증 완료"
 
+if echo "$ARCHIVE_FILES" | grep -q "configure_firewall.sh"; then
+    log_info "✓ 방화벽 설정 헬퍼(scripts/configure_firewall.sh) 아카이브 수록 검증 완료"
+else
+    log_warn "⚠️ scripts/configure_firewall.sh 가 아카이브에 포함되지 않았습니다. setup.sh 실행 시 자동 생성됩니다."
+fi
+
 if echo "$ARCHIVE_FILES" | grep -q "wheels/legacy_i7_930"; then
     log_info "✓ i7-930 사전 빌드 휠 디렉터리(wheels/legacy_i7_930) 아카이브 수록 검증 완료"
 fi

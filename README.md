@@ -40,12 +40,14 @@ graph TD
 ```
 
 **`./setup.sh` 자동 처리 항목**:
-1. **필수 프로젝트 파일 검증**: `pyproject.toml`, `config/*.json`, `src/api/server.py` 등 필수 파일 유무 검사
-2. **`uv` 패키지 매니저 및 가상환경 구성**: `uv` 설치 여부 확인 및 패키지 자동 동기화 (`uv sync`)
-3. **NVIDIA CUDA Toolkit (`nvcc`) & GPU 드라이버 검증**: `nvcc` 및 `nvidia-smi` 검증 (미설치 시 CPU 전용 폴백 없이 즉각 Fail-Fast 종료)
-4. **CUDA 가속 `llama-cpp-python` 자동 소스 컴파일**: `CMAKE_ARGS="-DGGML_CUDA=on"`으로 CUDA 가속 바이너리 설치 및 `llama_supports_gpu_offload()` 보장
-5. **네트워크 방화벽 자동 등록**: `config/server_config.json` 포트(`8081/tcp`)를 읽어 `ufw` / `firewalld` 허용 규칙 추가
-6. **서버 제어 쉘 스크립트 생성 및 심볼릭 링크 연결**: `./start_server.sh`, `./stop_server.sh`, `./status_server.sh` 자동 생성 및 실행 권한 부여
+1. **Sudo 관리자 권한 확보**: 대화형 TTY에서 `sudo -v` 1회 인증 후 백그라운드 keepalive 데몬 자동 구동 (비대화형 환경은 `scripts/configure_firewall.sh` 자동 생성)
+2. **필수 프로젝트 파일 검증**: `pyproject.toml`, `config/*.json`, `src/api/server.py` 등 필수 파일 유무 검사
+3. **`uv` 패키지 매니저 및 가상환경 구성**: `uv` 설치 여부 확인 및 패키지 자동 동기화 (`uv sync`)
+4. **NVIDIA CUDA Toolkit (`nvcc`) & GPU 드라이버 검증**: `nvcc` 및 `nvidia-smi` 검증 (미설치 시 CPU 전용 폴백 없이 즉각 Fail-Fast 종료)
+5. **CUDA 가속 `llama-cpp-python` 자동 소스 컴파일**: `CMAKE_ARGS="-DGGML_CUDA=on"`으로 CUDA 가속 바이너리 설치 및 `llama_supports_gpu_offload()` 보장
+6. **멀티 OS 방화벽 자동 포트 개방**: `ufw` / `firewalld` / `nftables` / `iptables` 자동 감지 후 `8081/tcp`, `8089/tcp` 허용 규칙 등록 (sudo 미확보 시 복구 스크립트 제공)
+7. **서버 제어 쉘 스크립트 생성 및 심볼릭 링크 연결**: `./start_server.sh`, `./stop_server.sh`, `./status_server.sh` 자동 생성 및 실행 권한 부여
+8. **파일 소유권 자동 환원**: `sudo ./setup.sh` 실행 시 `$SUDO_USER` 계정으로 `.venv`, `logs`, `config` 소유권 자동 `chown -R`
 
 ---
 
@@ -85,11 +87,12 @@ graph TD
 
 | 쉘 스크립트명 | 실행 경로 | 주요 역할 및 내부 수행 동작 |
 |---------------|-----------|-----------------------------|
-| **`setup.sh`** | `./setup.sh` | 필수 파일 점검, `uv sync` 가상환경 동기화, `8081/tcp` 방화벽 등록, 제어 스크립트 생성 |
+| **`setup.sh`** | `./setup.sh` | sudo 관리자 권한 승격 & keepalive, 필수 파일 점검, `uv sync`, 멀티 OS 방화벽 (`ufw`/`firewalld`/`nftables`/`iptables`) 포트 개방, 제어 스크립트 생성, `$SUDO_USER` 소유권 환원 |
 | **`start_server.sh`** | `./start_server.sh` | 백그라운드 데몬 구동, llama-server C++ 자동 빌드, GGUF 자동 다운로드, VRAM 100% 오프로드 검증 |
 | **`stop_server.sh`** | `./stop_server.sh` | PID 및 하위 llama-server 프로세스 단계별 종료 (`SIGTERM` ➔ `SIGKILL`), VRAM 메모리 완전 반납 |
 | **`status_server.sh`** | `./status_server.sh` | 서빙 PID, HTTP `/health` JSON API 헬스체크, nvidia-smi GPU 사용량 및 온도 실시간 리포트 |
-| **`make_seed_pack.sh`** | `./make_seed_pack.sh` | 타 서버 이관용 경량 Seed Pack 압축 생성 (`dist/vllm_serv_seed.tar.gz`, 대용량 모델 및 `.venv` 배제) |
+| **`make_seed_pack.sh`** | `./make_seed_pack.sh` | 타 서버 이관용 경량 Seed Pack 압축 생성 (`dist/vllm_serv_seed.tar.gz`, `configure_firewall.sh` 포함) |
+| **`configure_firewall.sh`** | `sudo ./scripts/configure_firewall.sh` | 멀티 OS 방화벽 수동 포트 개방 헬퍼 (`ufw`/`firewalld`/`nftables`/`iptables` 자동 감지 후 `8081/tcp`, `8089/tcp` 개방) |
 
 ---
 
