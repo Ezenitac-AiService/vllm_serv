@@ -319,6 +319,45 @@ class ConfigManager:
         profiles = self.get_platform_profiles()
         return profiles.get(profile_id)
 
+    def get_allowed_subnets(self) -> List[str]:
+        """FR-001 & FR-002: 정적 프로필 설정과 듀얼 NIC 활성 LAN IP 기반 동적 CIDR 대역을 결합하여 중복 제거된 allowed_subnets 반환."""
+        from src.core.network_detector import NetworkDetector
+
+        base_subnets = ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"]
+
+        server_cfg = self.get_server_config()
+        cfg_subnets = server_cfg.get("allowed_subnets", [])
+
+        profile_subnets = []
+        try:
+            from src.core.cpu_detector import CPUHardwareDetector
+            matched_id = CPUHardwareDetector.match_platform_profile()
+            profile = self.get_platform_profile(matched_id)
+            if profile and "network" in profile and "allowed_subnets" in profile["network"]:
+                profile_subnets = profile["network"]["allowed_subnets"]
+        except Exception:
+            pass
+
+        dynamic_subnets = []
+        try:
+            active_ips = NetworkDetector.get_active_lan_ips()
+            for ip in active_ips:
+                if ip.startswith("192.168."):
+                    dynamic_subnets.append("192.168.0.0/16")
+                elif ip.startswith("10."):
+                    dynamic_subnets.append("10.0.0.0/8")
+                elif ip.startswith("172."):
+                    dynamic_subnets.append("172.16.0.0/12")
+                elif ip and ip != "127.0.0.1":
+                    parts = ip.split(".")
+                    if len(parts) == 4:
+                        dynamic_subnets.append(f"{'.'.join(parts[:3])}.0/24")
+        except Exception:
+            pass
+
+        combined = base_subnets + cfg_subnets + profile_subnets + dynamic_subnets
+        return list(dict.fromkeys([s for s in combined if s]))
+
     def get_detected_network_info(self) -> Dict[str, Any]:
         """FR-002: 듀얼 NIC 미할당 포트 필터링 및 활성 LAN IP와 네트워크 바인딩 정보를 탐지합니다."""
         from src.core.network_detector import NetworkDetector
@@ -344,5 +383,6 @@ class ConfigManager:
             "api_port": api_port,
             "backend_port": backend_port,
             "detected_active_ips": active_ips,
-            "allowed_subnets": server_cfg.get("allowed_subnets", [])
+            "allowed_subnets": self.get_allowed_subnets()
         }
+

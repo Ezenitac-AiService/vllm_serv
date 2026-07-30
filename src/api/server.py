@@ -67,13 +67,9 @@ def create_app() -> FastAPI:
     # FR-001 / FR-002: 클라이언트 요청 및 감사 로깅 미들웨어 장착
     app.add_middleware(ClientAccessLogMiddleware)
 
-    # FR-008: 사설 내부망 CIDR 접근제어 미들웨어 장착
+    # FR-008 & FR-032: 사설 내부망 CIDR 접근제어 미들웨어 장착
     cm = ConfigManager()
-    server_cfg = cm.get_server_config()
-    allowed_subnets = server_cfg.get(
-        "allowed_subnets",
-        ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"]
-    )
+    allowed_subnets = cm.get_allowed_subnets()
     app.add_middleware(SubnetFilterMiddleware, allowed_subnets=allowed_subnets)
 
     app.include_router(admin_router)

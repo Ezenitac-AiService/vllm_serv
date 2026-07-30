@@ -59,4 +59,35 @@ def test_platform_profile_network_configurations():
             net = prof["network"]
             assert "bind_host" in net
             assert "allowed_subnets" in net
+            assert "192.168.0.0/16" in net["allowed_subnets"]
+
+
+def test_platform_profiles_include_192_168_subnet():
+    """FR-002 [US1]: Verifies all platform profiles include 192.168.0.0/16 and 10.0.0.0/8 subnets."""
+    cm = ConfigManager()
+    cm.invalidate_all_caches()
+    profiles = cm.get_platform_profiles()
+
+    for pid in ["dev-rtx3060", "pascal-avx2-gtx1080ti", "legacy-i7-930-gtx1070"]:
+        assert pid in profiles
+        subnets = profiles[pid]["network"]["allowed_subnets"]
+        assert "192.168.0.0/16" in subnets
+        assert "10.0.0.0/8" in subnets
+
+
+def test_get_allowed_subnets_dynamic_lan_ip_merging():
+    """FR-001 [US2]: Verifies cm.get_allowed_subnets() merges base, profile, and active LAN IP subnets."""
+    cm = ConfigManager()
+    cm.invalidate_all_caches()
+    subnets = cm.get_allowed_subnets()
+
+    assert "127.0.0.1" in subnets
+    assert "192.168.0.0/16" in subnets
+    assert "10.0.0.0/8" in subnets
+    assert "172.16.0.0/12" in subnets
+
+    net_info = cm.get_detected_network_info()
+    assert "allowed_subnets" in net_info
+    assert "192.168.0.0/16" in net_info["allowed_subnets"]
+
 

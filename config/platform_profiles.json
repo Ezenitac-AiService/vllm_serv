@@ -12,7 +12,7 @@
     "expected_avx2": true,
     "network": {
       "bind_host": "0.0.0.0",
-      "allowed_subnets": ["127.0.0.1", "192.168.0.0/16"],
+      "allowed_subnets": ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"],
       "firewall_auto_allow": true
     }
   },
@@ -29,7 +29,7 @@
     "expected_avx2": true,
     "network": {
       "bind_host": "0.0.0.0",
-      "allowed_subnets": ["127.0.0.1", "10.0.0.0/8"],
+      "allowed_subnets": ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"],
       "firewall_auto_allow": true
     }
   },
@@ -46,7 +46,7 @@
     "expected_avx2": false,
     "network": {
       "bind_host": "0.0.0.0",
-      "allowed_subnets": ["127.0.0.1", "192.168.0.0/16"],
+      "allowed_subnets": ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"],
       "firewall_auto_allow": true
     }
   }
