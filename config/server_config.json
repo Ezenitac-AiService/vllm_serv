@@ -18,7 +18,18 @@
         "max_connections": 100
     },
     "api_key_enabled": false,
-    "api_keys": [],
+    "api_keys": [
+        {
+            "key": "sk-vllm-dev-demo1",
+            "name": "Development Sample Key 1",
+            "status": "active"
+        },
+        {
+            "key": "sk-vllm-mobile-app",
+            "name": "Mobile Client App Key",
+            "status": "active"
+        }
+    ],
     "admin_secret": "aiservice",
     "speculative_decoding": {
         "enabled": false,

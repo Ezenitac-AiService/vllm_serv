@@ -18,7 +18,14 @@ class MetricsDB:
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        is_new_db = not os.path.exists(self.db_path)
         self._init_db()
+        if is_new_db:
+            try:
+                from scripts.seed_db import seed_database
+                seed_database(reset=False)
+            except Exception:
+                pass
 
     def _get_connection(self) -> sqlite3.Connection:
         """Returns SQLite connection with WAL mode and timeout=10.0 per C2 critique."""

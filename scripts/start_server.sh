@@ -47,6 +47,12 @@ echo -e "${COLOR_GREEN}[SERVER] 3. 로그 파일 경로: $LOG_FILE${COLOR_NC}"
 
 
 mkdir -p "$BASE_DIR/logs"
+mkdir -p "$BASE_DIR/data"
+
+if [ ! -f "$BASE_DIR/data/metrics.db" ]; then
+    echo -e "${COLOR_YELLOW}[SERVER] data/metrics.db 부재 감지. 초기 시드 데이터 팩 주입 수행 중...${COLOR_NC}"
+    uv run python "$BASE_DIR/scripts/seed_db.py" || true
+fi
 
 nohup setsid .venv/bin/python -m src.api.server < /dev/null > "$LOG_FILE" 2>&1 &
 sleep 0.5

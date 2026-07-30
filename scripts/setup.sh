@@ -610,6 +610,15 @@ else
     log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
 fi
 
+log_step "4.6 SQLite Metrics DB & Seed Pack 초기화 (045-db-seed-and-setup-integration)"
+mkdir -p "$BASE_DIR/data"
+if [ ! -f "$BASE_DIR/data/metrics.db" ]; then
+    log_info "data/metrics.db 부재 감지. 초기 시드 데이터 팩 자동 주입 중..."
+    uv run python "$BASE_DIR/scripts/seed_db.py" || log_warn "시드 DB 주입 실패 (기본 구조로 대체)."
+else
+    log_info "✓ 기존 data/metrics.db 유지 완료."
+fi
+
 log_step "5. setup.sh 설정 완결"
 
 # ==============================================================================
