@@ -10,10 +10,11 @@ class ConnectionPoolConfig(BaseModel):
 
 class ServerConfig(BaseModel):
     """FR-002 & FR-008: Pydantic v2 기반 서버 설정 규격."""
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = 8081
     backend_port: int = 8089
-    allowed_subnets: List[str] = Field(default_factory=lambda: ["127.0.0.1", "192.168.0.0/24"])
+    allowed_subnets: List[str] = Field(default_factory=lambda: ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"])
+    firewall_auto_allow: bool = True
     vram_limit_mb: int = 11264
     vram_max_capacity_mb: int = 11264
     healthcheck_timeout_s: int = 120
@@ -283,3 +284,31 @@ class ConfigManager:
         """단일 타겟 플랫폼 프로필 정보를 조회합니다."""
         profiles = self.get_platform_profiles()
         return profiles.get(profile_id)
+
+    def get_detected_network_info(self) -> Dict[str, Any]:
+        """FR-002: 듀얼 NIC 미할당 포트 필터링 및 활성 LAN IP와 네트워크 바인딩 정보를 탐지합니다."""
+        from src.core.network_detector import NetworkDetector
+        from src.core.firewall_manager import FirewallManager
+
+        server_cfg = self.get_server_config()
+        bind_host = server_cfg.get("host", "0.0.0.0")
+        api_port = server_cfg.get("port", 8081)
+        backend_port = server_cfg.get("backend_port", 8089)
+
+        active_ips = NetworkDetector.get_active_lan_ips()
+        
+        # Fire firewall port allow attempt if enabled
+        if server_cfg.get("firewall_auto_allow", True):
+            try:
+                fm = FirewallManager()
+                fm.ensure_service_ports_open([api_port, backend_port])
+            except Exception as e:
+                print(f"[ConfigManager] ⚠️ 방화벽 개방 시도 경고: {e}")
+
+        return {
+            "bind_host": bind_host,
+            "api_port": api_port,
+            "backend_port": backend_port,
+            "detected_active_ips": active_ips,
+            "allowed_subnets": server_cfg.get("allowed_subnets", [])
+        }

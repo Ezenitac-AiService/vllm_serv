@@ -38,3 +38,16 @@ def test_get_platform_profile_single():
 
     non_existent = cm.get_platform_profile("non-existent-profile")
     assert non_existent is None
+
+
+def test_platform_profile_network_configurations():
+    """T015 [US3]: Verifies network configuration block in platform profiles."""
+    cm = ConfigManager()
+    cm.invalidate_all_caches()
+    profiles = cm.get_platform_profiles()
+
+    for prof_id, prof in profiles.items():
+        if "network" in prof:
+            net = prof["network"]
+            assert "bind_host" in net
+            assert "allowed_subnets" in net

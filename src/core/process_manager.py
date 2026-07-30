@@ -470,12 +470,15 @@ class ProcessManager:
         env = dict(os.environ)
         env["CUDA_VISIBLE_DEVICES"] = "0"
 
+        server_cfg = self._config_manager.get_server_config()
+        bind_host = server_cfg.get("host", "0.0.0.0")
+
         if binary_info.build_source != "PYTHON_MODULE_FALLBACK":
             cmd = [
                 binary_info.binary_path,
                 "-m", model_file,
                 "-c", str(n_ctx),
-                "--host", "127.0.0.1",
+                "--host", bind_host,
                 "--port", str(self.port),
                 "-ngl", "999",
                 "--split-mode", "none",
@@ -488,7 +491,7 @@ class ProcessManager:
                 sys.executable, "-m", "llama_cpp.server",
                 "--model", model_file,
                 "--n_ctx", str(n_ctx),
-                "--host", "127.0.0.1",
+                "--host", bind_host,
                 "--port", str(self.port),
                 "--n_gpu_layers", "999"
             ]

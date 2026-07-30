@@ -14,5 +14,5 @@ if __name__ == "__main__":
     cm = ConfigManager()
     server_cfg = cm.get_server_config()
     port = server_cfg.get("port", 8081)
-    host = server_cfg.get("host", "127.0.0.1")
+    host = server_cfg.get("host", "0.0.0.0")
     uvicorn.run("src.api.main:app", host=host, port=port, reload=False)

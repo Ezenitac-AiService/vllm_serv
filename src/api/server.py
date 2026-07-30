@@ -19,19 +19,21 @@ from src.api.middleware.subnet_filter import SubnetFilterMiddleware
 from src.api.middleware.client_access_logger import ClientAccessLogMiddleware
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager replacing deprecated on_event."""
     cm = ConfigManager()
     server_cfg = cm.get_server_config()
     default_model = server_cfg.get("default_model", "qwen3.5-4b")
-    host = server_cfg.get("host", "127.0.0.1")
     backend_port = server_cfg.get("backend_port", 8089)
 
     # Initialize singleton httpx.AsyncClient with connection limits & dynamic base_url
     limits = httpx.Limits(max_keepalive_connections=20, max_connections=100)
     app.state.http_client = httpx.AsyncClient(
-        base_url=f"http://{host}:{backend_port}",
+        base_url=f"http://127.0.0.1:{backend_port}",
         limits=limits,
         timeout=None
     )
@@ -53,13 +55,25 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
+    # Allow CORS requests from external LAN web clients
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     # FR-001 / FR-002: 클라이언트 요청 및 감사 로깅 미들웨어 장착
     app.add_middleware(ClientAccessLogMiddleware)
 
     # FR-008: 사설 내부망 CIDR 접근제어 미들웨어 장착
     cm = ConfigManager()
     server_cfg = cm.get_server_config()
-    allowed_subnets = server_cfg.get("allowed_subnets", ["127.0.0.1", "192.168.0.0/24"])
+    allowed_subnets = server_cfg.get(
+        "allowed_subnets",
+        ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"]
+    )
     app.add_middleware(SubnetFilterMiddleware, allowed_subnets=allowed_subnets)
 
     app.include_router(admin_router)

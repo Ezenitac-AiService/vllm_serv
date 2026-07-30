@@ -1,16 +1,19 @@
 import pytest
 from src.core.config_manager import ConfigManager, ServerConfig, ModelCatalogEntry
 
+
 def test_pydantic_server_config_defaults():
     cfg = ServerConfig()
     assert cfg.port == 8081
-    assert cfg.host == "127.0.0.1"
-    assert "192.168.0.0/24" in cfg.allowed_subnets
+    assert cfg.host == "0.0.0.0"
+    assert any(sub.startswith("192.168.0.0") for sub in cfg.allowed_subnets)
     assert cfg.vram_limit_mb == 11264
+
 
 def test_pydantic_server_config_invalid_port():
     with pytest.raises(ValueError):
         ServerConfig(port=90)
+
 
 def test_config_manager_get_server_config():
     cm = ConfigManager()
@@ -18,7 +21,8 @@ def test_config_manager_get_server_config():
     assert isinstance(server_cfg, dict)
     assert "port" in server_cfg
     assert "allowed_subnets" in server_cfg
-    assert "host" in server_cfg
+    assert server_cfg["host"] == "0.0.0.0"
+
 
 def test_config_manager_get_model_catalog():
     cm = ConfigManager()
@@ -29,6 +33,7 @@ def test_config_manager_get_model_catalog():
         model_entry = ModelCatalogEntry(**entry)
         assert model_entry.name == "Qwen 3.5 4B"
         assert model_entry.quant_type == "q4_k_m"
+
 
 def test_config_manager_alias_resolution_and_path():
     cm = ConfigManager()
@@ -45,3 +50,11 @@ def test_config_manager_alias_resolution_and_path():
     assert abs_path.endswith("config/model_catalog.json")
     assert abs_path.startswith("/")
 
+
+def test_config_manager_network_detection():
+    cm = ConfigManager()
+    net_info = cm.get_detected_network_info()
+    assert isinstance(net_info, dict)
+    assert "detected_active_ips" in net_info
+    assert "bind_host" in net_info
+    assert net_info["bind_host"] == "0.0.0.0"
