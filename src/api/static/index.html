@@ -8,6 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <!-- Chart.js for Real-Time GPU/VRAM Time-Series Canvas Graphs (FR-001) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 048-think-tag-ui-markdown: Markdown Parsing, DOM Purify XSS & Syntax Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
     <div class="background-mesh"></div>
@@ -128,15 +133,33 @@
                 </section>
             </div>
 
-            <!-- Tab 3: AI Playground (FR-007, FR-008, FR-009, 044-llm-response-payload-viewer) -->
+            <!-- Tab 3: AI Playground (FR-007, FR-008, FR-009, 048-think-tag-ui-markdown) -->
             <div id="tab-playground" class="tab-panel">
-                <div class="playground-layout">
+                <div class="playground-layout-3col">
+                    <!-- Google AI Studio Style Left Collapsible Chat Sessions Sidebar -->
+                    <div class="glass-panel chat-sidebar" id="chat-history-sidebar">
+                        <h3>💬 Chat History</h3>
+                        <button type="button" id="new-chat-btn" class="primary-btn" style="width: 100%;">➕ New Chat</button>
+                        <div class="sidebar-title">Recent Conversations</div>
+                        <div id="session-list-container" class="session-list">
+                            <!-- Loaded dynamically -->
+                        </div>
+                    </div>
+
                     <!-- Playground Settings Panel -->
                     <div class="glass-panel playground-settings">
-                        <h3>⚙️ Model Parameters</h3>
+                        <h3>⚙️ Parameters</h3>
                         <div class="form-group">
                             <label for="pg-system-prompt">System Instructions</label>
-                            <textarea id="pg-system-prompt" rows="3" placeholder="You are a helpful AI assistant.">You are a helpful AI assistant.</textarea>
+                            <textarea id="pg-system-prompt" rows="2" placeholder="You are a helpful AI assistant.">You are a helpful AI assistant.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Thinking Process Mode</label>
+                            <div class="toggle-group" id="think-mode-group">
+                                <button type="button" class="toggle-btn active" data-mode="collapse">📁 Collapse</button>
+                                <button type="button" class="toggle-btn" data-mode="show">👁️ Show</button>
+                                <button type="button" class="toggle-btn" data-mode="off">🚫 Off</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="pg-temp">Temperature: <span id="pg-temp-val">0.7</span></label>
@@ -150,7 +173,7 @@
                             <label for="pg-max-tokens">Max Tokens</label>
                             <input type="number" id="pg-max-tokens" value="1024" min="16" max="4096">
                         </div>
-                        <button type="button" id="code-export-btn" class="secondary-btn" style="width: 100%; margin-top: 10px;">💻 Code Export (cURL/Python)</button>
+                        <button type="button" id="code-export-btn" class="secondary-btn" style="width: 100%; margin-top: 10px;">💻 Code Export</button>
                     </div>
 
                     <!-- Google AI Studio 2026 Style Chat Thread Canvas -->

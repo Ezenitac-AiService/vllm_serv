@@ -69,9 +69,72 @@ class MetricsDB:
             except Exception:
                 pass
 
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS playground_sessions (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS playground_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    thinking_process TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(session_id) REFERENCES playground_sessions(id) ON DELETE CASCADE
+                );
+            """)
+
             conn.execute("CREATE INDEX IF NOT EXISTS idx_api_key ON api_key_logs(api_key);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON api_key_logs(timestamp);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_session_id ON playground_messages(session_id);")
             conn.commit()
+
+    def create_playground_session(self, session_id: str, title: str) -> Dict[str, Any]:
+        """Creates a new playground chat session."""
+        with self._get_connection() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO playground_sessions (id, title, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                (session_id, title)
+            )
+            conn.commit()
+        return {"id": session_id, "title": title}
+
+    def list_playground_sessions(self) -> List[Dict[str, Any]]:
+        """Lists all playground chat sessions ordered by latest update."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT id, title, created_at, updated_at FROM playground_sessions ORDER BY updated_at DESC")
+            return [dict(r) for r in cursor.fetchall()]
+
+    def delete_playground_session(self, session_id: str):
+        """Deletes a playground chat session and its messages."""
+        with self._get_connection() as conn:
+            conn.execute("DELETE FROM playground_messages WHERE session_id = ?", (session_id,))
+            conn.execute("DELETE FROM playground_sessions WHERE id = ?", (session_id,))
+            conn.commit()
+
+    def add_playground_message(self, session_id: str, role: str, content: str, thinking_process: str = None):
+        """Appends a user or assistant message to a session."""
+        with self._get_connection() as conn:
+            conn.execute(
+                "INSERT INTO playground_messages (session_id, role, content, thinking_process) VALUES (?, ?, ?, ?)",
+                (session_id, role, content, thinking_process)
+            )
+            conn.execute("UPDATE playground_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (session_id,))
+            conn.commit()
+
+    def get_playground_messages(self, session_id: str) -> List[Dict[str, Any]]:
+        """Fetches all chat messages for a given session ID."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT id, session_id, role, content, thinking_process, timestamp FROM playground_messages WHERE session_id = ? ORDER BY id ASC",
+                (session_id,)
+            )
+            return [dict(r) for r in cursor.fetchall()]
 
     def log_request(
         self,

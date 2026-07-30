@@ -91,6 +91,7 @@ class PlaygroundRequest(BaseModel):
     top_p: float = 0.9
     max_tokens: int = 1024
     strip_think_tags: bool = True
+    session_id: Optional[str] = None
 
 
 class PlaygroundResponse(BaseModel):
@@ -323,6 +324,10 @@ async def run_playground_test(body: PlaygroundRequest):
         thinking_text=thinking_process
     )
 
+    if body.session_id:
+        metrics_db.add_playground_message(body.session_id, "user", body.prompt, None)
+        metrics_db.add_playground_message(body.session_id, "assistant", completion_text, thinking_process)
+
     return {
         "text": completion_text,
         "thinking_process": thinking_process,
@@ -333,6 +338,56 @@ async def run_playground_test(body: PlaygroundRequest):
         "completion_tokens": completion_tokens,
         "finish_reason": finish_reason
     }
+
+
+class CreateSessionRequest(BaseModel):
+    title: Optional[str] = "New Chat"
+
+
+class AddSessionMessageRequest(BaseModel):
+    role: str
+    content: str
+    thinking_process: Optional[str] = None
+
+
+@router.get("/playground/sessions")
+async def get_playground_sessions():
+    """Lists all saved playground chat sessions."""
+    from src.core.metrics_db import metrics_db
+    return metrics_db.list_playground_sessions()
+
+
+@router.post("/playground/sessions")
+async def create_playground_session_route(body: CreateSessionRequest):
+    """Creates a new playground chat session."""
+    import time
+    session_id = f"sess_{int(time.time() * 1000)}"
+    title = body.title or "New Chat"
+    from src.core.metrics_db import metrics_db
+    return metrics_db.create_playground_session(session_id, title)
+
+
+@router.delete("/playground/sessions/{session_id}")
+async def delete_playground_session_route(session_id: str):
+    """Deletes a playground chat session and all its messages."""
+    from src.core.metrics_db import metrics_db
+    metrics_db.delete_playground_session(session_id)
+    return {"status": "success", "deleted_session_id": session_id}
+
+
+@router.get("/playground/sessions/{session_id}/messages")
+async def get_playground_session_messages_route(session_id: str):
+    """Returns message history for a specific session."""
+    from src.core.metrics_db import metrics_db
+    return metrics_db.get_playground_messages(session_id)
+
+
+@router.post("/playground/sessions/{session_id}/messages")
+async def add_playground_session_message_route(session_id: str, body: AddSessionMessageRequest):
+    """Appends a message to a session."""
+    from src.core.metrics_db import metrics_db
+    metrics_db.add_playground_message(session_id, body.role, body.content, body.thinking_process)
+    return {"status": "success"}
 
 
 class ConfigToggleRequest(BaseModel):

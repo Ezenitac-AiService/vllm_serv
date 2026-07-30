@@ -391,11 +391,186 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- 048-think-tag-ui-markdown: State & Helper Functions ---
+    let currentThinkMode = 'collapse'; // 'collapse' | 'show' | 'off'
+    let currentSessionId = null;
+
+    function renderMarkdownText(text) {
+        if (!text) return '';
+        if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+            const rawHtml = marked.parse(text);
+            return DOMPurify.sanitize(rawHtml);
+        }
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    }
+
+    function renderThinkContainer(thinkingProcess, mode) {
+        if (!thinkingProcess || mode === 'off') return '';
+        const cleanProcess = thinkingProcess.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        if (mode === 'show') {
+            return `<div class="think-block"><strong>🧠 Thinking Process:</strong><br>${cleanProcess}</div>`;
+        } else {
+            return `<details class="think-accordion">
+                <summary class="think-summary">🧠 Thinking Process</summary>
+                <div class="think-accordion-content">${cleanProcess}</div>
+            </details>`;
+        }
+    }
+
+    // 3-Way Toggle Button Group Handler
+    const thinkModeBtns = document.querySelectorAll('#think-mode-group .toggle-btn');
+    thinkModeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            thinkModeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentThinkMode = btn.getAttribute('data-mode');
+
+            // FR-006: Real-time dynamic mode update for all existing messages in chat thread
+            document.querySelectorAll('.chat-bubble.assistant-bubble').forEach(bubble => {
+                const thinkContainer = bubble.querySelector('.think-container');
+                const thinkingText = bubble.getAttribute('data-thinking');
+                if (thinkContainer && thinkingText) {
+                    thinkContainer.innerHTML = renderThinkContainer(thinkingText, currentThinkMode);
+                }
+            });
+        });
+    });
+
+    // Chat Sessions Management Functions
+    async function loadPlaygroundSessions() {
+        const container = document.getElementById('session-list-container');
+        if (!container) return;
+        try {
+            const res = await fetch('/dashboard/api/playground/sessions');
+            if (res.ok) {
+                const sessions = await res.json();
+                container.innerHTML = '';
+                if (sessions.length === 0) {
+                    container.innerHTML = '<div style="font-size:12px; color:var(--text-secondary); padding:8px;">No chat history.</div>';
+                    return;
+                }
+                sessions.forEach(sess => {
+                    const item = document.createElement('div');
+                    item.className = `session-item ${sess.id === currentSessionId ? 'active' : ''}`;
+                    item.setAttribute('data-id', sess.id);
+                    item.innerHTML = `
+                        <span class="session-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;">${sess.title.replace(/</g, "&lt;")}</span>
+                        <span class="session-delete-btn" title="Delete Session">🗑️</span>
+                    `;
+                    item.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('session-delete-btn')) {
+                            e.stopPropagation();
+                            deleteSession(sess.id);
+                        } else {
+                            switchSession(sess.id);
+                        }
+                    });
+                    container.appendChild(item);
+                });
+            }
+        } catch (e) {
+            console.error('Failed loading sessions:', e);
+        }
+    }
+
+    function startNewChat() {
+        currentSessionId = null;
+        document.querySelectorAll('#session-list-container .session-item').forEach(i => i.classList.remove('active'));
+        const chatThreadContainer = document.getElementById('chat-thread-container');
+        if (chatThreadContainer) {
+            chatThreadContainer.innerHTML = `
+                <div class="chat-bubble assistant-bubble" style="background: rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%;">
+                    <strong>🤖 Assistant:</strong> Hello! How can I assist you with LLM inference today?
+                </div>
+            `;
+        }
+    }
+
+    async function switchSession(sessionId) {
+        currentSessionId = sessionId;
+        document.querySelectorAll('#session-list-container .session-item').forEach(i => {
+            i.classList.toggle('active', i.getAttribute('data-id') === sessionId);
+        });
+        const chatThreadContainer = document.getElementById('chat-thread-container');
+        try {
+            const res = await fetch(`/dashboard/api/playground/sessions/${sessionId}/messages`);
+            if (res.ok) {
+                const msgs = await res.json();
+                chatThreadContainer.innerHTML = '';
+                msgs.forEach(m => {
+                    if (m.role === 'user') {
+                        const uBubble = document.createElement('div');
+                        uBubble.className = 'chat-bubble user-bubble';
+                        uBubble.style.cssText = 'background: rgba(59, 130, 246, 0.25); border: 1px solid rgba(59, 130, 246, 0.4); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%; margin-left: auto; text-align: right;';
+                        uBubble.innerHTML = `<strong>👤 User:</strong> ${m.content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+                        chatThreadContainer.appendChild(uBubble);
+                    } else {
+                        const aBubble = document.createElement('div');
+                        aBubble.className = 'chat-bubble assistant-bubble';
+                        aBubble.style.cssText = 'background: rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%;';
+                        if (m.thinking_process) {
+                            aBubble.setAttribute('data-thinking', m.thinking_process);
+                        }
+                        aBubble.innerHTML = `
+                            <strong>🤖 Assistant:</strong>
+                            <div class="think-container">${renderThinkContainer(m.thinking_process, currentThinkMode)}</div>
+                            <div class="assistant-content markdown-body">${renderMarkdownText(m.content)}</div>
+                        `;
+                        chatThreadContainer.appendChild(aBubble);
+                    }
+                });
+                if (typeof hljs !== 'undefined') hljs.highlightAll();
+                chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
+            }
+        } catch (e) {
+            console.error('Failed switching session:', e);
+        }
+    }
+
+    async function deleteSession(sessionId) {
+        if (!confirm('Are you sure you want to delete this conversation?')) return;
+        try {
+            const res = await fetch(`/dashboard/api/playground/sessions/${sessionId}`, { method: 'DELETE' });
+            if (res.ok) {
+                if (currentSessionId === sessionId) {
+                    startNewChat();
+                }
+                loadPlaygroundSessions();
+            }
+        } catch (e) {
+            console.error('Failed deleting session:', e);
+        }
+    }
+
+    const newChatBtn = document.getElementById('new-chat-btn');
+    if (newChatBtn) newChatBtn.addEventListener('click', startNewChat);
+
+    // Initial session load
+    loadPlaygroundSessions();
+
+    // --- 6. Playground Test Handler ---
     elements.pgSubmitBtn.addEventListener('click', async () => {
         const prompt = elements.pgPromptInput.value.trim();
-        if (!prompt) {
-            alert('Please enter a prompt for testing.');
-            return;
+        if (!prompt) return;
+
+        const chatThreadContainer = document.getElementById('chat-thread-container');
+
+        // Create new session if none active
+        if (!currentSessionId) {
+            try {
+                const title = prompt.length > 25 ? prompt.substring(0, 25) + '...' : prompt;
+                const sRes = await fetch('/dashboard/api/playground/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title })
+                });
+                if (sRes.ok) {
+                    const sData = await sRes.json();
+                    currentSessionId = sData.id;
+                }
+            } catch (err) {
+                console.error('Failed creating session:', err);
+            }
         }
 
         // Append User Bubble
@@ -405,11 +580,15 @@ document.addEventListener('DOMContentLoaded', () => {
         userBubble.innerHTML = `<strong>👤 User:</strong> ${prompt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
         chatThreadContainer.appendChild(userBubble);
 
-        // Append Assistant Streaming Bubble Placeholder
+        // Append Assistant Bubble Placeholder
         const assistantBubble = document.createElement('div');
         assistantBubble.className = 'chat-bubble assistant-bubble';
         assistantBubble.style.cssText = 'background: rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; max-width: 85%;';
-        assistantBubble.innerHTML = `<strong>🤖 Assistant:</strong> <span class="assistant-content">Thinking...</span>`;
+        assistantBubble.innerHTML = `
+            <strong>🤖 Assistant:</strong>
+            <div class="think-container"></div>
+            <div class="assistant-content markdown-body">Thinking...</div>
+        `;
         chatThreadContainer.appendChild(assistantBubble);
         chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
 
@@ -426,14 +605,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     prompt: prompt,
                     temperature: parseFloat(elements.pgTemp.value),
                     top_p: parseFloat(elements.pgTopP.value),
-                    max_tokens: parseInt(elements.pgMaxTokens.value, 10)
+                    max_tokens: parseInt(elements.pgMaxTokens.value, 10),
+                    session_id: currentSessionId
                 })
             });
 
             if (res.ok) {
                 const data = await res.json();
-                const contentSpan = assistantBubble.querySelector('.assistant-content');
-                contentSpan.textContent = data.text;
+                const contentDiv = assistantBubble.querySelector('.assistant-content');
+                const thinkDiv = assistantBubble.querySelector('.think-container');
+
+                if (data.thinking_process) {
+                    assistantBubble.setAttribute('data-thinking', data.thinking_process);
+                    thinkDiv.innerHTML = renderThinkContainer(data.thinking_process, currentThinkMode);
+                }
+
+                contentDiv.innerHTML = renderMarkdownText(data.text);
+                if (typeof hljs !== 'undefined') hljs.highlightAll();
 
                 elements.pgMetricTtft.textContent = `${data.ttft_ms} ms`;
                 elements.pgMetricSpeed.textContent = `${data.token_speed_tok_s} tok/s`;
@@ -442,6 +630,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 elements.statSpeed.textContent = `${data.token_speed_tok_s} tok/s`;
                 elements.statTtft.textContent = `TTFT: ${data.ttft_ms} ms`;
+
+                // Reload sidebar session list
+                loadPlaygroundSessions();
             } else {
                 assistantBubble.querySelector('.assistant-content').textContent = 'Error executing playground inference.';
             }
