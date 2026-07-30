@@ -119,7 +119,7 @@ async def list_models(request: Request) -> dict[str, Any]:
 
 @router.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
 async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
-    """FR-009: RAG 및 Agent 마이크로서비스 요청을 비동기 싱글톤 커넥션 풀로 역방향 프록시 처리."""
+    """FR-009: RAG 및 Agent 마이크로서비스 요청을 비동기 싱글톤 커넥션 풀로 역방향 프록시 처리 및 Payload 원문 캡처."""
     if path in ("chat/completions", "completions") and not await check_llama_status():
         raise HTTPException(
             status_code=503,
@@ -128,6 +128,7 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
         )
 
     body_content = None
+    prompt_text = None
     if request.method == "POST" and path in ("chat/completions", "completions"):
         body_content = await request.body()
         if body_content:
@@ -138,6 +139,12 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
                 requested_n_ctx = body_json.get("n_ctx")
                 if requested_n_ctx is not None:
                     llama_manager.validate_requested_context(model_id, int(requested_n_ctx))
+
+                if "messages" in body_json and isinstance(body_json["messages"], list):
+                    user_msgs = [m.get("content", "") for m in body_json["messages"] if isinstance(m, dict) and m.get("role") == "user"]
+                    prompt_text = user_msgs[-1] if user_msgs else json.dumps(body_json["messages"], ensure_ascii=False)
+                elif "prompt" in body_json:
+                    prompt_text = str(body_json.get("prompt"))
             except HTTPException:
                 raise
             except Exception:
@@ -164,15 +171,77 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+    captured_chunks = []
+    start_time = time.perf_counter()
+    first_chunk_received = False
+    ttft_ms = 0.0
+
     async def stream_generator() -> AsyncGenerator[bytes, None]:
         """RAG 및 Agent 마이크로서비스 전용 SSE 스트리밍 제너레이터."""
+        nonlocal first_chunk_received, ttft_ms
         try:
             async for chunk in r.aiter_raw():
+                if not first_chunk_received:
+                    ttft_ms = (time.perf_counter() - start_time) * 1000.0
+                    first_chunk_received = True
                 if await request.is_disconnected():
                     break
+                if path in ("chat/completions", "completions") and request.method == "POST":
+                    captured_chunks.append(chunk)
                 yield chunk
         finally:
             await r.aclose()
+            if path in ("chat/completions", "completions") and request.method == "POST":
+                try:
+                    import json
+                    completion_text = ""
+                    prompt_tokens = 0
+                    completion_tokens = 0
+                    if captured_chunks:
+                        full_resp = b"".join(captured_chunks).decode("utf-8", errors="ignore")
+                        if full_resp.strip().startswith("{"):
+                            res_json = json.loads(full_resp)
+                            choices = res_json.get("choices", [])
+                            if choices:
+                                completion_text = choices[0].get("message", {}).get("content", "") or choices[0].get("text", "")
+                            usage = res_json.get("usage", {})
+                            prompt_tokens = usage.get("prompt_tokens", 0)
+                            completion_tokens = usage.get("completion_tokens", 0)
+                        else:
+                            for line in full_resp.splitlines():
+                                line = line.strip()
+                                if line.startswith("data: ") and line != "data: [DONE]":
+                                    try:
+                                        c_json = json.loads(line[6:])
+                                        choices = c_json.get("choices", [])
+                                        if choices:
+                                            delta = choices[0].get("delta", {})
+                                            content = delta.get("content", "")
+                                            if content:
+                                                completion_text += content
+                                    except Exception:
+                                        pass
+                    total_latency_s = time.perf_counter() - start_time
+                    tps = round(completion_tokens / max(total_latency_s, 0.05), 1) if completion_tokens else 0.0
+
+                    auth_header = request.headers.get("authorization", "")
+                    api_key = auth_header.replace("Bearer ", "").strip() if "Bearer " in auth_header else "anonymous"
+
+                    from src.core.metrics_db import metrics_db
+                    metrics_db.log_request(
+                        api_key=api_key or "anonymous",
+                        endpoint=request.url.path,
+                        status_code=r.status_code,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        ttft_ms=round(ttft_ms, 2),
+                        tps=tps,
+                        is_error=(r.status_code >= 400),
+                        prompt_text=prompt_text,
+                        completion_text=completion_text
+                    )
+                except Exception:
+                    pass
 
     return StreamingResponse(
         stream_generator(),

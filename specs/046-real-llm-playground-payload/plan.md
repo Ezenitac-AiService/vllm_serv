@@ -21,5 +21,5 @@
 
 ## Constitution Compliance Check
 
-- [x] Zero Mock Policy in Implementation Code (Constitution v1.4.0)
+- [x] Zero Mock Policy in Implementation Code (Constitution v1.5.2)
 - [x] All test commands executed via `uv run pytest`.

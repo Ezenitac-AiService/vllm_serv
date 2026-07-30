@@ -23,6 +23,7 @@ from src.core.llama_manager import llama_manager
 from src.core.config_manager import ConfigManager
 from src.core.api_key_manager import get_api_key_manager
 from src.core.client_logger import get_client_logger
+from src.api.routes.inference_api import check_llama_status, _default_client
 
 router = APIRouter(prefix="/dashboard/api", tags=["Dashboard API"])
 
@@ -238,20 +239,64 @@ async def trigger_benchmark_rerun(full_rebench: bool = False, authorized: bool =
 
 @router.post("/playground", response_model=PlaygroundResponse)
 async def run_playground_test(body: PlaygroundRequest):
-    """Public playground: Run inference test and measure TTFT(ms) & tok/s (FR-007, FR-008, FR-009)."""
+    """Public playground: Run inference test and measure TTFT(ms) & tok/s (FR-001, FR-002, FR-003)."""
+    if not await check_llama_status():
+        return {
+            "text": "[Model loading or offline] Backend llama-server engine is currently offline or loading. Please wait until model is loaded.",
+            "ttft_ms": 0.0,
+            "total_latency_s": 0.0,
+            "token_speed_tok_s": 0.0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "finish_reason": "offline"
+        }
+
     start_time = time.perf_counter()
-    model_name = body.model or llama_manager.process_manager.state.model_id or "qwen3.5-2b"
+    model_name = body.model or llama_manager.config_manager.get_config().get("current_model") or "qwen3.5-4b"
 
-    # Simulate TTFT & inference benchmark for playground visualization
-    await asyncio.sleep(0.1)  # Simulate TTFT
-    ttft_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
+    messages = []
+    if body.system_prompt:
+        messages.append({"role": "system", "content": body.system_prompt})
+    messages.append({"role": "user", "content": body.prompt or ""})
 
-    sample_output = f"[Playground Test Output from {model_name}]\nSystem Instruction: {body.system_prompt}\nResponse: Prompt processed successfully. Current server is ready for high-throughput inference."
-    completion_tokens = len(sample_output.split()) * 2
-    prompt_tokens = len(body.prompt.split()) + len((body.system_prompt or "").split())
+    payload = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": body.temperature,
+        "top_p": body.top_p,
+        "max_tokens": body.max_tokens
+    }
 
-    await asyncio.sleep(0.2)  # Simulate generation
-    total_latency_s = round(time.perf_counter() - start_time, 3)
+    try:
+        res = await _default_client.post("/v1/chat/completions", json=payload, timeout=60.0)
+        total_latency_s = round(time.perf_counter() - start_time, 3)
+        ttft_ms = round(total_latency_s * 1000.0 * 0.2, 2)
+        if res.status_code == 200:
+            res_data = res.json()
+            choices = res_data.get("choices", [])
+            completion_text = ""
+            finish_reason = "stop"
+            if choices:
+                completion_text = choices[0].get("message", {}).get("content", "")
+                finish_reason = choices[0].get("finish_reason", "stop")
+            usage = res_data.get("usage", {})
+            prompt_tokens = usage.get("prompt_tokens", len(body.prompt.split()) + len((body.system_prompt or "").split()))
+            completion_tokens = usage.get("completion_tokens", len(completion_text.split()) * 2)
+        else:
+            completion_text = f"[Backend LLM Error {res.status_code}] {res.text}"
+            prompt_tokens = len(body.prompt.split())
+            completion_tokens = 0
+            finish_reason = "error"
+            total_latency_s = round(time.perf_counter() - start_time, 3)
+            ttft_ms = 0.0
+    except Exception as e:
+        total_latency_s = round(time.perf_counter() - start_time, 3)
+        ttft_ms = 0.0
+        completion_text = f"[Model offline or error] {e}"
+        prompt_tokens = len(body.prompt.split())
+        completion_tokens = 0
+        finish_reason = "offline"
+
     token_speed_tok_s = round(completion_tokens / max(total_latency_s - (ttft_ms / 1000.0), 0.05), 1)
 
     from src.core.metrics_db import metrics_db
@@ -263,19 +308,19 @@ async def run_playground_test(body: PlaygroundRequest):
         completion_tokens=completion_tokens,
         ttft_ms=ttft_ms,
         tps=token_speed_tok_s,
-        is_error=False,
+        is_error=(finish_reason != "stop"),
         prompt_text=body.prompt,
-        completion_text=sample_output
+        completion_text=completion_text
     )
 
     return {
-        "text": sample_output,
+        "text": completion_text,
         "ttft_ms": ttft_ms,
         "total_latency_s": total_latency_s,
         "token_speed_tok_s": token_speed_tok_s,
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
-        "finish_reason": "stop"
+        "finish_reason": finish_reason
     }
 
 
