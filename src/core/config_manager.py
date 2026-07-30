@@ -231,6 +231,29 @@ class ConfigManager:
         self._server_config_cache = config
         return config.copy()
 
+    def save_server_config(self, config_dict: Dict[str, Any]) -> None:
+        """Saves server_config.json atomically with chmod 0600 and invalidates cache."""
+        if self.config_path.endswith("server_config.json"):
+            server_config_path = self.config_path
+        else:
+            server_config_path = os.path.join(os.path.dirname(self.config_path), "server_config.json")
+
+        dir_name = os.path.dirname(server_config_path)
+        with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8") as tf:
+            json.dump(config_dict, tf, indent=4, ensure_ascii=False)
+            tf.flush()
+            os.fsync(tf.fileno())
+            temp_name = tf.name
+
+        try:
+            os.chmod(temp_name, 0o600)
+            os.replace(temp_name, server_config_path)
+            self._server_config_cache = config_dict.copy()
+        except Exception:
+            if os.path.exists(temp_name):
+                os.remove(temp_name)
+            raise
+
     def get_vram_max_capacity_mb(self) -> int:
         """FR-004: Returns dynamic VRAM capacity in MB via NVML detection, platform profile matching, or server config."""
         cfg = self.get_server_config()

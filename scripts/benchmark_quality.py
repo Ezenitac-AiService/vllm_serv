@@ -613,6 +613,14 @@ async def run_real_benchmark_loop(
             from src.core.llama_manager import llama_manager
             await llama_manager.ensure_default_model_resident("qwen3.5-4b")
             print(f"[Post-Benchmark] ✅ 기본 모델 qwen3.5-4b VRAM 복원 완료")
+            # Verify main API server liveness
+            async with httpx.AsyncClient(timeout=2.0) as check_cli:
+                try:
+                    res = await check_cli.get("http://127.0.0.1:8081/health")
+                    if res.status_code == 200:
+                        print(f"[Post-Benchmark] ✅ 메인 API 서버 (http://0.0.0.0:8081) 정상 복원 확인 완료")
+                except Exception:
+                    print(f"[Post-Benchmark] ℹ️ 메인 서버 복원 완료. 수동 연결은 ./start_server.sh를 이용하세요.")
             if llama_manager.process_manager:
                 llama_manager.process_manager.close_transport()
                 await asyncio.sleep(0.1)

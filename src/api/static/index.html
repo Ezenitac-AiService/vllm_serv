@@ -180,8 +180,28 @@
 
             <!-- Tab 4: Audit & API Key Management (FR-004, FR-006) -->
             <div id="tab-audit" class="tab-panel">
+                <section class="glass-panel security-toggle-card" style="margin-bottom: 20px;">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2>🛡️ API Key Authentication Security Mode</h2>
+                            <p id="toggle-status-text" class="section-desc">Current Mode: Disabled (Public Access)</p>
+                        </div>
+                        <button type="button" id="toggle-security-btn" class="primary-btn">Toggle API Key Required Mode</button>
+                    </div>
+                </section>
+
+                <section class="glass-panel metrics-top5-card" style="margin-bottom: 20px;">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2>🏆 Top 5 Key Resource Rankings & Metrics</h2>
+                        <button type="button" id="export-csv-btn" class="secondary-btn">📥 Export Metrics CSV</button>
+                    </div>
+                    <div id="top5-ranking-container" style="margin-top: 10px;">
+                        <p class="table-placeholder">Loading top key rankings...</p>
+                    </div>
+                </section>
+
                 <section class="glass-panel apikey-section">
-                    <h2>🔑 API Key Management</h2>
+                    <h2>🔑 API Key Management & SQLite Metrics</h2>
                     <div id="apikey-controls">
                         <div class="key-create-bar">
                             <input type="text" id="new-key-name" placeholder="Client App Name (e.g. Mobile-App-1)">
@@ -191,15 +211,18 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Key ID</th>
-                                    <th>Client Name</th>
+                                    <th>Key Name</th>
                                     <th>Masked Key</th>
-                                    <th>Created At</th>
-                                    <th>Action</th>
+                                    <th>Requests</th>
+                                    <th>Errors</th>
+                                    <th>Prompt Tokens</th>
+                                    <th>Completion Tokens</th>
+                                    <th>Est. Cost ($)</th>
+                                    <th>Status / Action</th>
                                 </tr>
                             </thead>
                             <tbody id="apikey-list-body">
-                                <tr><td colspan="5" class="table-placeholder">🔒 Please authenticate with Admin Secret to view keys</td></tr>
+                                <tr><td colspan="8" class="table-placeholder">Loading API key metrics...</td></tr>
                             </tbody>
                         </table>
                     </div>

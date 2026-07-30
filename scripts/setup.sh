@@ -140,6 +140,9 @@ fi
 
 log_info "uv 버전: $(uv --version)"
 
+# 혹시 이전 터미널에서 SIGSTOP(Ctrl+Z)으로 방치된 좀비 uv 파일 락 프로세스가 존재할 경우 자동 정리
+pkill -f "uv pip install" 2>/dev/null || true
+
 log_info "가상환경 고속 동기화 중 (uv sync --frozen)..."
 if ! uv sync --frozen 2>/dev/null; then
     log_info "락파일(uv.lock) 불일치 감지 또는 가상환경 수립 필요: 일반 uv sync 동기화로 Fallback 진행 중..."
@@ -308,27 +311,26 @@ elif command -v firewall-cmd &> /dev/null; then
     else
         log_warn "sudo 권한 미확인: firewalld 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
     fi
-elif [ "$SUDO_AVAILABLE" = true ]; then
-    log_info "sudo 권한 사용 가능. 타 OS 방화벽 감지 및 서비스 포트 개방을 시도합니다."
-        log_info "nftables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
+elif command -v nft &> /dev/null; then
+    log_info "nftables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
+    if [ "$SUDO_AVAILABLE" = true ]; then
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo nft add rule inet filter input tcp dport "${port}" accept 2>/dev/null || \
                 sudo nft add rule ip filter INPUT tcp dport "${port}" accept 2>/dev/null || \
                 log_warn "nftables 포트 ${port} 규칙 추가 실패. 수동 확인 필요."
         done
-    elif command -v iptables &> /dev/null; then
-        log_info "iptables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
+    fi
+elif command -v iptables &> /dev/null; then
+    log_info "iptables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
+    if [ "$SUDO_AVAILABLE" = true ]; then
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo iptables -C INPUT -p tcp --dport "${port}" -j ACCEPT 2>/dev/null || \
                 sudo iptables -A INPUT -p tcp --dport "${port}" -j ACCEPT || true
             log_info "✓ iptables 포트 ${port}/tcp 규칙 등록 완료"
         done
-    else
-        log_info "활성화된 OS 방화벽 패키지를 감지하지 못했습니다. (포트: ${FIREWALL_PORTS[*]})"
     fi
 else
-    log_warn "sudo 권한 미확보 상태. 방화벽 포트 개방을 건너뜁니다."
-    log_warn "포트를 수동으로 개방하려면: sudo ./scripts/configure_firewall.sh"
+    log_info "활성화된 OS 방화벽 패키지를 감지하지 못했습니다. (포트: ${FIREWALL_PORTS[*]})"
 fi
 
 

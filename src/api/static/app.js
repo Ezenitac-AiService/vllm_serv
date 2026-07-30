@@ -516,8 +516,118 @@ print(response.choices[0].message.content)`;
 
     elements.refreshAuditBtn.addEventListener('click', loadAuditLogs);
 
+    // --- Feature 043: API Security & Metrics Handlers ---
+    async function loadKeyMetrics() {
+        const apiKeyBody = document.getElementById('apikey-list-body');
+        const top5Container = document.getElementById('top5-ranking-container');
+        const toggleText = document.getElementById('toggle-status-text');
+        if (!apiKeyBody) return;
+
+        try {
+            const res = await fetch('/dashboard/api/keys/metrics');
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Render Top 5 Card
+                if (data.top_5 && data.top_5.length > 0) {
+                    top5Container.innerHTML = data.top_5.map((item, idx) => `
+                        <div style="display: inline-block; background: rgba(255,255,255,0.05); padding: 8px 12px; margin: 4px; border-radius: 6px;">
+                            <strong>#${idx + 1} ${item.api_key.substring(0, 10)}...</strong>
+                            <div style="font-size: 0.85em; color: #a0aec0;">Tokens: ${item.prompt_tokens + item.completion_tokens} | Est. Cost: $${item.estimated_cost_usd}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    top5Container.innerHTML = '<p class="table-placeholder">No active key usage metrics recorded yet.</p>';
+                }
+
+                // Render Key Table
+                if (data.metrics && data.metrics.length > 0) {
+                    apiKeyBody.innerHTML = '';
+                    data.metrics.forEach(m => {
+                        const tr = document.createElement('tr');
+                        const isAnomaly = m.error_count > 5 || (m.prompt_tokens + m.completion_tokens) > 50000;
+                        tr.innerHTML = `
+                            <td>Client-App</td>
+                            <td><code>${m.api_key.substring(0, 8)}****</code></td>
+                            <td>${m.request_count}</td>
+                            <td>${m.error_count} ${isAnomaly ? '<span title="High Error/Traffic Anomaly">⚠️</span>' : ''}</td>
+                            <td>${m.prompt_tokens}</td>
+                            <td>${m.completion_tokens}</td>
+                            <td>$${m.estimated_cost_usd}</td>
+                            <td>
+                                <button class="danger-btn revoke-key-btn" data-key="${m.api_key}" style="padding: 2px 8px; font-size: 0.8em;">Revoke</button>
+                            </td>
+                        `;
+                        apiKeyBody.appendChild(tr);
+                    });
+
+                    // Attach revoke handlers
+                    document.querySelectorAll('.revoke-key-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const keyToRevoke = e.target.getAttribute('data-key');
+                            const adminSecret = prompt('Enter Admin Secret to revoke key:');
+                            if (!adminSecret) return;
+                            const revRes = await fetch('/dashboard/api/keys/revoke', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Admin-Secret': adminSecret
+                                },
+                                body: JSON.stringify({ key: keyToRevoke })
+                            });
+                            if (revRes.ok) {
+                                alert('API key revoked successfully.');
+                                loadKeyMetrics();
+                            } else {
+                                alert('Failed to revoke API key.');
+                            }
+                        });
+                    });
+                } else {
+                    apiKeyBody.innerHTML = '<tr><td colspan="8" class="table-placeholder">No key metrics recorded yet.</td></tr>';
+                }
+            }
+        } catch (e) {
+            console.error('Failed loading key metrics:', e);
+        }
+    }
+
+    const toggleSecurityBtn = document.getElementById('toggle-security-btn');
+    if (toggleSecurityBtn) {
+        toggleSecurityBtn.addEventListener('click', async () => {
+            const adminSecret = prompt('Enter Admin Secret to toggle Security Mode:');
+            if (!adminSecret) return;
+            const currentState = document.getElementById('toggle-status-text').textContent.includes('ENABLED');
+            const targetState = !currentState;
+
+            const res = await fetch('/dashboard/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Secret': adminSecret
+                },
+                body: JSON.stringify({ api_key_enabled: targetState })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message);
+                document.getElementById('toggle-status-text').textContent = `Current Mode: ${targetState ? 'ENABLED (API Key Required)' : 'DISABLED (Public Access)'}`;
+            } else {
+                alert('Unauthorized: Invalid Admin Secret.');
+            }
+        });
+    }
+
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', () => {
+            window.location.href = '/dashboard/api/keys/export/csv';
+        });
+    }
+
     // --- Initial Bootstrapping ---
     initMetricsChart();
     setupMetricSSE();
     loadCapabilities();
+    loadKeyMetrics();
 });

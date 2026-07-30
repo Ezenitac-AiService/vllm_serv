@@ -1,18 +1,25 @@
 {
+    "host": "0.0.0.0",
     "port": 8081,
     "backend_port": 8089,
-    "host": "0.0.0.0",
+    "allowed_subnets": [
+        "127.0.0.1",
+        "192.168.0.0/16",
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+    ],
     "firewall_auto_allow": true,
+    "vram_limit_mb": 11264,
+    "vram_max_capacity_mb": null,
     "healthcheck_timeout_s": 120,
+    "graceful_drain_timeout_s": 5.0,
     "connection_pool": {
         "max_keepalive_connections": 20,
         "max_connections": 100
     },
-    "vram_max_capacity_mb": null,
-    "graceful_drain_timeout_s": 5.0,
-    "admin_secret": "aiservice",
     "api_key_enabled": false,
     "api_keys": [],
+    "admin_secret": "aiservice",
     "speculative_decoding": {
         "enabled": false,
         "draft_model": "qwen3.5-2b"

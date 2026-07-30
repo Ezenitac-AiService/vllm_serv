@@ -17,6 +17,7 @@ from src.api.routes.dashboard_api import router as dashboard_router
 from src.api.routes.admin_api import router as admin_router
 from src.api.middleware.subnet_filter import SubnetFilterMiddleware
 from src.api.middleware.client_access_logger import ClientAccessLogMiddleware
+from src.api.middleware.api_key_auth import APIKeyAuthMiddleware
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
 
     # FR-001 / FR-002: 클라이언트 요청 및 감사 로깅 미들웨어 장착
     app.add_middleware(ClientAccessLogMiddleware)
+    app.add_middleware(APIKeyAuthMiddleware)
 
     # FR-008 & FR-032: 사설 내부망 CIDR 접근제어 미들웨어 장착
     cm = ConfigManager()

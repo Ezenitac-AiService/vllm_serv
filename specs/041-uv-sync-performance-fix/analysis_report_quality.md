@@ -1,7 +1,7 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `013-enhance-benchmark-report`
-**Generated Date**: 2026-07-30 14:53:49
+**Generated Date**: 2026-07-30 14:53:48
 **Execution Mode**: `STATIC PROFILING & FALLBACK SAMPLE MODE`
 **Golden Reference Ground Truth**: `data/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 

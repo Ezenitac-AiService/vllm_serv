@@ -263,3 +263,82 @@ async def run_playground_test(body: PlaygroundRequest):
         "completion_tokens": completion_tokens,
         "finish_reason": "stop"
     }
+
+
+class ConfigToggleRequest(BaseModel):
+    api_key_enabled: bool
+
+
+@router.post("/config", response_model=GenericResponse)
+async def update_dashboard_config(
+    body: ConfigToggleRequest,
+    authenticated: bool = Depends(verify_admin_secret_auth)
+):
+    """Toggle API Key Enforcement mode (FR-002, FR-003, C1 Admin Secret enforced)."""
+    cm = ConfigManager()
+    cfg = cm.get_server_config()
+    cfg["api_key_enabled"] = body.api_key_enabled
+    cm.save_server_config(cfg)
+    status_str = "ENABLED (API Key Required)" if body.api_key_enabled else "DISABLED (Public Mode)"
+    return {"status": "success", "message": f"API Key Authentication Security Mode updated to: {status_str}"}
+
+
+@router.get("/keys/metrics")
+async def get_keys_metrics():
+    """Retrieve SQLite aggregated metrics and Top 5 key rankings (FR-006, FR-007)."""
+    from src.core.metrics_db import metrics_db
+    metrics_list = metrics_db.get_aggregated_metrics()
+    
+    # Calculate top 5 keys
+    top_5 = sorted(metrics_list, key=lambda x: x["prompt_tokens"] + x["completion_tokens"], reverse=True)[:5]
+    
+    return {
+        "status": "success",
+        "metrics": metrics_list,
+        "top_5": top_5
+    }
+
+
+class RevokeKeyRequest(BaseModel):
+    key: str
+
+
+@router.post("/keys/revoke", response_model=GenericResponse)
+async def revoke_api_key(
+    body: RevokeKeyRequest,
+    authenticated: bool = Depends(verify_admin_secret_auth)
+):
+    """Revoke API Key immediately (FR-009)."""
+    cm = ConfigManager()
+    cfg = cm.get_server_config()
+    keys = cfg.get("api_keys", [])
+    updated = False
+    for k in keys:
+        if k.get("key") == body.key:
+            k["status"] = "revoked"
+            updated = True
+            break
+    if updated:
+        cm.save_server_config(cfg)
+        return {"status": "success", "message": f"API key {body.key[:8]}... has been revoked."}
+    return {"status": "error", "message": "API key not found."}
+
+
+@router.get("/keys/export/csv")
+async def export_keys_metrics_csv():
+    """Export key metrics history report as CSV format (FR-010)."""
+    from fastapi.responses import Response
+    from src.core.metrics_db import metrics_db
+    metrics_list = metrics_db.get_aggregated_metrics()
+    
+    csv_lines = ["api_key,request_count,error_count,prompt_tokens,completion_tokens,estimated_cost_usd,last_used_at"]
+    for m in metrics_list:
+        csv_lines.append(f"{m['api_key']},{m['request_count']},{m['error_count']},{m['prompt_tokens']},{m['completion_tokens']},{m['estimated_cost_usd']},{m['last_used_at']}")
+    
+    csv_content = "\n".join(csv_lines)
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=api_key_metrics.csv"}
+    )
+
