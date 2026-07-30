@@ -34,7 +34,7 @@ class ServerNetworkConfig:
     api_port: int = 8081
     llama_server_port: int = 8089
     allowed_subnets: List[str] = field(default_factory=lambda: [
-        "127.0.0.1/32",
+        "127.0.0.1",
         "192.168.0.0/16",
         "10.0.0.0/8",
         "172.16.0.0/12"

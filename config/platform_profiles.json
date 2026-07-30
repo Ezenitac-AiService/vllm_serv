@@ -1,9 +1,9 @@
 {
   "dev-rtx3060": {
     "profile_id": "dev-rtx3060",
-    "name": "Primary Development Workstation (i7-4770 / RTX 3060)",
+    "name": "Primary Trainee Development Workstation (i7-4770 / RTX 3060)",
     "cpu_model": "Modern x86_64 CPU / i7-4770",
-    "ram_gb": 32,
+    "ram_gb": 16,
     "gpu_name": "NVIDIA GeForce RTX 3060",
     "vram_mb": 12288,
     "compute_capability": "8.6",
@@ -29,7 +29,7 @@
     "expected_avx2": true,
     "network": {
       "bind_host": "0.0.0.0",
-      "allowed_subnets": ["127.0.0.1", "192.168.0.0/16"],
+      "allowed_subnets": ["127.0.0.1", "10.0.0.0/8"],
       "firewall_auto_allow": true
     }
   },

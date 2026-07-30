@@ -423,6 +423,11 @@ chmod +x "$BASE_DIR/scripts/status_server.sh"
 ln -sf "$BASE_DIR/scripts/status_server.sh" "$BASE_DIR/status_server.sh"
 log_info "✓ 생성 완료: scripts/status_server.sh (루트 심볼릭 링크 ./status_server.sh)"
 
+log_step "4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)"
+
+log_info "컨텍스트 윈도우 스케일링 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
+uv run python -m src.scripts.benchmark_context_scaling --non-blocking || log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (estimate_kv_cache_vram()으로 자동 fallback 진행)."
+
 log_step "5. setup.sh 설정 완결"
 
 log_info "vllm_serv 환경 설정 및 제어 스크립트 생성이 완료되었습니다!"

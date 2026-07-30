@@ -58,3 +58,26 @@ def test_config_manager_network_detection():
     assert "detected_active_ips" in net_info
     assert "bind_host" in net_info
     assert net_info["bind_host"] == "0.0.0.0"
+
+
+def test_config_manager_admin_secret_override(monkeypatch):
+    """Verify admin_secret loading from server_config and VLLM_ADMIN_SECRET env override."""
+    cm = ConfigManager()
+    cm.invalidate_all_caches()
+    cfg = cm.get_server_config()
+    assert cfg.get("admin_secret") == "aiservice"
+
+    monkeypatch.setenv("VLLM_ADMIN_SECRET", "custom_secret_key")
+    cm.invalidate_all_caches()
+    cfg_override = cm.get_server_config()
+    assert cfg_override.get("admin_secret") == "custom_secret_key"
+
+
+def test_dynamic_vram_capacity_binding():
+    """Verify dynamic VRAM capacity binding when vram_max_capacity_mb is null/unspecified."""
+    cm = ConfigManager()
+    cm.invalidate_all_caches()
+    vram_mb = cm.get_vram_max_capacity_mb()
+    assert isinstance(vram_mb, int)
+    assert vram_mb > 0
+

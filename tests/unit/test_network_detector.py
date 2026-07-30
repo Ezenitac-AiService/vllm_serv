@@ -57,3 +57,17 @@ def test_network_detector_unassigned_dual_lan_port_handling():
         assert "192.168.0.80" in usable_ips
         assert "127.0.0.1" not in usable_ips
         assert "0.0.0.0" not in usable_ips
+
+
+def test_ip_subnet_guard_filtering():
+    """Verify IpSubnetGuard filtering for 10.0.0.0/8 dev subnet and 192.168.0.0/16 trainee subnet."""
+    from src.api.middleware.subnet_filter import IpSubnetGuard
+
+    guard_dev = IpSubnetGuard(["127.0.0.1", "10.0.0.0/8"])
+    assert guard_dev.is_allowed("10.0.1.50") is True
+    assert guard_dev.is_allowed("192.168.0.50") is False
+
+    guard_trainee = IpSubnetGuard(["127.0.0.1", "192.168.0.0/16"])
+    assert guard_trainee.is_allowed("192.168.1.100") is True
+    assert guard_trainee.is_allowed("10.0.1.50") is False
+

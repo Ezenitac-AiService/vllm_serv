@@ -16,7 +16,9 @@ ServerState = ProcessStatusEnum
 class LlamaManager:
     """Coordinator class delegating to ProcessManager and EventBroadcaster."""
 
-    def __init__(self, config_manager: ConfigManager, port: Optional[int] = None):
+    def __init__(self, config_manager: Optional[ConfigManager] = None, port: Optional[int] = None):
+        if config_manager is None:
+            config_manager = ConfigManager()
         self.config_manager = config_manager
         server_cfg = config_manager.get_server_config()
         if port is not None:
@@ -250,6 +252,53 @@ class LlamaManager:
                 f"Inference request blocked: Process is in state '{self.state.value}'. "
                 f"Must wait until VRAM 100% offload is complete and state is READY."
             )
+
+    def get_max_allowed_n_ctx(self, model_id: str) -> int:
+        """FR-006: Returns maximum allowed n_ctx for a given model based on VRAM capacity and scaling rules.
+
+        Small models (2B/4B: e.g. gemma4-e2b, qwen3.5-2b, qwen3.5-4b) allow context expansion (8K~16K).
+        Large models (9B/12B: e.g. gemma4-12b, qwen3.5-9b) enforce 4K=4096 cap to prevent VRAM OOM.
+        """
+        resolved_id = self.config_manager.resolve_model_id(model_id)
+
+        # Check cached profiles first
+        cache_path = self.config_manager.get_absolute_path("config/model_context_profiles.json")
+        if cache_path and os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    cached_data = json.load(f)
+                    if resolved_id in cached_data and "max_safe_n_ctx" in cached_data[resolved_id]:
+                        return cached_data[resolved_id]["max_safe_n_ctx"]
+            except Exception:
+                pass
+
+        # Large models (9B / 12B) cap at 4096 (4K)
+        if any(token in resolved_id.lower() for token in ["12b", "9b"]):
+            return 4096
+
+        # Small models (2B / 4B) allow context scaling (8K)
+        if any(token in resolved_id.lower() for token in ["2b", "4b", "e2b", "e4b"]):
+            return 8192
+
+        return 4096
+
+    def validate_requested_context(self, model_id: str, requested_n_ctx: int) -> None:
+        """FR-006: Validates requested n_ctx against max allowed. Raises HTTPException 400 if exceeded."""
+        from fastapi import HTTPException
+        max_allowed = self.get_max_allowed_n_ctx(model_id)
+        if requested_n_ctx > max_allowed:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": {
+                        "message": f"Requested context length ({requested_n_ctx}) exceeds model maximum allowed context length ({max_allowed}) for model '{model_id}'.",
+                        "type": "invalid_request_error",
+                        "param": "n_ctx",
+                        "code": "context_length_exceeded"
+                    }
+                }
+            )
+
 
     async def _wait_for_ready(self, timeout: float = 30.0, max_retries: int = 10, interval: float = 0.5) -> bool:
         """T006: HTTP GET /health JSON API & VRAM 100% 오프로드 완납 상태 동시 확인 후 READY 전환.

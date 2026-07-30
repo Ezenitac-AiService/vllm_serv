@@ -16,15 +16,16 @@ class ServerConfig(BaseModel):
     allowed_subnets: List[str] = Field(default_factory=lambda: ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"])
     firewall_auto_allow: bool = True
     vram_limit_mb: int = 11264
-    vram_max_capacity_mb: int = 11264
+    vram_max_capacity_mb: Optional[int] = None
     healthcheck_timeout_s: int = 120
     graceful_drain_timeout_s: float = 5.0
     connection_pool: ConnectionPoolConfig = Field(default_factory=ConnectionPoolConfig)
     api_key_enabled: bool = False
     api_keys: List[Dict[str, Any]] = Field(default_factory=list)
-    admin_secret: str = "admin1234"
+    admin_secret: str = "aiservice"
     speculative_decoding: Dict[str, Any] = Field(default_factory=lambda: {"enabled": False, "draft_model": "qwen3.5-2b"})
     structured_output: Dict[str, Any] = Field(default_factory=lambda: {"enabled": True, "strict_json_schema": True})
+
 
 
     @field_validator("port", "backend_port")
@@ -223,8 +224,39 @@ class ConfigManager:
             except ValueError:
                 pass
 
+        env_secret = os.environ.get("VLLM_ADMIN_SECRET")
+        if env_secret:
+            config["admin_secret"] = env_secret
+
         self._server_config_cache = config
         return config.copy()
+
+    def get_vram_max_capacity_mb(self) -> int:
+        """FR-004: Returns dynamic VRAM capacity in MB via NVML detection, platform profile matching, or server config."""
+        cfg = self.get_server_config()
+        cap = cfg.get("vram_max_capacity_mb")
+        if cap is not None and isinstance(cap, int) and cap > 0:
+            return cap
+
+        try:
+            from src.core.gpu_detector import GPUManager
+            vram_info = GPUManager.get_gpu_vram_info()
+            if vram_info and vram_info.get("total_mb", 0) > 0:
+                return vram_info["total_mb"]
+        except Exception:
+            pass
+
+        try:
+            from src.core.cpu_detector import CPUHardwareDetector
+            matched_id = CPUHardwareDetector.match_platform_profile()
+            profile = self.get_platform_profile(matched_id)
+            if profile and "vram_mb" in profile:
+                return profile["vram_mb"]
+        except Exception:
+            pass
+
+        return 11264
+
 
     def _write_atomic_server_config(self, config: dict, **kwargs) -> None:
         """Saves server_config.json atomically."""

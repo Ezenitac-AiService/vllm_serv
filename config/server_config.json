@@ -8,8 +8,11 @@
         "max_keepalive_connections": 20,
         "max_connections": 100
     },
-    "vram_max_capacity_mb": 11264,
+    "vram_max_capacity_mb": null,
     "graceful_drain_timeout_s": 5.0,
+    "admin_secret": "aiservice",
+    "api_key_enabled": false,
+    "api_keys": [],
     "speculative_decoding": {
         "enabled": false,
         "draft_model": "qwen3.5-2b"

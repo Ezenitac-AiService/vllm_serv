@@ -127,6 +127,22 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
             headers={"Retry-After": "10"}
         )
 
+    body_content = None
+    if request.method == "POST" and path in ("chat/completions", "completions"):
+        body_content = await request.body()
+        if body_content:
+            try:
+                import json
+                body_json = json.loads(body_content)
+                model_id = body_json.get("model") or llama_manager.config_manager.get_config().get("current_model", "qwen3.5-4b")
+                requested_n_ctx = body_json.get("n_ctx")
+                if requested_n_ctx is not None:
+                    llama_manager.validate_requested_context(model_id, int(requested_n_ctx))
+            except HTTPException:
+                raise
+            except Exception:
+                pass
+
     client = _get_http_client(request)
     url = httpx.URL(path=request.url.path, query=request.url.query.encode("utf-8"))
 
@@ -134,7 +150,7 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
         request.method,
         url,
         headers=request.headers.raw,
-        content=request.stream()
+        content=body_content if body_content is not None else request.stream()
     )
 
     try:

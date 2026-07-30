@@ -15,17 +15,25 @@ def test_get_platform_profiles():
 
     assert "dev-rtx3060" in profiles
     assert "legacy-i7-930-gtx1070" in profiles
+    assert "pascal-avx2-gtx1080ti" in profiles
 
     dev = profiles["dev-rtx3060"]
     assert dev["compute_capability"] == "8.6"
     assert dev["vram_mb"] == 12288
+    assert dev["ram_gb"] == 16
     assert dev["expected_avx"] is True
+    assert "192.168.0.0/16" in dev["network"]["allowed_subnets"]
+
+    pascal = profiles["pascal-avx2-gtx1080ti"]
+    assert pascal["ram_gb"] == 32
+    assert "10.0.0.0/8" in pascal["network"]["allowed_subnets"]
 
     legacy = profiles["legacy-i7-930-gtx1070"]
     assert legacy["compute_capability"] == "6.1"
     assert legacy["ram_gb"] == 24
     assert legacy["vram_mb"] == 8192
     assert legacy["expected_avx"] is False
+    assert "192.168.0.0/16" in legacy["network"]["allowed_subnets"]
 
 
 def test_get_platform_profile_single():
@@ -51,3 +59,4 @@ def test_platform_profile_network_configurations():
             net = prof["network"]
             assert "bind_host" in net
             assert "allowed_subnets" in net
+

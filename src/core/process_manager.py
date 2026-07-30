@@ -131,7 +131,7 @@ class ProcessManager:
 
         # 외부 JSON 서버 설정에서 VRAM 상한선 및 포트 동적 로드 (명시적 port 지정 시 최우선 적용)
         server_config = config_manager.get_server_config()
-        self.vram_max_capacity_mb = server_config.get("vram_max_capacity_mb", 11264)
+        self.vram_max_capacity_mb = config_manager.get_vram_max_capacity_mb()
         if port != 8081:
             self.port = port
         else:
