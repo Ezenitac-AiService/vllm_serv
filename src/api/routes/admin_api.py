@@ -7,7 +7,7 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Header, Depends, status, Request
 from pydantic import BaseModel
 
-from src.core.api_key_manager import get_api_key_manager, ApiKeyEntity
+from src.core.api_key_manager import get_api_key_manager
 
 router = APIRouter(prefix="/v1/admin", tags=["Admin API Key Management"])
 

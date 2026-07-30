@@ -11,10 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.core.config_manager import ConfigManager
 
 from src.core.gpu_detector import (
-    check_gpu_availability,
     get_nvml_vram_info,
     estimate_kv_cache_vram,
-    GpuDeviceInfo,
     VramOffloadStatus,
     GpuAccelerationError,
     VramOverflowError,

@@ -298,10 +298,11 @@ uv run python scripts/benchmark_quality.py --auto-download --real
 
 ---
 
-## ⚙️ 외부 설정 파일 구조 (Configurations)
+## ⚙️ 프로젝트 디렉토리 및 외부 설정 구조 (Configurations)
 
+- **`.legacy/`**: 더 이상 직접 실행되지 않는 1회성 스크립트, 구형 설치 파일 및 벤치마크 임시 결과를 영구 아카이빙하는 비파괴적 보존 디렉토리.
 - **`config/model_catalog.json`**: 지원 모델의 GGUF 경로, CLIP 경로, HF repo_id, VRAM 추정치 모듈화.
-- **`config/server_config.json`**: 서빙 포트(`8081`), 호스트(`127.0.0.1`), VRAM 상한(`11264MB`), 헬스체크 타임아웃(`120s`) 설정.
+- **`config/server_config.json`**: 서빙 포트(`8081`), 호스트(`0.0.0.0`), VRAM 상한(`11264MB`), 헬스체크 타임아웃(`120s`) 설정.
 
 ---
 
