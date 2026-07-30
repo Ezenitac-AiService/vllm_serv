@@ -42,6 +42,11 @@ class SubnetFilterMiddleware(BaseHTTPMiddleware):
         self.guard = IpSubnetGuard(allowed_subnets)
 
     async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        # Allow public access to dashboard UI and health check endpoints
+        if path.startswith("/dashboard") or path.startswith("/health") or path == "/":
+            return await call_next(request)
+
         client_host = request.client.host if request.client else "127.0.0.1"
 
         if not self.guard.is_allowed(client_host):
@@ -53,3 +58,4 @@ class SubnetFilterMiddleware(BaseHTTPMiddleware):
             )
 
         return await call_next(request)
+

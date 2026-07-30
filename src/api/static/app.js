@@ -92,62 +92,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 2. Chart.js Time-Series Canvas Graph Initialization (FR-001) ---
     function initMetricsChart() {
-        const ctx = document.getElementById('metricsChart').getContext('2d');
-        state.chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: state.metricsHistory.timestamps,
-                datasets: [
-                    {
-                        label: 'VRAM Used (MB)',
-                        data: state.metricsHistory.vramUsed,
-                        borderColor: '#06b6d4',
-                        backgroundColor: 'rgba(6, 182, 212, 0.15)',
-                        fill: true,
-                        tension: 0.3,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'GPU Utilization (%)',
-                        data: state.metricsHistory.gpuUtil,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'transparent',
-                        borderDash: [5, 5],
-                        tension: 0.3,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                scales: {
-                    x: {
-                        ticks: { color: '#9ca3af', maxTicksLimit: 10 },
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                    },
-                    y: {
-                        position: 'left',
-                        ticks: { color: '#06b6d4' },
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                        title: { display: true, text: 'VRAM (MB)', color: '#06b6d4' }
-                    },
-                    y1: {
-                        position: 'right',
-                        min: 0,
-                        max: 100,
-                        ticks: { color: '#3b82f6' },
-                        grid: { drawOnChartArea: false },
-                        title: { display: true, text: 'GPU %', color: '#3b82f6' }
-                    }
+        if (typeof Chart === 'undefined') {
+            console.warn('[Dashboard] Chart.js CDN not loaded or offline. Graph rendering will fallback.');
+            return;
+        }
+        try {
+            const ctx = document.getElementById('metricsChart').getContext('2d');
+            state.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: state.metricsHistory.timestamps,
+                    datasets: [
+                        {
+                            label: 'VRAM Used (MB)',
+                            data: state.metricsHistory.vramUsed,
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'GPU Utilization (%)',
+                            data: state.metricsHistory.gpuUtil,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
                 },
-                plugins: {
-                    legend: { labels: { color: '#f3f4f6' } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af', maxTicksLimit: 10 },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        y: {
+                            position: 'left',
+                            ticks: { color: '#06b6d4' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            title: { display: true, text: 'VRAM (MB)', color: '#06b6d4' }
+                        },
+                        y1: {
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            ticks: { color: '#3b82f6' },
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'GPU %', color: '#3b82f6' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f3f4f6' } }
+                    }
                 }
-            }
-        });
+            });
+        } catch (err) {
+            console.error('[Dashboard] Error initializing Chart.js:', err);
+        }
     }
+
 
     // --- 3. Real-Time SSE Resource Metric Listener (FR-001, FR-003) ---
     function setupMetricSSE() {
