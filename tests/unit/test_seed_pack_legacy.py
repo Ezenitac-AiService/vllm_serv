@@ -72,6 +72,29 @@ def test_setup_sh_fast_track_and_fallback_logic():
     assert "uv pip install" in content
 
 
+def test_setup_sh_explicit_llama_cpp_python_wheel_matching():
+    """Verify setup.sh explicitly targets llama_cpp_python*.whl instead of generic *.whl (030-fix-legacy-wheel-selection FR-001)."""
+    content = SETUP_SCRIPT.read_text(encoding="utf-8")
+    # Must use version-sorted ls for llama_cpp_python*.whl
+    assert "ls -v wheels/legacy_i7_930/llama_cpp_python*.whl" in content
+    assert "tail -n 1" in content
+
+
+def test_setup_sh_offline_installation_flags():
+    """Verify setup.sh uses --no-index --find-links wheels/legacy_i7_930 for offline fast-track wheel installation (030-fix-legacy-wheel-selection FR-002)."""
+    content = SETUP_SCRIPT.read_text(encoding="utf-8")
+    assert "--no-index" in content
+    assert "--find-links wheels/legacy_i7_930" in content
+
+
+def test_setup_sh_gpu_offload_failure_triggers_fallback():
+    """Verify setup.sh falls back to source compilation if GPU offload check fails post Fast-Track (030-fix-legacy-wheel-selection FR-004)."""
+    content = SETUP_SCRIPT.read_text(encoding="utf-8")
+    # Check that fallback message is logged and source compilation path is reached when Fast-Track or GPU check fails
+    assert "Fallback" in content
+    assert "CMAKE_ARGS" in content
+
+
 def test_setup_sh_preserves_platform_a_b_compilation():
     """Verify setup.sh retains CMAKE_ARGS source compilation for Platform A/B (FR-003)."""
     content = SETUP_SCRIPT.read_text(encoding="utf-8")

@@ -124,7 +124,7 @@ if [ "$BUILD_LEGACY" -eq 1 ]; then
             log_info "i7-930 전용 휠 생성 중 (CFLAGS=-march=x86-64, -DGGML_AVX=OFF -DGGML_AVX2=OFF)..."
             CFLAGS="-march=x86-64" \
             CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF" \
-            uv pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
+            uv run pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
         else
             log_warn "uv 패키지 매니저 미설치로 i7-930 휠 사전 컴파일 스킵 (기존 아티팩트 활용)"
         fi

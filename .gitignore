@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+*.whl
 .venv/
 venv/
 dist/
