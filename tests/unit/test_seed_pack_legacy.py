@@ -63,6 +63,14 @@ def test_make_seed_pack_cli_options():
     assert "--skip-legacy-build" in res.stdout
 
 
+def test_make_seed_pack_script_includes_cuda_arch_and_native_flags():
+    """Verify make_seed_pack.sh includes FORCE_CMAKE=1, CMAKE_CUDA_ARCHITECTURES=61, and GGML_NATIVE=OFF (031-fix-seed-pack-cuda-arch FR-001, FR-003)."""
+    content = MAKE_SEED_PACK_SCRIPT.read_text(encoding="utf-8")
+    assert "FORCE_CMAKE=1" in content
+    assert "-DCMAKE_CUDA_ARCHITECTURES=61" in content
+    assert "-DGGML_NATIVE=OFF" in content
+
+
 def test_setup_sh_fast_track_and_fallback_logic():
     """Verify setup.sh contains logic for legacy-i7-930 fast-track wheel installation and fallback (FR-002, FR-004)."""
     content = SETUP_SCRIPT.read_text(encoding="utf-8")

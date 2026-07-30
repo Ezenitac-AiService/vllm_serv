@@ -36,9 +36,9 @@ def test_make_seed_pack_default_tarball(tmp_path):
     assert res.returncode == 0, f"make_seed_pack.sh failed: {res.stderr}\nOutput: {res.stdout}"
     assert output_tar.exists(), "Output tar.gz file must exist"
 
-    # Size check (< 10MB = 10,485,760 bytes)
+    # Size check (< 200MB = 209,715,200 bytes) including prebuilt legacy wheels (wheels/legacy_i7_930/)
     file_size = output_tar.stat().st_size
-    assert file_size < 10 * 1024 * 1024, f"Seed pack file size too large: {file_size} bytes"
+    assert file_size < 200 * 1024 * 1024, f"Seed pack file size too large: {file_size} bytes"
 
     # Inspect tarball contents
     with tarfile.open(output_tar, "r:gz") as tar:
