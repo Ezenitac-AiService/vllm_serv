@@ -29,13 +29,35 @@ def kiwi_tokenize(text: str) -> list[str]:
 # 환경 변수 로드 (.env)
 load_dotenv()
 
-# OpenAI 호환 Groq API 클라이언트 초기화
-api_key = os.getenv("GROQ_API_KEY")
-model_name = os.getenv("CURRENT_GROQ_MODEL", "llama-3.3-70b-versatile")
-client = OpenAI(
-    base_url="https://api.groq.com/openai/v1",
-    api_key=api_key or "gsk_dummy_key_for_test"
-)
+def get_local_llm_client() -> tuple[OpenAI, str]:
+    """
+    OpenAI API 규격 기반 로컬 LLM 클라이언트 및 엔드포인트 URL을 반환합니다.
+    우선순위: OPENAI_BASE_URL > VLLM_API_BASE > http://10.0.0.41:8000/v1 (서버 할당 IP)
+    """
+    base_url = (
+        os.getenv("OPENAI_BASE_URL")
+        or os.getenv("VLLM_API_BASE")
+        or "http://10.0.0.41:8000/v1"
+    )
+    api_key = os.getenv("OPENAI_API_KEY", "EMPTY")
+    return OpenAI(base_url=base_url, api_key=api_key), base_url
+
+def get_target_model_name() -> str:
+    """
+    추론 대상 모델명을 반환합니다.
+    지원 모델: gemma4-e2b, gemma4-e4b, qwen3.5-2b, qwen3.5-4b, qwen3.5-9b
+    우선순위: OPENAI_MODEL_NAME > MODEL_NAME > qwen3.5-2b
+    """
+    return (
+        os.getenv("OPENAI_MODEL_NAME")
+        or os.getenv("MODEL_NAME")
+        or "qwen3.5-2b"
+    )
+
+
+client, base_url = get_local_llm_client()
+model_name = get_target_model_name()
+
 
 # 1. 감성 요소 객체 데이터 타입 정의
 class ReviewSentimentItem(TypedDict):
@@ -188,7 +210,11 @@ SYSTEM_PROMPT = """주어진 음식점 리뷰 문단을 분석하여, 지정된 
 """
 
 # 6. 핵심 추출 파이프라인 함수
-def process_review_sentiment_extraction(review_text: str) -> list[dict[str, str]]:
+def process_review_sentiment_extraction(
+    review_text: str,
+    llm_client: OpenAI | None = None
+) -> list[dict[str, str]]:
+
     """
     4단계 하이브리드 파이프라인(LLM 맥락 복원, 유의어 정규화, BM25 희소 검증, 가드레일, 감성모델용 정제문 가공)을 통해
     리뷰 문단에서 5대 감성 원문 문장(sentence)과 정제 문장(refined_sentence)을 파싱하고 맥락적 대상(target)을 복원하여 반환합니다.
@@ -205,17 +231,30 @@ def process_review_sentiment_extraction(review_text: str) -> list[dict[str, str]
         {"role": "user", "content": f"## 분석할 리뷰\n\"{review_text}\""}
     ]
 
+    active_client = client if llm_client is None else llm_client
+    target_model = get_target_model_name()
+
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=0.1,
-            response_format={"type": "json_object"}
-        )
+        try:
+            response = active_client.chat.completions.create(
+                model=target_model,
+                messages=messages,
+                temperature=0.1,
+                response_format={"type": "json_object"}
+            )
+        except Exception as json_mode_err:
+            # response_format json_object 미지원 소형 모델 폴백 (일반 추론 후 태스크 정제)
+            response = active_client.chat.completions.create(
+                model=target_model,
+                messages=messages,
+                temperature=0.1
+            )
         raw_content = response.choices[0].message.content or "[]"
     except Exception as e:
-        print(f"[시스템] API 호출 실패 (Mock fallback 또는 에러): {e}")
+        print(f"[시스템] 로컬 LLM 서버 연결 실패: {base_url} 서버 상태를 확인하세요 ({e})")
         return []
+
+
 
     # 2단계: <think> 태그 제거 및 JSON 객체 변환
     cleaned_content = strip_think_tags(raw_content)

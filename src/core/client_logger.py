@@ -117,9 +117,21 @@ class ClientLoggerManager:
         log_msg = " ".join(parts)
         self.error_logger.error(log_msg)
 
+    def get_recent_access_logs(self, limit: int = 50) -> list:
+        """Reads recent access log entries from access.log."""
+        if not os.path.exists(self.access_log_path):
+            return []
+        try:
+            with open(self.access_log_path, "r", encoding="utf-8") as f:
+                lines = [line.strip() for line in f if line.strip()]
+            return lines[-limit:]
+        except Exception:
+            return []
+
     def stop(self) -> None:
         self.access_listener.stop()
         self.error_listener.stop()
+
 
 
 
