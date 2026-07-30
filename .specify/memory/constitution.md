@@ -1,11 +1,12 @@
 <!--
 Sync Impact Report:
-- Version Change: 1.5.1 -> 1.5.2 (Formatting & Non-Destructive Wording Polish)
+- Version Change: 1.5.2 -> 1.6.0 (Added Principle VII: Mandatory Regression Testing & Playwright E2E Discipline)
 - Modified Principles:
-  - Principle I ~ VI: Refined typography, bullet alignments, and section formatting with 100% content & detail preservation.
-- Added Sections: None
+  - Principle I ~ VI: Preserved exactly.
+  - Principle VII (NEW): Added Mandatory Full Suite Regression & Playwright E2E Browser Testing Discipline to prevent UI/API breakage upon modification.
+- Added Sections: Principle VII (Mandatory Regression Testing & Playwright E2E Discipline)
 - Removed Sections: None
-- Templates Requiring Updates: .specify/templates/plan-template.md (✅ aligned)
+- Templates Requiring Updates: .specify/templates/plan-template.md (✅ aligned), .specify/templates/spec-template.md (✅ aligned), .specify/templates/tasks-template.md (✅ aligned)
 - Follow-up TODOs: None
 -->
 
@@ -38,6 +39,11 @@ Sync Impact Report:
 - **표준 가상환경 패키저**: 본 프로젝트는 `uv` 패키지 및 파이썬 가상환경 관리자를 표준 환경으로 사용합니다. 패키지 추가, 설치 및 환경 동기화 시에는 `pip`이나 임의의 패키지 매니저 대신 `uv add`, `uv sync`를 사용해야 합니다.
 - **격리 명령어 지정**: 모든 파이썬 스크립트 실행, 모듈 호출, pytest 테스트 수행 시에는 임의의 `PYTHONPATH` 지정 대신 `uv run` (예: `uv run pytest`, `uv run python ...`) 명령을 사용하여 격리된 가상환경 경로 및 패키지 정합성을 보장해야 합니다.
 
+### VII. 의무적 회귀 테스트 및 브라우저 E2E 검증 원칙 (Mandatory Regression Testing & Playwright E2E Discipline)
+- **전체 회귀 테스트 수트 의무 실행 (Full Suite Regression Rule)**: 기능 수정, 버그 파치, 신규 기능 구현 완료 전에는 신규 작성 테스트뿐만 아니라 프로젝트의 모든 기존 회귀 테스트 수트(`uv run pytest`)를 필수 실행하여 기존 기능의 파손 여부를 종합 검증해야 합니다.
+- **실체적 웹 UI 브라우저 E2E 검증 (Real Browser E2E Testing)**: 웹 UI 및 대시보드 변경이 수반될 때에는 파이썬 API 단위 테스트에만 의존하지 않고 `pytest-playwright` 기반의 실제 Headless 브라우저 E2E 회귀 테스트 수트(`tests/e2e/`)를 수록하여 전체 탭 전환, 모달 렌더링, 폼 제출(페이지 새로고침 방지), DOM 이벤트 핸들러 동작을 실체적으로 자동 검증해야 합니다.
+- **회귀 검증 없는 완납 선언 전면 금지**: 전체 회귀 테스트 및 E2E 브라우저 검증 결과가 100% 통과(Green Pass)하지 않은 상태에서 구현 완납을 선언하는 행위를 헌법상 엄격히 금지합니다.
+
 ## Governance
 
 본 헌장(Constitution)은 vllm_serv 프로젝트 내 모든 작업의 기반이 되는 최상위 헌법 규정입니다.
@@ -56,4 +62,4 @@ Sync Impact Report:
 ### 3. 예외 관리 및 복잡도 추적 (Exception Management & Complexity Tracking)
 - 부득이한 사유로 헌장 원칙에 미치지 못하거나 예외 처리가 필요한 경우, 무단 적용을 금지하며 구현 계획서(`plan.md`)의 복잡도 추적(Complexity Tracking) 섹션에 위반 사유와 대안 기각 사유를 명시적으로 정당화해야 합니다.
 
-**Version**: 1.5.2 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-30
+**Version**: 1.6.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-30
