@@ -179,3 +179,30 @@ class ConfigManager:
         self._cache = None
         self._model_catalog_cache = None
         self._server_config_cache = None
+        self._platform_profiles_cache = None
+
+    # -------------------------------------------------------------------------
+    # FR-006: Platform Profiles JSON 외부화 및 로더
+    # -------------------------------------------------------------------------
+    _platform_profiles_cache: Optional[Dict[str, Any]] = None
+
+    def get_platform_profiles(self) -> Dict[str, Any]:
+        """FR-006: config/platform_profiles.json에서 타겟 플랫폼 프로필을 로드하고 캐싱합니다."""
+        if self._platform_profiles_cache is not None:
+            return self._platform_profiles_cache.copy()
+
+        profiles_path = os.path.join(os.path.dirname(self.config_path), "platform_profiles.json")
+        try:
+            with open(profiles_path, "r", encoding="utf-8") as f:
+                profiles = json.load(f)
+            self._platform_profiles_cache = profiles
+            return profiles.copy()
+        except (FileNotFoundError, json.JSONDecodeError, Exception) as e:
+            print(f"[ConfigManager] ⚠️ platform_profiles.json 로드 실패: {e}")
+            self._platform_profiles_cache = {}
+            return {}
+
+    def get_platform_profile(self, profile_id: str) -> Optional[Dict[str, Any]]:
+        """단일 타겟 플랫폼 프로필 정보를 조회합니다."""
+        profiles = self.get_platform_profiles()
+        return profiles.get(profile_id)

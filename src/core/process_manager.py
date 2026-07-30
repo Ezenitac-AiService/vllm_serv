@@ -342,13 +342,23 @@ class ProcessManager:
 
         llama_src_dir = os.path.join(base_dir, "llama.cpp")
         if os.path.exists(os.path.join(llama_src_dir, "CMakeLists.txt")):
-            print("[ProcessManager] llama-server missing. Compiling llama.cpp with CUDA support (cmake -B build -DGGML_CUDA=ON)...")
+            try:
+                from src.core.cpu_detector import get_llama_build_flags, print_detection_report
+                build_flags = get_llama_build_flags()
+                cmake_args = build_flags.cmake_args_list
+                print(f"[ProcessManager] llama-server missing. Compiling llama.cpp with hardware detection flags ({build_flags.cmake_args_str})...")
+                print_detection_report()
+            except Exception as e:
+                print(f"[ProcessManager] ⚠️ Hardware detection failed, using fallback flags: {e}")
+                cmake_args = ["-DGGML_CUDA=ON", "-DGGML_AVX=OFF", "-DGGML_AVX2=OFF", "-DGGML_F16C=OFF", "-DGGML_FMA=OFF"]
+
             import subprocess
             try:
                 os.makedirs(bin_dir, exist_ok=True)
                 build_dir = os.path.join(llama_src_dir, "build")
+                cmd = ["cmake", "-B", build_dir] + cmake_args
                 subprocess.run(
-                    ["cmake", "-B", build_dir, "-DGGML_CUDA=ON"],
+                    cmd,
                     cwd=llama_src_dir, check=True, capture_output=True
                 )
                 subprocess.run(
@@ -372,6 +382,7 @@ class ProcessManager:
             is_cuda_enabled=True,
             build_source="PYTHON_MODULE_FALLBACK"
         )
+
 
     async def spawn_process(self, model_id: str, n_ctx: int = 2048) -> ProcessState:
         """Spawns a new llama-server subprocess for Gemma 4 or Qwen 3.5."""

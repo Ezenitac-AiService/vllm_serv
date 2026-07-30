@@ -89,6 +89,7 @@ graph TD
 | **`start_server.sh`** | `./start_server.sh` | 백그라운드 데몬 구동, llama-server C++ 자동 빌드, GGUF 자동 다운로드, VRAM 100% 오프로드 검증 |
 | **`stop_server.sh`** | `./stop_server.sh` | PID 및 하위 llama-server 프로세스 단계별 종료 (`SIGTERM` ➔ `SIGKILL`), VRAM 메모리 완전 반납 |
 | **`status_server.sh`** | `./status_server.sh` | 서빙 PID, HTTP `/health` JSON API 헬스체크, nvidia-smi GPU 사용량 및 온도 실시간 리포트 |
+| **`make_seed_pack.sh`** | `./make_seed_pack.sh` | 타 서버 이관용 경량 Seed Pack 압축 생성 (`dist/vllm_serv_seed.tar.gz`, 대용량 모델 및 `.venv` 배제) |
 
 ---
 

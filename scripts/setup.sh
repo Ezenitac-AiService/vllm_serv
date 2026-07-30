@@ -36,6 +36,7 @@ REQUIRED_FILES=(
     "src/core/process_manager.py"
     "src/core/llama_manager.py"
     "scripts/benchmark_quality.py"
+    "scripts/make_seed_pack.sh"
 )
 
 MISSING_COUNT=0
@@ -95,16 +96,23 @@ GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
 VRAM_TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader | head -n 1)
 log_info "✓ NVIDIA GPU 감지 완료: $GPU_NAME (총 VRAM: $VRAM_TOTAL)"
 
-# FR-001 / T007: CUDA 가속 llama-cpp-python 소스 컴파일 및 설치
-log_info "CUDA 가속 llama-cpp-python 소스 컴파일 및 설치 중 (CMAKE_ARGS=\"-DGGML_CUDA=on\")..."
+# FR-001 / FR-002: CPU & GPU 하드웨어 명령어 세트 감지 및 CMAKE_ARGS 동적 생성
+log_info "CPU 명령어 세트 및 GPU Compute Capability 감지 수행 중..."
+uv run python -m src.core.cpu_detector --report || true
+
+DETECTED_CMAKE_ARGS=$(uv run python -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF")
+log_info "적용할 동적 CMAKE_ARGS: $DETECTED_CMAKE_ARGS"
+
+log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 소스 컴파일 중..."
 log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
-CMAKE_ARGS="-DGGML_CUDA=on" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python --force-reinstall --no-cache-dir
+CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python --force-reinstall --no-cache-dir
 if [ $? -ne 0 ]; then
     log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
     log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
     exit 1
 fi
-log_info "✓ llama-cpp-python CUDA 빌드 설치 완료"
+log_info "✓ llama-cpp-python 동적 최적화 컴파일 및 설치 완료"
+
 
 # T008: 설치 후 llama_supports_gpu_offload() GPU 지원 검증 (post-install assertion)
 log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."

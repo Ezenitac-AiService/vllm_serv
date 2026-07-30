@@ -1,0 +1,22 @@
+{
+  "dev-rtx3060": {
+    "name": "Primary Development Workstation",
+    "cpu_model": "Modern x86_64 CPU",
+    "ram_gb": 32,
+    "gpu_name": "NVIDIA GeForce RTX 3060",
+    "vram_mb": 12288,
+    "compute_capability": "8.6",
+    "os_name": "Linux x86_64",
+    "expected_avx": true
+  },
+  "legacy-i7-930-gtx1070": {
+    "name": "Legacy Target Server (i7 930)",
+    "cpu_model": "Intel Core i7 930 @ 2.80GHz",
+    "ram_gb": 24,
+    "gpu_name": "NVIDIA GeForce GTX 1070",
+    "vram_mb": 8192,
+    "compute_capability": "6.1",
+    "os_name": "Ubuntu Server 24.04 LTS",
+    "expected_avx": false
+  }
+}
