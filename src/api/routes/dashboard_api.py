@@ -89,11 +89,13 @@ class PlaygroundRequest(BaseModel):
     prompt: str
     temperature: float = 0.7
     top_p: float = 0.9
-    max_tokens: int = 256
+    max_tokens: int = 1024
+    strip_think_tags: bool = True
 
 
 class PlaygroundResponse(BaseModel):
     text: str
+    thinking_process: Optional[str] = None
     ttft_ms: float
     total_latency_s: float
     token_speed_tok_s: float
@@ -297,6 +299,13 @@ async def run_playground_test(body: PlaygroundRequest):
         completion_tokens = 0
         finish_reason = "offline"
 
+    thinking_process = None
+    if body.strip_think_tags and completion_text:
+        from src.core.think_tag_parser import parse_think_tags
+        clean_text, think_text = parse_think_tags(completion_text)
+        completion_text = clean_text
+        thinking_process = think_text
+
     token_speed_tok_s = round(completion_tokens / max(total_latency_s - (ttft_ms / 1000.0), 0.05), 1)
 
     from src.core.metrics_db import metrics_db
@@ -310,11 +319,13 @@ async def run_playground_test(body: PlaygroundRequest):
         tps=token_speed_tok_s,
         is_error=(finish_reason != "stop"),
         prompt_text=body.prompt,
-        completion_text=completion_text
+        completion_text=completion_text,
+        thinking_text=thinking_process
     )
 
     return {
         "text": completion_text,
+        "thinking_process": thinking_process,
         "ttft_ms": ttft_ms,
         "total_latency_s": total_latency_s,
         "token_speed_tok_s": token_speed_tok_s,

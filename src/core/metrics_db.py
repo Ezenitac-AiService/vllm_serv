@@ -51,7 +51,8 @@ class MetricsDB:
                     tps REAL DEFAULT 0.0,
                     is_error INTEGER DEFAULT 0,
                     prompt_text TEXT,
-                    completion_text TEXT
+                    completion_text TEXT,
+                    thinking_text TEXT
                 );
             """)
             # Migration check for existing databases
@@ -61,6 +62,10 @@ class MetricsDB:
                 pass
             try:
                 conn.execute("ALTER TABLE api_key_logs ADD COLUMN completion_text TEXT;")
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE api_key_logs ADD COLUMN thinking_text TEXT;")
             except Exception:
                 pass
 
@@ -79,7 +84,8 @@ class MetricsDB:
         tps: float = 0.0,
         is_error: bool = False,
         prompt_text: str = None,
-        completion_text: str = None
+        completion_text: str = None,
+        thinking_text: str = None
     ):
         """Logs a single API request asynchronously/synchronously with connection pooling and payload text."""
         try:
@@ -87,8 +93,8 @@ class MetricsDB:
                 conn.execute(
                     """
                     INSERT INTO api_key_logs 
-                    (api_key, endpoint, status_code, prompt_tokens, completion_tokens, ttft_ms, tps, is_error, prompt_text, completion_text)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (api_key, endpoint, status_code, prompt_tokens, completion_tokens, ttft_ms, tps, is_error, prompt_text, completion_text, thinking_text)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         api_key,
@@ -100,7 +106,8 @@ class MetricsDB:
                         tps,
                         1 if is_error else 0,
                         prompt_text,
-                        completion_text
+                        completion_text,
+                        thinking_text
                     )
                 )
                 conn.commit()
@@ -153,10 +160,10 @@ class MetricsDB:
             return results
 
     def get_payload_by_id(self, log_id: int) -> Dict[str, Any]:
-        """Returns prompt_text and completion_text for a specific log entry ID."""
+        """Returns prompt_text, completion_text, and thinking_text for a specific log entry ID."""
         with self._get_connection() as conn:
             cursor = conn.execute(
-                "SELECT id, api_key, endpoint, status_code, prompt_tokens, completion_tokens, ttft_ms, tps, prompt_text, completion_text, timestamp FROM api_key_logs WHERE id = ?",
+                "SELECT id, api_key, endpoint, status_code, prompt_tokens, completion_tokens, ttft_ms, tps, prompt_text, completion_text, thinking_text, timestamp FROM api_key_logs WHERE id = ?",
                 (log_id,)
             )
             row = cursor.fetchone()

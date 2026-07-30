@@ -221,6 +221,13 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
                                                 completion_text += content
                                     except Exception:
                                         pass
+                    thinking_text = None
+                    if completion_text:
+                        from src.core.think_tag_parser import parse_think_tags
+                        clean_text, think_text = parse_think_tags(completion_text)
+                        completion_text = clean_text
+                        thinking_text = think_text
+
                     total_latency_s = time.perf_counter() - start_time
                     tps = round(completion_tokens / max(total_latency_s, 0.05), 1) if completion_tokens else 0.0
 
@@ -238,7 +245,8 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
                         tps=tps,
                         is_error=(r.status_code >= 400),
                         prompt_text=prompt_text,
-                        completion_text=completion_text
+                        completion_text=completion_text,
+                        thinking_text=thinking_text
                     )
                 except Exception:
                     pass
