@@ -24,9 +24,11 @@ show_help() {
     echo "vllm_serv 프로젝트의 핵심 소스코드, 설정 및 쉘 스크립트를 경량 Seed Pack 아카이브로 패키징합니다."
     echo ""
     echo "옵션:"
-    echo "  -o, --output PATH   생성할 아카이브 저장 경로 지정 (기본값: dist/vllm_serv_seed.tar.gz)"
-    echo "      --zip           기본 .tar.gz 대신 .zip 포맷으로 아카이브 생성"
-    echo "  -h, --help          도움말 메시지 출력 후 종료"
+    echo "  -o, --output PATH       생성할 아카이브 저장 경로 지정 (기본값: dist/vllm_serv_seed.tar.gz)"
+    echo "      --zip               기본 .tar.gz 대신 .zip 포맷으로 아카이브 생성"
+    echo "      --build-legacy      i7-930 전용 사전 컴파일 휠(wheels/legacy_i7_930/*.whl) 번들링 (기본 활성)"
+    echo "      --skip-legacy-build i7-930 전용 휠 사전 컴파일 과정 스킵"
+    echo "  -h, --help              도움말 메시지 출력 후 종료"
     echo ""
     exit 0
 }
@@ -43,6 +45,7 @@ cd "$BASE_DIR"
 
 OUTPUT_PATH=""
 USE_ZIP=0
+BUILD_LEGACY=1
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -52,6 +55,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --zip)
             USE_ZIP=1
+            shift
+            ;;
+        --build-legacy)
+            BUILD_LEGACY=1
+            shift
+            ;;
+        --skip-legacy-build)
+            BUILD_LEGACY=0
             shift
             ;;
         -h|--help)
@@ -103,6 +114,25 @@ mkdir -p "$OUTPUT_DIR"
 log_info "저장 목표 경로: $OUTPUT_PATH"
 log_info "제외 항목: models/, .venv/, .bin/, logs/, build/, dist/, __pycache__/, .git/"
 
+# 1.5 i7-930 (Nehalem) 사전 빌드 휠 검증 및 컴파일
+if [ "$BUILD_LEGACY" -eq 1 ]; then
+    log_info "i7-930 (Nehalem) 전용 사전 컴파일 휠 패키지 검증 수행 중..."
+    mkdir -p wheels/legacy_i7_930
+    EXISTING_WHEELS=$(ls wheels/legacy_i7_930/*.whl 2>/dev/null || true)
+    if [ -z "$EXISTING_WHEELS" ]; then
+        if command -v uv &> /dev/null; then
+            log_info "i7-930 전용 휠 생성 중 (CFLAGS=-march=x86-64, -DGGML_AVX=OFF -DGGML_AVX2=OFF)..."
+            CFLAGS="-march=x86-64" \
+            CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF" \
+            uv pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
+        else
+            log_warn "uv 패키지 매니저 미설치로 i7-930 휠 사전 컴파일 스킵 (기존 아티팩트 활용)"
+        fi
+    else
+        log_info "✓ 기존 i7-930 사전 빌드 휠 감지됨 (wheels/legacy_i7_930/)"
+    fi
+fi
+
 # 2. 아카이브 생성
 if [ "$USE_ZIP" -eq 1 ]; then
     rm -f "$ABS_OUTPUT_PATH"
@@ -140,7 +170,7 @@ fi
 SIZE_BYTES=$(stat -c%s "$ABS_OUTPUT_PATH" 2>/dev/null || stat -f%z "$ABS_OUTPUT_PATH" 2>/dev/null || echo "0")
 SIZE_KB=$((SIZE_BYTES / 1024))
 
-# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json)
+# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json & wheels/legacy_i7_930)
 if [ "$USE_ZIP" -eq 1 ]; then
     ARCHIVE_FILES=$(unzip -l "$ABS_OUTPUT_PATH" 2>/dev/null || true)
 else
@@ -152,6 +182,10 @@ if ! echo "$ARCHIVE_FILES" | grep -q "platform_profiles.json"; then
     exit 1
 fi
 log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이브 수록 검증 완료"
+
+if echo "$ARCHIVE_FILES" | grep -q "wheels/legacy_i7_930"; then
+    log_info "✓ i7-930 사전 빌드 휠 디렉터리(wheels/legacy_i7_930) 아카이브 수록 검증 완료"
+fi
 
 
 log_info "\n[타 시스템 멀티 플랫폼 마이그레이션 안내]"

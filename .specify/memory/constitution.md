@@ -1,11 +1,10 @@
 <!--
 Sync Impact Report:
-- Version Change: 1.1.0 -> 1.2.0 (added Principle V: uv Environment & Package Management)
-- Modified Principles:
-  - V. uv 패키지 및 환경 관리 원칙 (New)
+- Version Change: 1.2.0 -> 1.2.1 (Synced plan-template.md with Principles IV & V; updated Last Amended date)
+- Modified Principles: None
 - Added Sections: None
 - Removed Sections: None
-- Templates Requiring Updates: None
+- Templates Requiring Updates: .specify/templates/plan-template.md (✅ updated)
 - Follow-up TODOs: None
 -->
 
@@ -34,4 +33,4 @@ Sync Impact Report:
 - 모든 기능 제안, 명세, 계획, 구현 과정에서 위 원칙들을 검토하고 준수해야 합니다.
 - 헌장 업데이트 시에는 문서 내의 버전 규칙을 따르며, 연관된 템플릿의 정합성을 보장해야 합니다.
 
-**Version**: 1.2.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-29
+**Version**: 1.2.1 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-30

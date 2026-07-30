@@ -14,7 +14,7 @@
 
 **Purpose**: Project initialization and legacy wheel storage directory structure
 
-- [ ] T001 Create directory structure for legacy wheels in `wheels/legacy_i7_930/`
+- [x] T001 Create directory structure for legacy wheels in `wheels/legacy_i7_930/`
 
 ---
 
@@ -22,7 +22,7 @@
 
 **Purpose**: Base test framework scaffolding for shell script validation
 
-- [ ] T002 [P] Create test suite file `tests/unit/test_seed_pack_legacy.py` for testing seed pack wheel build and setup fast-track logic
+- [x] T002 [P] Create test suite file `tests/unit/test_seed_pack_legacy.py` for testing seed pack wheel build and setup fast-track logic
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -36,14 +36,14 @@
 
 ### Tests for User Story 1 (MANDATORY)
 
-- [ ] T003 [P] [US1] Write test for `scripts/make_seed_pack.sh` i7-930 prebuilt wheel packaging in `tests/unit/test_seed_pack_legacy.py`
-- [ ] T004 [P] [US1] Write test for `scripts/setup.sh` i7-930 fast-track wheel installation in `tests/unit/test_seed_pack_legacy.py`
+- [x] T003 [P] [US1] Write test for `scripts/make_seed_pack.sh` i7-930 prebuilt wheel packaging in `tests/unit/test_seed_pack_legacy.py`
+- [x] T004 [P] [US1] Write test for `scripts/setup.sh` i7-930 fast-track wheel installation in `tests/unit/test_seed_pack_legacy.py`
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Update `scripts/make_seed_pack.sh` to pre-compile i7-930 `.whl` with `CFLAGS="-march=x86-64"` and `CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF"` into `wheels/legacy_i7_930/`, ensuring `wheels/` is explicitly included in tar/zip packaging (overriding tar exclusions) and verified in archive
-- [ ] T006 [US1] Update `scripts/setup.sh` to detect `legacy-i7-930-gtx1070` platform (with Nehalem AVX-missing fallback protection) and execute `uv pip install` fast-track wheel injection from `wheels/legacy_i7_930/*.whl`
-- [ ] T007 [US1] Run unit tests `tests/unit/test_seed_pack_legacy.py` for US1 to verify fast-track wheel installation and GPU offload assertion
+- [x] T005 [US1] Update `scripts/make_seed_pack.sh` to pre-compile i7-930 `.whl` with `CFLAGS="-march=x86-64"` and `CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF"` into `wheels/legacy_i7_930/`, ensuring `wheels/` is explicitly included in tar/zip packaging (overriding tar exclusions) and verified in archive
+- [x] T006 [US1] Update `scripts/setup.sh` to detect `legacy-i7-930-gtx1070` platform (with Nehalem AVX-missing fallback protection) and execute `uv pip install` fast-track wheel injection from `wheels/legacy_i7_930/*.whl`
+- [x] T007 [US1] Run unit tests `tests/unit/test_seed_pack_legacy.py` for US1 to verify fast-track wheel installation and GPU offload assertion
 
 **Checkpoint**: User Story 1 (MVP) complete and testable independently
 
@@ -57,12 +57,12 @@
 
 ### Tests for User Story 2 (MANDATORY)
 
-- [ ] T008 [P] [US2] Write test for missing wheel fallback on i7-930 and Platform A/B AVX2 compilation preservation in `tests/unit/test_seed_pack_legacy.py`
+- [x] T008 [P] [US2] Write test for missing wheel fallback on i7-930 and Platform A/B AVX2 compilation preservation in `tests/unit/test_seed_pack_legacy.py`
 
 ### Implementation for User Story 2
 
-- [ ] T009 [US2] Add fallback warning log and source compilation fallback in `scripts/setup.sh` when `wheels/legacy_i7_930/*.whl` is missing or invalid
-- [ ] T010 [US2] Verify Platform A/B profiles retain native AVX/AVX2 CMAKE compilation in `scripts/setup.sh` and execute test suite
+- [x] T009 [US2] Add fallback warning log and source compilation fallback in `scripts/setup.sh` when `wheels/legacy_i7_930/*.whl` is missing or invalid
+- [x] T010 [US2] Verify Platform A/B profiles retain native AVX/AVX2 CMAKE compilation in `scripts/setup.sh` and execute test suite
 
 **Checkpoint**: User Stories 1 AND 2 functional and verified
 
@@ -72,8 +72,8 @@
 
 **Purpose**: Overall validation, Quickstart guide execution, and regression testing
 
-- [ ] T011 [P] Run full `uv run pytest` test suite to verify 0 regressions across all unit/integration tests
-- [ ] T012 Run quickstart validation guide in `specs/029-prebuild-legacy-seed-pack/quickstart.md` to verify seed pack generation and fast-track setup
+- [x] T011 [P] Run full `uv run pytest` test suite to verify 0 regressions across all unit/integration tests
+- [x] T012 Run quickstart validation guide in `specs/029-prebuild-legacy-seed-pack/quickstart.md` to verify seed pack generation and fast-track setup
 
 ---
 
