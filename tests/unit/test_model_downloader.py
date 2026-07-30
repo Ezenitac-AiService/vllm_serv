@@ -62,8 +62,8 @@ class TestModelDownloadCatalog:
     """MODEL_DOWNLOAD_CATALOG 카탈로그 무결성 단위 테스트."""
 
     def test_catalog_has_six_models(self):
-        """카탈로그에 Qwen 3.5 3종 + Gemma 4 3종 = 6개 모델이 등록되어야 함."""
-        assert len(MODEL_DOWNLOAD_CATALOG) == 6
+        """카탈로그에 Qwen 3.5 3종 + Gemma 4 3종 + BGE-M3 + BGE-Reranker = 8개 모델이 등록되어야 함."""
+        assert len(MODEL_DOWNLOAD_CATALOG) == 8
 
     def test_qwen_models_no_clip(self):
         """Qwen 3.5 모델은 CLIP mmproj가 없어야 함."""

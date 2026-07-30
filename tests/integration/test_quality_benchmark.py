@@ -18,7 +18,7 @@ from scripts.benchmark_quality import run_benchmark, generate_markdown_report
 def test_run_benchmark_execution(mock_req, mock_live):
     """Verify that run_benchmark computes metrics for all 6 models when server is live."""
     reports, gpu_metadata = run_benchmark()
-    assert len(reports) == 6
+    assert len(reports) == 8
     model_ids = [r.model_id for r in reports]
     assert "Qwen 3.5 2B" in model_ids
     assert "Qwen 3.5 4B" in model_ids
@@ -56,4 +56,19 @@ def test_markdown_report_generation(mock_req, mock_live, tmp_path):
     assert "Quality/VRAM Index" in content
     assert "Qwen 3.5 4B" in content
     assert "Gemma 4 12B" in content
+
+
+def test_vram_coloading_validation():
+    """T018/FR-005/SC-004: Test VRAM co-loading validation across target GPU profiles."""
+    from scripts.benchmark_quality import validate_vram_coloading_across_platforms
+    coload_results = validate_vram_coloading_across_platforms()
+
+    assert "legacy-i7-930-gtx1070" in coload_results
+    assert "pascal-avx2-gtx1080ti" in coload_results
+    assert "dev-rtx3060" in coload_results
+
+    for profile_id, res in coload_results.items():
+        assert res["passed"] is True
+        assert len(res["fit_models"]) > 0
+
 

@@ -1,59 +1,10 @@
 {
-  "generated_at": "2026-07-30T14:53:48Z",
+  "generated_at": "2026-07-30T17:46:42Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
     "cuda_version": "13.0",
     "is_cuda_available": true
   },
-  "profiles": {
-    "Gemma 4 E2B": {
-      "max_context_length": 16384,
-      "recommended_context_length": 8192,
-      "peak_vram_mb": 2680,
-      "tpot_tok_per_sec": 50.94,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-30T14:53:48Z"
-    },
-    "Gemma 4 E4B": {
-      "max_context_length": 8192,
-      "recommended_context_length": 4096,
-      "peak_vram_mb": 4210,
-      "tpot_tok_per_sec": 39.53,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-30T14:53:48Z"
-    },
-    "Gemma 4 12B": {
-      "max_context_length": 4096,
-      "recommended_context_length": 2048,
-      "peak_vram_mb": 8900,
-      "tpot_tok_per_sec": 24.84,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-30T14:53:48Z"
-    },
-    "Qwen 3.5 2B": {
-      "max_context_length": 16384,
-      "recommended_context_length": 8192,
-      "peak_vram_mb": 2450,
-      "tpot_tok_per_sec": 68.34,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-30T14:53:48Z"
-    },
-    "Qwen 3.5 4B": {
-      "max_context_length": 8192,
-      "recommended_context_length": 4096,
-      "peak_vram_mb": 3950,
-      "tpot_tok_per_sec": 46.99,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-30T14:53:48Z"
-    },
-    "Qwen 3.5 9B": {
-      "max_context_length": 4096,
-      "recommended_context_length": 2048,
-      "peak_vram_mb": 7120,
-      "tpot_tok_per_sec": 34.21,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-30T14:53:48Z"
-    }
-  }
+  "profiles": {}
 }

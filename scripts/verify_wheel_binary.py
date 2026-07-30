@@ -71,20 +71,20 @@ def verify_wheel(wheel_path: str) -> Tuple[bool, Dict[str, int], bool, str]:
             for so_path in so_files:
                 rel_name = os.path.relpath(so_path, tmpdir)
                 basename = os.path.basename(so_path)
-                # Check filename or read bytes for CUDA symbols
-                if "cuda" in basename.lower() or "ggml" in basename.lower() or "llama" in basename.lower():
+                # Check filename for CUDA library
+                if "cuda" in basename.lower():
                     cuda_found = True
 
                 cnt = scan_so_with_python_bytes(so_path)
                 so_counts[rel_name] = cnt
                 total_avx += cnt
 
-        # A wheel with valid .so libraries and CUDA-supporting ggml/llama binaries is valid
-        is_valid = len(so_files) > 0 and cuda_found
+        # A wheel with valid .so libraries, CUDA support, and 0 AVX instructions is valid
+        is_valid = len(so_files) > 0 and cuda_found and total_avx == 0
         if is_valid:
-            msg = f"✓ Wheel verified valid: CUDA enabled ({len(so_counts)} .so files checked)"
+            msg = f"✓ Wheel verified valid: CUDA enabled ({len(so_counts)} .so files checked, 0 AVX)"
         else:
-            msg = f"❌ Wheel INVALID: Found issues across .so files (cuda_enabled={cuda_found})"
+            msg = f"❌ Wheel INVALID: Found issues across .so files (cuda_enabled={cuda_found}, total_avx={total_avx})"
 
         return is_valid, so_counts, cuda_found, msg
 

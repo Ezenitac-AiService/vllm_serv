@@ -72,6 +72,9 @@ def test_config_manager_admin_secret_override(monkeypatch):
     cfg_override = cm.get_server_config()
     assert cfg_override.get("admin_secret") == "custom_secret_key"
 
+    monkeypatch.delenv("VLLM_ADMIN_SECRET", raising=False)
+    cm.invalidate_all_caches()
+
 
 def test_dynamic_vram_capacity_binding():
     """Verify dynamic VRAM capacity binding when vram_max_capacity_mb is null/unspecified."""

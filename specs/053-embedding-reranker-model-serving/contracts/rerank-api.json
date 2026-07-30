@@ -1,0 +1,85 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cross-Encoder Rerank API",
+    "version": "1.0.0",
+    "description": "vllm_serv Reranking Endpoint for Query-Document Relevance Scoring (BGE-Reranker-v2-M3)"
+  },
+  "paths": {
+    "/v1/rerank": {
+      "post": {
+        "summary": "Rerank Documents by Relevance",
+        "operationId": "rerank_documents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query", "documents"],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Search query text"
+                  },
+                  "documents": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "List of document texts to score and re-order"
+                  },
+                  "model": {
+                    "type": "string",
+                    "default": "bge-reranker-v2-m3"
+                  },
+                  "top_n": {
+                    "type": "integer",
+                    "nullable": true,
+                    "description": "Optionally return only top N documents"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Rerank Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["results", "model"],
+                  "properties": {
+                    "model": { "type": "string", "example": "bge-reranker-v2-m3" },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["index", "relevance_score"],
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "description": "Original index in the input documents array",
+                            "example": 1
+                          },
+                          "relevance_score": {
+                            "type": "number",
+                            "description": "Cross-Encoder similarity score",
+                            "example": 0.9421
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Rerank Service Unavailable or Loading"
+          }
+        }
+      }
+    }
+  }
+}

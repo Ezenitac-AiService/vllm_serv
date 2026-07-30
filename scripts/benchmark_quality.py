@@ -676,7 +676,49 @@ def save_context_profiles_cache(reports: List[ComprehensiveQualityReportMetric],
     return cache_path
 
 
+def validate_vram_coloading_across_platforms() -> Dict[str, Any]:
+    """FR-005 & SC-004: Validate VRAM co-loading safety across target GPU platforms.
+    Embedding (bge-m3: 605MB) + Reranker (bge-reranker-v2-m3: 606MB) + LLM.
+    Target platforms: GTX 1070 (8192MB), GTX 1080 Ti (11264MB), RTX 3060 (12288MB).
+    """
+    aux_vram_mb = 605 + 606  # ~1211MB
+    platforms = {
+        "legacy-i7-930-gtx1070": {"gpu": "GTX 1070", "vram_mb": 8192},
+        "pascal-avx2-gtx1080ti": {"gpu": "GTX 1080 Ti", "vram_mb": 11264},
+        "dev-rtx3060": {"gpu": "RTX 3060", "vram_mb": 12288},
+    }
+    llm_vram_est = {
+        "qwen3.5-2b": 3000,
+        "qwen3.5-4b": 5500,
+        "gemma4-e2b": 3500,
+        "gemma4-e4b": 6500,
+    }
+    results = {}
+    for profile_id, info in platforms.items():
+        total_vram = info["vram_mb"]
+        fit_models = []
+        overflow_models = []
+        for model_id, llm_vram in llm_vram_est.items():
+            total_req = llm_vram + aux_vram_mb
+            if total_req <= total_vram:
+                fit_models.append(model_id)
+            else:
+                overflow_models.append(model_id)
+        results[profile_id] = {
+            "gpu": info["gpu"],
+            "total_vram_mb": total_vram,
+            "aux_vram_mb": aux_vram_mb,
+            "fit_models": fit_models,
+            "overflow_models": overflow_models,
+            "passed": len(fit_models) > 0
+        }
+    return results
+
+
 if __name__ == "__main__":
+    coload_results = validate_vram_coloading_across_platforms()
+    print("=== VRAM Co-loading Validation ===")
+    print(json.dumps(coload_results, indent=2))
     force_live = "--real" in sys.argv or "--real-inference" in sys.argv
     auto_download = "--auto-download" in sys.argv
 

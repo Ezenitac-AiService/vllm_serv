@@ -2,6 +2,10 @@
     "host": "0.0.0.0",
     "port": 8081,
     "backend_port": 8089,
+    "embedding_backend_port": 8090,
+    "rerank_backend_port": 8091,
+    "embedding_enabled": true,
+    "rerank_enabled": true,
     "allowed_subnets": [
         "127.0.0.1",
         "192.168.0.0/16",

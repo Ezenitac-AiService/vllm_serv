@@ -31,9 +31,8 @@ def test_trigger_benchmark_rerun_unauthorized():
 
 def test_trigger_benchmark_rerun_authorized():
     """Verify POST /dashboard/api/benchmark/rerun accepts valid admin secret."""
-    from src.core.api_key_manager import get_api_key_manager
-    key_mgr = get_api_key_manager()
-    secret = key_mgr._admin_secret
+    from src.core.config_manager import ConfigManager
+    secret = ConfigManager().get_server_config().get("admin_secret", "aiservice")
 
     response = client.post(
         "/dashboard/api/benchmark/rerun",

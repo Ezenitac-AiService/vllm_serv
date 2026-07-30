@@ -88,5 +88,39 @@
         "requires_mmproj": false,
         "quant_type": "q4_k_m",
         "size_gb": 5.8
+    },
+    "bge-m3": {
+        "name": "BGE M3 (Q8_0 Embedding)",
+        "repo_id": "ggml-org/bge-m3-Q8_0-GGUF",
+        "filename": "bge-m3-q8_0.gguf",
+        "clip_filename": null,
+        "target_dir": "models/bge-m3",
+        "model_path": "models/bge-m3/bge-m3-q8_0.gguf",
+        "clip_path": null,
+        "chat_template": null,
+        "default_n_ctx": 8192,
+        "vram_est_mb": 605,
+        "requires_mmproj": false,
+        "quant_type": "q8_0",
+        "size_gb": 0.6,
+        "task_type": "embedding",
+        "default_port": 8090
+    },
+    "bge-reranker-v2-m3": {
+        "name": "BGE Reranker v2 M3 (Q8_0 Cross-Encoder)",
+        "repo_id": "klnstpr/bge-reranker-v2-m3-Q8_0-GGUF",
+        "filename": "bge-reranker-v2-m3-q8_0.gguf",
+        "clip_filename": null,
+        "target_dir": "models/bge-reranker-v2-m3",
+        "model_path": "models/bge-reranker-v2-m3/bge-reranker-v2-m3-q8_0.gguf",
+        "clip_path": null,
+        "chat_template": null,
+        "default_n_ctx": 8192,
+        "vram_est_mb": 606,
+        "requires_mmproj": false,
+        "quant_type": "q8_0",
+        "size_gb": 0.6,
+        "task_type": "rerank",
+        "default_port": 8091
     }
 }

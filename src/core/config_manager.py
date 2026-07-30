@@ -4,6 +4,13 @@ import tempfile
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, field_validator
 
+from enum import Enum
+
+class TaskTypeEnum(str, Enum):
+    LLM = "llm"
+    EMBEDDING = "embedding"
+    RERANK = "rerank"
+
 class ConnectionPoolConfig(BaseModel):
     max_keepalive_connections: int = 20
     max_connections: int = 100
@@ -13,6 +20,10 @@ class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8081
     backend_port: int = 8089
+    embedding_backend_port: int = 8090
+    rerank_backend_port: int = 8091
+    embedding_enabled: bool = True
+    rerank_enabled: bool = True
     allowed_subnets: List[str] = Field(default_factory=lambda: ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"])
     firewall_auto_allow: bool = True
     vram_limit_mb: int = 11264
@@ -26,9 +37,7 @@ class ServerConfig(BaseModel):
     speculative_decoding: Dict[str, Any] = Field(default_factory=lambda: {"enabled": False, "draft_model": "qwen3.5-2b"})
     structured_output: Dict[str, Any] = Field(default_factory=lambda: {"enabled": True, "strict_json_schema": True})
 
-
-
-    @field_validator("port", "backend_port")
+    @field_validator("port", "backend_port", "embedding_backend_port", "rerank_backend_port")
     @classmethod
     def validate_port(cls, v: int) -> int:
         if not (1024 <= v <= 65535):
@@ -50,6 +59,8 @@ class ModelCatalogEntry(BaseModel):
     requires_mmproj: bool = False
     quant_type: str
     size_gb: float
+    task_type: TaskTypeEnum = TaskTypeEnum.LLM
+    default_port: Optional[int] = None
 
 class ConfigManager:
     """Manages system configuration with same-directory atomic replace, chmod 0600, Pydantic v2 validation, and memory caching."""

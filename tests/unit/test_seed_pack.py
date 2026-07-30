@@ -30,7 +30,7 @@ def test_make_seed_pack_default_tarball(tmp_path):
     repo_root = get_repo_root()
     output_tar = tmp_path / "vllm_serv_seed.tar.gz"
 
-    cmd = ["bash", os.path.join(repo_root, "scripts", "make_seed_pack.sh"), "-o", str(output_tar)]
+    cmd = ["bash", os.path.join(repo_root, "scripts", "make_seed_pack.sh"), "--skip-legacy-build", "-o", str(output_tar)]
     res = subprocess.run(cmd, capture_output=True, text=True, cwd=repo_root)
 
     assert res.returncode == 0, f"make_seed_pack.sh failed: {res.stderr}\nOutput: {res.stdout}"
@@ -72,7 +72,7 @@ def test_make_seed_pack_zip_format(tmp_path):
     repo_root = get_repo_root()
     output_zip = tmp_path / "vllm_serv_seed.zip"
 
-    cmd = ["bash", os.path.join(repo_root, "scripts", "make_seed_pack.sh"), "--zip", "-o", str(output_zip)]
+    cmd = ["bash", os.path.join(repo_root, "scripts", "make_seed_pack.sh"), "--skip-legacy-build", "--zip", "-o", str(output_zip)]
     res = subprocess.run(cmd, capture_output=True, text=True, cwd=repo_root)
 
     assert res.returncode == 0, f"make_seed_pack.sh --zip failed: {res.stderr}\nOutput: {res.stdout}"

@@ -126,6 +126,8 @@ class ProcessManager:
                     "chat_template": entry.get("chat_template", "chatml"),
                     "vram_est_mb": entry.get("vram_est_mb", 6000),
                     "requires_mmproj": entry.get("requires_mmproj", False),
+                    "task_type": entry.get("task_type", "llm"),
+                    "default_port": entry.get("default_port"),
                 }
         self.model_presets = loaded_presets
 
@@ -420,6 +422,15 @@ class ProcessManager:
         model_rel = target_preset["model"]
         model_file = self._config_manager.get_absolute_path(model_rel) or os.path.join(base_dir, model_rel)
 
+        if not os.path.exists(model_file):
+            self.state = ProcessState(
+                status=ProcessStatusEnum.ERROR,
+                model_id=model_id,
+                port=self.port,
+                error_message=f"Model file not found: {model_file}"
+            )
+            return self.state
+
         # Ensure target_dir exists
         target_dir = os.path.dirname(model_file)
         os.makedirs(target_dir, exist_ok=True)
@@ -493,6 +504,12 @@ class ProcessManager:
             ]
             if clip_file and os.path.exists(clip_file):
                 cmd.extend(["--mmproj", clip_file])
+            
+            task_type = str(target_preset.get("task_type", "llm")).lower()
+            if task_type in ("embedding", "tasktypeenum.embedding"):
+                cmd.append("--embedding")
+            elif task_type in ("rerank", "reranking", "tasktypeenum.rerank"):
+                cmd.append("--reranking")
         else:
             cmd = [
                 sys.executable, "-m", "llama_cpp.server",
@@ -507,6 +524,12 @@ class ProcessManager:
                 cmd.extend(["--clip_model_path", clip_file])
             if target_preset.get("chat_template"):
                 cmd.extend(["--chat_format", target_preset["chat_template"]])
+            
+            task_type = str(target_preset.get("task_type", "llm")).lower()
+            if task_type in ("embedding", "tasktypeenum.embedding"):
+                cmd.extend(["--embedding", "true"])
+            elif task_type in ("rerank", "reranking", "tasktypeenum.rerank"):
+                cmd.extend(["--reranking", "true"])
 
         try:
             self.state = ProcessState(

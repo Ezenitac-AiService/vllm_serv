@@ -29,9 +29,19 @@ class LlamaManager:
         self.broadcaster = EventBroadcaster(queue_maxsize=100)
         self.model_downloader = ModelDownloader()
         self._error_msg = ""
-        self._lock = asyncio.Lock()
+        self._lock: Optional[asyncio.Lock] = None
         self._gpu_info: Optional[GpuDeviceInfo] = None
         self._vram_offload_status: Optional[VramOffloadStatus] = None
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if self._lock is None or (loop is not None and getattr(self._lock, "_loop", None) is not None and self._lock._loop is not loop):
+            self._lock = asyncio.Lock()
+        return self._lock
 
     @property
     def state(self) -> ProcessStatusEnum:
@@ -80,6 +90,7 @@ class LlamaManager:
     def get_status_event(self) -> dict:
         cfg = self.config_manager.get_config()
         state = self.process_manager.state
+        from src.core.auxiliary_manager import auxiliary_manager
         data = {
             "state": state.status,
             "current_model": cfg.get("current_model"),
@@ -91,6 +102,8 @@ class LlamaManager:
             "vram_offloaded_100pct": self._vram_offload_status.is_fully_offloaded if self._vram_offload_status else False,
             "gpu_info": self._gpu_info.model_dump() if self._gpu_info else None,
             "offload_status": self._vram_offload_status.model_dump() if self._vram_offload_status else None,
+            "embedding_status": auxiliary_manager.embedding_pm.state.status,
+            "rerank_status": auxiliary_manager.rerank_pm.state.status,
         }
         return {"event": "status", "data": json.dumps(data)}
 
@@ -187,7 +200,7 @@ class LlamaManager:
 
     async def load_model(self, model_id: str, n_ctx: int):
         """모델 로드. 로컬 가중치 미존재 시 자동 다운로드 후 서빙 프로세스 개설."""
-        async with self._lock:
+        async with self.lock:
             await self._unload_model_internal()
             self.config_manager.update_config(current_model=model_id, current_n_ctx=n_ctx)
             asyncio.create_task(self._start_server_subprocess(model_id, n_ctx))
@@ -202,7 +215,7 @@ class LlamaManager:
         Returns:
             ProcessState: 최종 프로세스 상태
         """
-        async with self._lock:
+        async with self.lock:
             await self._unload_model_internal()
 
             # FR-003: 로컬 파일 미존재 탐지 및 자동 다운로드
@@ -367,7 +380,7 @@ class LlamaManager:
         return await self.load_model_with_download(default_model_id, n_ctx=4096)
 
     async def unload_model(self):
-        async with self._lock:
+        async with self.lock:
             await self._unload_model_internal()
 
     async def _unload_model_internal(self):

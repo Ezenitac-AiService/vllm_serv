@@ -26,6 +26,7 @@ def client(tmp_path, monkeypatch):
     app = create_app()
     with TestClient(app) as test_client:
         yield test_client
+    key_mgr.config_path = "config/server_config.json"
     cm.invalidate_all_caches()
 
 

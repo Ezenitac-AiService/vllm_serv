@@ -68,6 +68,8 @@ class StatusResponse(BaseModel):
     vram_total: int
     vram_used: int
     error_msg: str = ""
+    embedding_status: Optional[str] = None
+    rerank_status: Optional[str] = None
 
 
 class CapabilitiesResponse(BaseModel):

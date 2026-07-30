@@ -24,11 +24,12 @@ def test_apply_and_unload(mock_start):
     # Mock to do nothing
     mock_start.return_value = None
 
+    headers = {"X-Admin-Secret": "aiservice"}
     payload = {"model_id": "test-model", "n_ctx": 1024}
-    response = client.post("/dashboard/api/apply", json=payload)
+    response = client.post("/dashboard/api/apply", json=payload, headers=headers)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
 
-    response = client.post("/dashboard/api/unload")
+    response = client.post("/dashboard/api/unload", headers=headers)
     assert response.status_code == 200
     assert response.json()["status"] == "success"

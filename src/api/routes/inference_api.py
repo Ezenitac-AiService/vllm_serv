@@ -3,6 +3,7 @@ OpenAI-compatible inference routing and proxy handlers (FR-001, FR-005, FR-007, 
 Provides GET /v1/models catalog listing and reverse-proxying for RAG/Agent requests.
 """
 
+import os
 import time
 from typing import Any, AsyncGenerator
 import httpx
@@ -117,19 +118,66 @@ async def list_models(request: Request) -> dict[str, Any]:
     return {"object": "list", "data": models_data}
 
 
+def _get_backend_target_port(path: str) -> int:
+    try:
+        cm = ConfigManager()
+        server_cfg = cm.get_server_config()
+        clean_path = path.strip("/").split("/")[-1]
+        if clean_path in ("embeddings", "embedding"):
+            return server_cfg.get("embedding_backend_port", 8090)
+        elif clean_path in ("rerank", "reranking"):
+            return server_cfg.get("rerank_backend_port", 8091)
+        else:
+            return server_cfg.get("backend_port", 8089)
+    except Exception:
+        clean_path = path.strip("/").split("/")[-1]
+        if clean_path in ("embeddings", "embedding"):
+            return 8090
+        elif clean_path in ("rerank", "reranking"):
+            return 8091
+        return 8089
+
+
 @router.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
-async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
-    """FR-009: RAG 및 Agent 마이크로서비스 요청을 비동기 싱글톤 커넥션 풀로 역방향 프록시 처리 및 Payload 원문 캡처."""
-    if path in ("chat/completions", "completions") and not await check_llama_status():
+@router.api_route("/embedding", methods=["POST", "OPTIONS"])
+@router.api_route("/rerank", methods=["POST", "OPTIONS"])
+async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
+    """FR-009 & FR-002: RAG, Agent, Embedding, Reranker 요청을 백엔드 싱글톤 인스턴스로 역방향 프록시 라우팅."""
+    if not path:
+        path = request.url.path.strip("/")
+
+    clean_path = path.strip("/").split("/")[-1]
+    if clean_path in ("chat/completions", "completions") and not await check_llama_status():
         raise HTTPException(
             status_code=503,
             detail="Model is currently loading or unloaded. Please try again later.",
             headers={"Retry-After": "10"}
         )
 
+    # Mock response support for pytest/offline execution
+    if os.environ.get("MOCK_LLAMA_SERVER") == "1":
+        import json
+        if clean_path in ("embeddings", "embedding"):
+            mock_data = {
+                "object": "list",
+                "data": [{"object": "embedding", "index": 0, "embedding": [0.01] * 1024}],
+                "model": "bge-m3",
+                "usage": {"prompt_tokens": 10, "total_tokens": 10}
+            }
+            return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
+        elif clean_path in ("rerank", "reranking"):
+            mock_data = {
+                "model": "bge-reranker-v2-m3",
+                "results": [
+                    {"index": 0, "relevance_score": 0.95},
+                    {"index": 1, "relevance_score": 0.12}
+                ]
+            }
+            return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
+
     body_content = None
     prompt_text = None
-    if request.method == "POST" and path in ("chat/completions", "completions"):
+    if request.method == "POST" and clean_path in ("chat/completions", "completions"):
         body_content = await request.body()
         if body_content:
             try:
@@ -150,22 +198,27 @@ async def reverse_proxy(request: Request, path: str) -> StreamingResponse:
             except Exception:
                 pass
 
-    client = _get_http_client(request)
-    url = httpx.URL(path=request.url.path, query=request.url.query.encode("utf-8"))
+    target_port = _get_backend_target_port(path)
+    backend_url = f"http://127.0.0.1:{target_port}{request.url.path}"
+    if request.url.query:
+        backend_url += f"?{request.url.query}"
 
-    req = client.build_request(
-        request.method,
-        url,
-        headers=request.headers.raw,
-        content=body_content if body_content is not None else request.stream()
-    )
+    if body_content is None and request.method in ("POST", "PUT", "PATCH"):
+        body_content = await request.body()
 
     try:
-        r = await client.send(req, stream=True)
+        async with httpx.AsyncClient(timeout=None) as direct_client:
+            req = direct_client.build_request(
+                request.method,
+                backend_url,
+                headers=request.headers.raw,
+                content=body_content if body_content is not None else request.stream()
+            )
+            r = await direct_client.send(req, stream=True)
     except httpx.ConnectError:
         raise HTTPException(
             status_code=503,
-            detail="Model server is currently unreachable. Please try again later.",
+            detail=f"Model server at port {target_port} is currently unreachable. Please try again later.",
             headers={"Retry-After": "10"}
         )
     except Exception as e:

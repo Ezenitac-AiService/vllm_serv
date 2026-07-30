@@ -23,6 +23,8 @@ from src.api.middleware.api_key_auth import APIKeyAuthMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
 
+from src.core.auxiliary_manager import auxiliary_manager
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context manager replacing deprecated on_event."""
@@ -39,12 +41,14 @@ async def lifespan(app: FastAPI):
         timeout=None
     )
 
-    # Auto-load default resident model on startup
+    # Auto-load default resident LLM model and auxiliary (Embedding/Reranker) instances
     asyncio.create_task(llama_manager.ensure_default_model_resident(default_model))
+    asyncio.create_task(auxiliary_manager.start_auto_startup_and_recovery())
     yield
     # Cleanup on shutdown
     await app.state.http_client.aclose()
     await llama_manager.unload_model()
+    await auxiliary_manager.shutdown()
 
 
 def create_app() -> FastAPI:
