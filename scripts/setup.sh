@@ -274,14 +274,14 @@ if [ "$SUDO_AVAILABLE" = true ]; then
 
     FIREWALL_PORTS=("$SERVER_PORT" 8089)
 
-    if command -v ufw &> /dev/null && ufw status 2>/dev/null | grep -qi "active"; then
+    if command -v ufw &> /dev/null && sudo ufw status 2>/dev/null | grep -qi "active"; then
         log_info "ufw 방화벽 감지. 서비스 포트 개방 중..."
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo ufw allow "${port}/tcp" || true
             log_info "✓ ufw allow ${port}/tcp"
         done
         sudo ufw status verbose 2>/dev/null || true
-    elif command -v firewall-cmd &> /dev/null && firewall-cmd --state 2>/dev/null | grep -qi "running"; then
+    elif command -v firewall-cmd &> /dev/null && sudo firewall-cmd --state 2>/dev/null | grep -qi "running"; then
         log_info "firewalld 방화벽 감지. 서비스 포트 영구 등록 중..."
         for port in "${FIREWALL_PORTS[@]}"; do
             sudo firewall-cmd --permanent --add-port="${port}/tcp" || true

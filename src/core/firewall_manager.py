@@ -58,7 +58,12 @@ class FirewallManager:
                     ["ufw", "status"],
                     capture_output=True, text=True, timeout=5
                 )
-                if res.returncode == 0 and "Status: active" in res.stdout:
+                if res.returncode != 0:
+                    res = subprocess.run(
+                        ["sudo", "-n", "ufw", "status"],
+                        capture_output=True, text=True, timeout=5
+                    )
+                if "Status: active" in res.stdout:
                     return "ufw"
             except Exception:
                 pass
