@@ -32,3 +32,7 @@ logs/
 .bin/
 llama.cpp/build/
 
+# Runtime SQLite DBs
+data/*.db*
+
+
