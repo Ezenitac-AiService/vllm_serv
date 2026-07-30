@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial session load
     loadPlaygroundSessions();
 
-    // --- 6. Playground Test Handler ---
+    // --- 6. Playground Test Handler (Real-Time SSE Streaming) ---
     elements.pgSubmitBtn.addEventListener('click', async () => {
         const prompt = elements.pgPromptInput.value.trim();
         if (!prompt) return;
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         assistantBubble.innerHTML = `
             <strong>🤖 Assistant:</strong>
             <div class="think-container"></div>
-            <div class="assistant-content markdown-body">Thinking...</div>
+            <div class="assistant-content markdown-body">Streaming response...</div>
         `;
         chatThreadContainer.appendChild(assistantBubble);
         chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
@@ -599,8 +599,17 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.pgPromptInput.value = '';
         elements.pgSubmitBtn.disabled = true;
 
+        const thinkContainer = assistantBubble.querySelector('.think-container');
+        const contentDiv = assistantBubble.querySelector('.assistant-content');
+        contentDiv.innerHTML = '';
+
+        let accumulatedThink = '';
+        let accumulatedText = '';
+        let thinkDetailsElem = null;
+        let thinkContentElem = null;
+
         try {
-            const res = await fetch('/dashboard/api/playground', {
+            const res = await fetch('/dashboard/api/playground/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -614,34 +623,113 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                const contentDiv = assistantBubble.querySelector('.assistant-content');
-                const thinkDiv = assistantBubble.querySelector('.think-container');
-
-                if (data.thinking_process) {
-                    assistantBubble.setAttribute('data-thinking', data.thinking_process);
-                    thinkDiv.innerHTML = renderThinkContainer(data.thinking_process, currentThinkMode);
-                }
-
-                contentDiv.innerHTML = renderMarkdownText(data.text);
-                if (typeof hljs !== 'undefined') hljs.highlightAll();
-
-                elements.pgMetricTtft.textContent = `${data.ttft_ms} ms`;
-                elements.pgMetricSpeed.textContent = `${data.token_speed_tok_s} tok/s`;
-                elements.pgMetricLatency.textContent = `${data.total_latency_s} s`;
-                elements.pgMetricTokens.textContent = `${data.prompt_tokens} in / ${data.completion_tokens} out`;
-
-                elements.statSpeed.textContent = `${data.token_speed_tok_s} tok/s`;
-                elements.statTtft.textContent = `TTFT: ${data.ttft_ms} ms`;
-
-                // Reload sidebar session list
-                loadPlaygroundSessions();
-            } else {
-                assistantBubble.querySelector('.assistant-content').textContent = 'Error executing playground inference.';
+            if (!res.ok) {
+                contentDiv.textContent = `[HTTP Error ${res.status}] Failed to start stream.`;
+                return;
             }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+
+            const collapseThinkBlock = () => {
+                if (thinkDetailsElem && currentThinkMode === 'collapse') {
+                    thinkDetailsElem.removeAttribute('open');
+                }
+            };
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // keep last incomplete line
+
+                let currentEventType = 'message';
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+
+                    if (line.startsWith('event:')) {
+                        currentEventType = line.substring(6).trim();
+                        if (currentEventType === 'think_end') {
+                            collapseThinkBlock();
+                        }
+                        continue;
+                    }
+
+                    if (line.startsWith('data:')) {
+                        const dataStr = line.substring(5).trim();
+                        if (dataStr === '[DONE]') break;
+
+                        try {
+                            const parsed = JSON.loads ? JSON.parse(dataStr) : {};
+                            
+                            // 1. Thinking Delta Streaming
+                            if (parsed.think) {
+                                accumulatedThink += parsed.think;
+                                assistantBubble.setAttribute('data-thinking', accumulatedThink);
+
+                                if (currentThinkMode !== 'off') {
+                                    if (!thinkDetailsElem) {
+                                        thinkContainer.innerHTML = `
+                                            <details class="think-accordion" open>
+                                                <summary class="think-summary">🧠 Thinking Process (Streaming...)</summary>
+                                                <div class="think-accordion-content"></div>
+                                            </details>
+                                        `;
+                                        thinkDetailsElem = thinkContainer.querySelector('.think-accordion');
+                                        thinkContentElem = thinkContainer.querySelector('.think-accordion-content');
+                                    }
+                                    if (thinkContentElem) {
+                                        thinkContentElem.textContent = accumulatedThink;
+                                    }
+                                }
+                            }
+
+                            // 2. Text Delta Streaming
+                            if (parsed.text) {
+                                // Auto-collapse thinking block when answer text starts
+                                collapseThinkBlock();
+
+                                accumulatedText += parsed.text;
+                                contentDiv.innerHTML = renderMarkdownText(accumulatedText);
+                                if (typeof hljs !== 'undefined') hljs.highlightAll();
+                            }
+
+                            // 3. Metrics Event
+                            if (parsed.ttft_ms !== undefined) {
+                                elements.pgMetricTtft.textContent = `${parsed.ttft_ms} ms`;
+                                elements.pgMetricSpeed.textContent = `${parsed.token_speed_tok_s} tok/s`;
+                                elements.pgMetricLatency.textContent = `${parsed.total_latency_s} s`;
+                                elements.pgMetricTokens.textContent = `${parsed.prompt_tokens} in / ${parsed.completion_tokens} out`;
+
+                                elements.statSpeed.textContent = `${parsed.token_speed_tok_s} tok/s`;
+                                elements.statTtft.textContent = `TTFT: ${parsed.ttft_ms} ms`;
+                            }
+                        } catch (e) {
+                            // Raw text chunk fallback
+                        }
+                    }
+                }
+                chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
+            }
+
+            // Ensure summary title is updated after completion
+            if (thinkDetailsElem) {
+                const summaryElem = thinkDetailsElem.querySelector('.think-summary');
+                if (summaryElem) {
+                    summaryElem.textContent = currentThinkMode === 'show' 
+                        ? '🧠 Thinking Process (Visible - Click to toggle)'
+                        : '🧠 Thinking Process (Collapsed - Click to expand)';
+                }
+            }
+
+            loadPlaygroundSessions();
+
         } catch (e) {
-            assistantBubble.querySelector('.assistant-content').textContent = `Failed: ${e}`;
+            contentDiv.textContent = `[Stream Error] ${e}`;
         } finally {
             elements.pgSubmitBtn.disabled = false;
             chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;

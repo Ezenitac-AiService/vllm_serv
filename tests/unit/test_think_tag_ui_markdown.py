@@ -69,3 +69,15 @@ def test_playground_sessions_api_endpoints():
     res_del = client.delete(f"/dashboard/api/playground/sessions/{session_id}")
     assert res_del.status_code == 200
     assert res_del.json()["status"] == "success"
+
+
+def test_playground_stream_endpoint():
+    """Test SSE real-time streaming endpoint /dashboard/api/playground/stream."""
+    res = client.post("/dashboard/api/playground/stream", json={
+        "prompt": "Hello stream test",
+        "system_prompt": "You are a test bot",
+        "max_tokens": 100
+    })
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    assert "[DONE]" in res.text or "data:" in res.text

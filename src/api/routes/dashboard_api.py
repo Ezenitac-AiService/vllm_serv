@@ -16,6 +16,7 @@ import time
 import asyncio
 from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Request, HTTPException, Depends, Header, status
+from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel, Field
 
@@ -339,6 +340,129 @@ async def run_playground_test(body: PlaygroundRequest):
         "completion_tokens": completion_tokens,
         "finish_reason": finish_reason
     }
+
+
+@router.post("/playground/stream")
+async def run_playground_stream(body: PlaygroundRequest):
+    """Real-time SSE Streaming Endpoint for AI Playground with live <think> tag streaming."""
+    start_time = time.perf_counter()
+    model_name = body.model or llama_manager.config_manager.get_config().get("current_model") or "qwen3.5-4b"
+
+    messages = []
+    if body.system_prompt:
+        messages.append({"role": "system", "content": body.system_prompt})
+    messages.append({"role": "user", "content": body.prompt or ""})
+
+    payload = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": body.temperature,
+        "top_p": body.top_p,
+        "max_tokens": body.max_tokens,
+        "stream": True
+    }
+
+    async def sse_generator():
+        nonlocal start_time
+        first_token_time = None
+        full_completion = ""
+        full_thinking = ""
+        in_think_tag = False
+        completion_tokens = 0
+        prompt_tokens = len((body.prompt or "").split()) + len((body.system_prompt or "").split())
+
+        try:
+            req = _default_client.build_request("POST", "/v1/chat/completions", json=payload)
+            res = await _default_client.send(req, stream=True, timeout=60.0)
+
+            if res.status_code == 200:
+                async for line in res.aiter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
+                    data_str = line[6:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk_json = json.loads(data_str)
+                        delta = chunk_json.get("choices", [{}])[0].get("delta", {})
+                        content_piece = delta.get("content", "")
+                        if content_piece:
+                            if first_token_time is None:
+                                first_token_time = time.perf_counter()
+
+                            completion_tokens += 1
+
+                            if "<think>" in content_piece:
+                                in_think_tag = True
+                                content_piece = content_piece.replace("<think>", "")
+                                yield "event: think_start\ndata: {}\n\n"
+
+                            if "</think>" in content_piece:
+                                parts = content_piece.split("</think>")
+                                think_part = parts[0]
+                                text_part = parts[1] if len(parts) > 1 else ""
+                                if think_part:
+                                    full_thinking += think_part
+                                    yield f"data: {json.dumps({'think': think_part})}\n\n"
+                                yield "event: think_end\ndata: {}\n\n"
+                                in_think_tag = False
+                                if text_part:
+                                    full_completion += text_part
+                                    yield f"data: {json.dumps({'text': text_part})}\n\n"
+                                continue
+
+                            if in_think_tag:
+                                full_thinking += content_piece
+                                yield f"data: {json.dumps({'think': content_piece})}\n\n"
+                            else:
+                                full_completion += content_piece
+                                yield f"data: {json.dumps({'text': content_piece})}\n\n"
+
+                    except Exception:
+                        pass
+            else:
+                err_msg = f"[LLM Backend Error {res.status_code}]"
+                full_completion = err_msg
+                yield f"data: {json.dumps({'text': err_msg})}\n\n"
+        except Exception as e:
+            err_msg = f"[Model Offline/Error: {e}]"
+            full_completion = err_msg
+            yield f"data: {json.dumps({'text': err_msg})}\n\n"
+
+        total_latency_s = round(time.perf_counter() - start_time, 3)
+        ttft_ms = round((first_token_time - start_time) * 1000.0, 2) if first_token_time else 0.0
+        token_speed = round(completion_tokens / max(total_latency_s - (ttft_ms / 1000.0), 0.05), 1)
+
+        from src.core.metrics_db import metrics_db
+        metrics_db.log_request(
+            api_key="playground",
+            endpoint="/dashboard/api/playground/stream",
+            status_code=200,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            ttft_ms=ttft_ms,
+            tps=token_speed,
+            is_error=False,
+            prompt_text=body.prompt,
+            completion_text=full_completion,
+            thinking_text=full_thinking if full_thinking else None
+        )
+
+        if body.session_id:
+            metrics_db.add_playground_message(body.session_id, "user", body.prompt, None)
+            metrics_db.add_playground_message(body.session_id, "assistant", full_completion, full_thinking if full_thinking else None)
+
+        metrics_data = {
+            "ttft_ms": ttft_ms,
+            "total_latency_s": total_latency_s,
+            "token_speed_tok_s": token_speed,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens
+        }
+        yield f"event: metrics\ndata: {json.dumps(metrics_data)}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
 
 class CreateSessionRequest(BaseModel):
