@@ -115,16 +115,36 @@ if [[ "$MATCHED_PROFILE" == *"legacy-i7-930"* ]]; then
         log_info "C++ 소스 재컴파일을 건너뛰고 사전 빌드 휠을 가상환경(.venv)에 고속 설치합니다..."
         if uv pip install "$LEGACY_WHEEL" --force-reinstall --no-index --find-links wheels/legacy_i7_930; then
             log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
-            if uv run python -c "
-import llama_cpp
+            GPU_CHECK_OUTPUT=$(uv run python -c "
+import sys, llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
-assert fn is not None, 'No GPU check function found'
-assert fn(), 'GPU offload not supported'
-" 2>/dev/null; then
+if fn is None:
+    print('ERROR: No GPU check function found in llama_cpp', file=sys.stderr)
+    sys.exit(1)
+if not fn():
+    print('ERROR: llama_supports_gpu_offload() returned False', file=sys.stderr)
+    sys.exit(2)
+" 2>&1)
+            GPU_CHECK_STATUS=$?
+
+            if [ "$GPU_CHECK_STATUS" -eq 0 ]; then
                 log_info "✓ i7-930 사전 빌드 휠 Fast-Track 설치 및 CUDA GPU 가속 활성화 확인 완료 (C++ 소스 재컴파일 스킵됨)"
                 INSTALLED_VIA_FAST_TRACK=1
             else
-                log_warn "⚠️ 사전 빌드 휠 복원 후 GPU 가속 검증 실패. C++ 소스 컴파일 파이프라인으로 Fallback합니다."
+                CAUSE="GPU_CHECK_FAILED (알 수 없는 검증 오류)"
+                if [[ "$GPU_CHECK_OUTPUT" == *"Illegal instruction"* ]] || [[ "$GPU_CHECK_STATUS" -eq 132 ]]; then
+                    CAUSE="SIGILL_ILLEGAL_INSTRUCTION (호스트 CPU에서 지원하지 않는 AVX 명령어 유입 감지)"
+                elif [[ "$GPU_CHECK_OUTPUT" == *"returned False"* ]]; then
+                    CAUSE="GPU_OFFLOAD_FALSE (llama_supports_gpu_offload() 반환값 False)"
+                elif [[ "$GPU_CHECK_OUTPUT" == *"ImportError"* ]] || [[ "$GPU_CHECK_OUTPUT" == *"cannot open shared object"* ]]; then
+                    CAUSE="SHARED_LIB_IMPORT_ERROR (공유 라이브러리/CUDA 드라이버 미로드)"
+                fi
+
+                log_warn "⚠️ [FAST-TRACK FAIL] 사전 빌드 휠 복원 후 GPU 가속 검증 실패: $CAUSE"
+                log_warn "--- [FAST-TRACK FAIL TRACEBACK] ---"
+                echo "$GPU_CHECK_OUTPUT" | while read -r line; do log_warn "  $line"; done
+                log_warn "------------------------------------"
+                log_warn "C++ 소스 컴파일 파이프라인으로 Fallback합니다."
             fi
         else
             log_warn "⚠️ 사전 빌드 휠 설치 실패. C++ 소스 컴파일 파이프라인으로 Fallback합니다."

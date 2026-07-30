@@ -108,3 +108,46 @@ def test_setup_sh_preserves_platform_a_b_compilation():
     content = SETUP_SCRIPT.read_text(encoding="utf-8")
     assert "DETECTED_CMAKE_ARGS" in content
     assert "CMAKE_ARGS=\"$DETECTED_CMAKE_ARGS\" uv pip install" in content
+
+
+def test_make_seed_pack_integrates_verify_wheel_binary():
+    """Verify make_seed_pack.sh calls verify_wheel_binary.py and --no-build-isolation (035-seed-pack-wheel-diagnostics FR-001)."""
+    content = MAKE_SEED_PACK_SCRIPT.read_text(encoding="utf-8")
+    assert "verify_wheel_binary.py" in content
+    assert "--no-build-isolation" in content
+    assert "rm -f wheels/legacy_i7_930/*.whl" in content
+
+
+def test_setup_sh_fast_track_failure_diagnostic_logging():
+    """Verify setup.sh captures GPU check output and logs structured failure cause without 2>/dev/null (035-seed-pack-wheel-diagnostics FR-002)."""
+    content = SETUP_SCRIPT.read_text(encoding="utf-8")
+    assert "GPU_CHECK_OUTPUT=" in content
+    assert "2>/dev/null" not in content.split("llama_supports_gpu_offload")[1].split("fi")[0]
+    assert "[FAST-TRACK FAIL]" in content
+    assert "FAST-TRACK FAIL TRACEBACK" in content
+
+
+def test_make_seed_pack_avx_disabling_cmake_flags():
+    """Verify make_seed_pack.sh includes all required AVX-disabling CMAKE flags for i7-930 (035-seed-pack-wheel-diagnostics FR-001, T012)."""
+    content = MAKE_SEED_PACK_SCRIPT.read_text(encoding="utf-8")
+    required_flags = [
+        "-DGGML_AVX=OFF",
+        "-DGGML_AVX2=OFF",
+        "-DGGML_F16C=OFF",
+        "-DGGML_FMA=OFF",
+        "-DGGML_NATIVE=OFF",
+        "-DCMAKE_CUDA_ARCHITECTURES=61",
+        "-DGGML_CUDA=ON",
+    ]
+    for flag in required_flags:
+        assert flag in content, f"Missing required CMAKE flag: {flag}"
+
+
+def test_setup_sh_diagnostic_failure_categories():
+    """Verify setup.sh includes all structured failure cause categories (035-seed-pack-wheel-diagnostics FR-002, T012)."""
+    content = SETUP_SCRIPT.read_text(encoding="utf-8")
+    assert "SIGILL_ILLEGAL_INSTRUCTION" in content
+    assert "GPU_OFFLOAD_FALSE" in content
+    assert "SHARED_LIB_IMPORT_ERROR" in content
+
+

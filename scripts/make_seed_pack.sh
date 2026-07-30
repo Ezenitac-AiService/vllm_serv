@@ -118,19 +118,29 @@ log_info "제외 항목: models/, .venv/, .bin/, logs/, build/, dist/, __pycache
 if [ "$BUILD_LEGACY" -eq 1 ]; then
     log_info "i7-930 (Nehalem) 전용 사전 컴파일 휠 패키지 검증 수행 중..."
     mkdir -p wheels/legacy_i7_930
-    EXISTING_WHEELS=$(ls wheels/legacy_i7_930/*.whl 2>/dev/null || true)
-    if [ -z "$EXISTING_WHEELS" ]; then
+    EXISTING_WHEEL=$(ls wheels/legacy_i7_930/*.whl 2>/dev/null | head -n 1 || true)
+    NEED_REBUILD=1
+
+    if [ -n "$EXISTING_WHEEL" ]; then
+        if uv run python scripts/verify_wheel_binary.py "$EXISTING_WHEEL" 2>/dev/null; then
+            log_info "✓ 기존 i7-930 사전 빌드 휠 검증 성공 (AVX=0, CUDA 활성화 확인됨). 기존 휠을 재사용합니다."
+            NEED_REBUILD=0
+        else
+            log_warn "⚠️ 기존 i7-930 휠 검증 실패 (AVX 유입 또는 CUDA 미지원 감지). 구형 휠을 자동 삭제(Clean) 후 새로 컴파일합니다."
+            rm -f wheels/legacy_i7_930/*.whl
+        fi
+    fi
+
+    if [ "$NEED_REBUILD" -eq 1 ]; then
         if command -v uv &> /dev/null; then
             log_info "i7-930 전용 휠 생성 중 (CFLAGS=-march=x86-64, sm_61 GTX1070)..."
             FORCE_CMAKE=1 \
             CFLAGS="-march=x86-64" \
             CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DGGML_NATIVE=OFF -DCMAKE_CUDA_ARCHITECTURES=61" \
-            uv run pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
+            uv run pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 --no-build-isolation || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
         else
             log_warn "uv 패키지 매니저 미설치로 i7-930 휠 사전 컴파일 스킵 (기존 아티팩트 활용)"
         fi
-    else
-        log_info "✓ 기존 i7-930 사전 빌드 휠 감지됨 (wheels/legacy_i7_930/)"
     fi
 fi
 

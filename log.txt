@@ -1,5 +1,5 @@
-dev@dev:~/vllm_serv$ tar -xzf /home/dev/vllm_serv/vllm_serv_seed.tar.gz -C /home/dev/vllm_serv
-dev@dev:~/vllm_serv$ scripts/setup.sh
+(vllm-serv) dev@dev:~/vllm_serv$ tar -xzf /home/dev/vllm_serv/vllm_serv_seed.tar.gz -C /home/dev/vllm_serv
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/scripts/setup.sh
 
 ====================================================
 ▶ 1. 필수 프로젝트 기본 파일 존재 여부 검증
@@ -18,52 +18,12 @@ dev@dev:~/vllm_serv$ scripts/setup.sh
 ====================================================
 [SETUP INFO] uv 버전: uv 0.12.0 (x86_64-unknown-linux-gnu)
 [SETUP INFO] 가상환경 패키지 동기화 중 (uv sync)...
-Using CPython 3.12.13
-Creating virtual environment at: .venv
 Resolved 46 packages in 1ms
-      Built vllm-serv @ file:///home/dev/vllm_serv 
-Prepared 1 package in 533ms
-Installed 40 packages in 125ms
- + annotated-doc==0.0.5
- + annotated-types==0.8.0
- + anyio==4.14.2
- + certifi==2026.7.22
- + click==8.4.2
- + cmake==4.4.0
- + diskcache==5.6.3
- + fastapi==0.140.13
- + filelock==3.32.0
- + fsspec==2026.7.0
- + h11==0.16.0
- + hf-xet==1.5.2
- + httpcore==1.0.9
- + httpx==0.28.1
- + huggingface-hub==1.25.1
- + idna==3.18
- + iniconfig==2.3.0
- + jinja2==3.1.6
- + llama-cpp-python==0.3.34
- + markupsafe==3.0.3
- + ninja==1.13.0
- + numpy==2.5.1
- + packaging==26.2
- + pluggy==1.6.0
- + pydantic==2.13.4
- + pydantic-core==2.46.4
- + pydantic-settings==2.14.2
- + pygments==2.20.0
- + pytest==9.1.1
- + pytest-asyncio==1.4.0
- + python-dotenv==1.2.2
- + pyyaml==6.0.3
- + sse-starlette==3.4.6
- + starlette==1.3.1
- + starlette-context==0.3.6
- + tqdm==4.70.0
- + typing-extensions==4.16.0
- + typing-inspection==0.4.2
- + uvicorn==0.51.0
- + vllm-serv==0.1.0 (from file:///home/dev/vllm_serv)
+      Built vllm-serv @ file:///home/dev/vllm_serv                                           
+Prepared 1 package in 646ms
+Uninstalled 1 package in 2ms
+Installed 1 package in 1ms
+ ~ vllm-serv==0.1.0 (from file:///home/dev/vllm_serv)
 [SETUP INFO] NVIDIA CUDA Toolkit (nvcc) 빌드 환경 검증 중...
 [SETUP INFO] ✓ nvcc 감지 완료: Cuda compilation tools, release 12.0, V12.0.140
 [SETUP INFO] NVIDIA GPU 가속 드라이버 및 nvidia-smi 검증 중...
@@ -88,10 +48,10 @@ Installed 40 packages in 125ms
 [SETUP INFO] 적용할 동적 CMAKE_ARGS: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
 [SETUP INFO] ⚡ i7-930 타겟 플랫폼 감지! 사전 빌드 휠(wheels/legacy_i7_930/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl) Fast-Track 복원을 시작합니다.
 [SETUP INFO] C++ 소스 재컴파일을 건너뛰고 사전 빌드 휠을 가상환경(.venv)에 고속 설치합니다...
-Resolved 6 packages in 10ms
-Prepared 6 packages in 506ms
-Uninstalled 6 packages in 25ms
-Installed 6 packages in 24ms
+Resolved 6 packages in 12ms
+Prepared 6 packages in 598ms
+Uninstalled 6 packages in 140ms
+Installed 6 packages in 23ms
  ~ diskcache==5.6.3
  ~ jinja2==3.1.6
  - llama-cpp-python==0.3.34
@@ -103,8 +63,6 @@ Installed 6 packages in 24ms
 [SETUP WARN] ⚠️ 사전 빌드 휠 복원 후 GPU 가속 검증 실패. C++ 소스 컴파일 파이프라인으로 Fallback합니다.
 [SETUP INFO] CUDA 및 CPU 최적화 적용 llama-cpp-python 소스 컴파일 중...
 [SETUP INFO] 이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다...
-Resolved 23 packages in 3.99s
-   Building llama-cpp-python==0.3.34                                                       ⠇ Preparing packages...
-   Building llama-cpp-python==0.3.34                                                                           
-   Building llama-cpp-python==0.3.34                                                                           ⠴ Preparing packages... (22/23)                                                                                
+Resolved 23 packages in 3.75s
+   Building llama-cpp-python==0.3.34                                                         ⠦ Preparing packages... (22/23)                                                              
 

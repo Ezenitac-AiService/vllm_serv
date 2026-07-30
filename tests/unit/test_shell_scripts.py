@@ -46,3 +46,27 @@ def test_make_seed_pack_includes_platform_profiles():
         content = f.read()
 
     assert "platform_profiles.json" in content
+
+
+def test_setup_sh_fast_track_diagnostic_output():
+    """T016 [US2]: Verifies setup.sh captures GPU check stderr and logs structured failure cause without 2>/dev/null (FR-002)."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "GPU_CHECK_OUTPUT=" in content
+    assert "2>/dev/null" not in content.split("llama_supports_gpu_offload")[1].split("fi")[0]
+    assert "[FAST-TRACK FAIL]" in content
+    assert "FAST-TRACK FAIL TRACEBACK" in content
+
+
+def test_setup_sh_failure_categories():
+    """T016 [US2]: Verifies setup.sh includes all structured failure cause categories (SIGILL, GPU_OFFLOAD_FALSE, SHARED_LIB_IMPORT_ERROR)."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "SIGILL_ILLEGAL_INSTRUCTION" in content
+    assert "GPU_OFFLOAD_FALSE" in content
+    assert "SHARED_LIB_IMPORT_ERROR" in content
+
