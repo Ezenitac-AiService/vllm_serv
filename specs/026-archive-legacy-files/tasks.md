@@ -20,8 +20,8 @@
 
 **Purpose**: Project configuration layout & archive directory creation
 
-- [ ] T001 Verify project structure and specification files at `specs/026-archive-legacy-files/`
-- [ ] T002 Create `.legacy/` archive directory at project root
+- [x] T001 Verify project structure and specification files at `specs/026-archive-legacy-files/`
+- [x] T002 Create `.legacy/` archive directory at project root
 
 ---
 
@@ -29,7 +29,7 @@
 
 **Purpose**: Base test structures and architecture verification scaffolding
 
-- [ ] T003 [P] Create unit test scaffold for root archive cleanliness and modularity in `tests/unit/test_architecture_modularity.py`
+- [x] T003 [P] Create unit test scaffold for root archive cleanliness and modularity in `tests/unit/test_architecture_modularity.py`
 
 **Checkpoint**: Foundation ready - `.legacy/` directory and test harnesses ready.
 
@@ -41,9 +41,9 @@
 
 **Independent Test**: `ls -la .legacy/` lists all target legacy files, and root directory is clean.
 
-- [ ] T004 [P] [US1] Move legacy extraction items (`ATEAM_ExtractionItem.py`, `BTEAM_ExtractionItem.py`) to `.legacy/`
-- [ ] T005 [P] [US1] Move legacy installation script (`get-pip.py`) and benchmark result (`benchmark_results.json`) to `.legacy/`
-- [ ] T006 [P] [US1] Move 1-line root shell stub scripts (`make_seed_pack.sh`, `setup.sh`, `start_server.sh`, `status_server.sh`, `stop_server.sh`) to `.legacy/`
+- [x] T004 [P] [US1] Move legacy extraction items (`ATEAM_ExtractionItem.py`, `BTEAM_ExtractionItem.py`) to `.legacy/`
+- [x] T005 [P] [US1] Move legacy installation script (`get-pip.py`) and benchmark result (`benchmark_results.json`) to `.legacy/`
+- [x] T006 [P] [US1] Move 1-line root shell stub scripts (`make_seed_pack.sh`, `setup.sh`, `start_server.sh`, `status_server.sh`, `stop_server.sh`) to `.legacy/`
 
 **Checkpoint**: User Story 1 (Legacy archiving) is complete.
 
@@ -55,9 +55,9 @@
 
 **Independent Test**: `uv run pytest tests/` passes 100% cleanly without module import errors.
 
-- [ ] T007 [P] [US2] Audit and clean up unused imports and dead code in `src/core/config_manager.py` and `src/core/process_manager.py`
-- [ ] T008 [P] [US2] Audit and clean up unused imports and dead code in `src/api/server.py` and `src/api/routes/`
-- [ ] T009 [P] [US2] Refactor and harmonize utility functions in `scripts/` operational scripts
+- [x] T007 [P] [US2] Audit and clean up unused imports and dead code in `src/core/config_manager.py` and `src/core/process_manager.py`
+- [x] T008 [P] [US2] Audit and clean up unused imports and dead code in `src/api/server.py` and `src/api/routes/`
+- [x] T009 [P] [US2] Refactor and harmonize utility functions in `scripts/` operational scripts
 
 **Checkpoint**: User Story 2 (Codebase refactoring) is complete.
 
@@ -69,8 +69,8 @@
 
 **Independent Test**: `git status` verifies `.legacy/` files are tracked properly in Git.
 
-- [ ] T010 [P] [US3] Verify `.gitignore` configuration for `.legacy/` tracking and archive retention
-- [ ] T011 [US3] Update project documentation (`README.md`) to reflect `.legacy/` archive directory structure
+- [x] T010 [P] [US3] Verify `.gitignore` configuration for `.legacy/` tracking and archive retention
+- [x] T011 [US3] Update project documentation (`README.md`) to reflect `.legacy/` archive directory structure
 
 ---
 
@@ -78,9 +78,9 @@
 
 **Purpose**: Final verification, import audit, and test execution
 
-- [ ] T012 [P] Verify import integrity across all codebase modules (`src/`, `scripts/`, `tests/`)
-- [ ] T013 Run complete pytest test suite (`uv run pytest tests/`) to ensure 100% test pass rate
-- [ ] T014 Execute quickstart validation guide scenarios in `specs/026-archive-legacy-files/quickstart.md`
+- [x] T012 [P] Verify import integrity across all codebase modules (`src/`, `scripts/`, `tests/`)
+- [x] T013 Run complete pytest test suite (`uv run pytest tests/`) to ensure 100% test pass rate
+- [x] T014 Execute quickstart validation guide scenarios in `specs/026-archive-legacy-files/quickstart.md`
 
 ---
 

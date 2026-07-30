@@ -1,1 +1,1 @@
-/home/dev/storage/vllm_serv/scripts/start_server.sh
+../scripts/start_server.sh

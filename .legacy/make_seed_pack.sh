@@ -1,1 +1,1 @@
-scripts/make_seed_pack.sh
+../scripts/make_seed_pack.sh

@@ -32,7 +32,7 @@ def test_start_server_preflight_help():
 
 def test_setup_script_contains_match_profile():
     """T012 [US3]: Verifies setup.sh invokes match-profile CLI option."""
-    script_path = os.path.join(REPO_ROOT, "setup.sh")
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
     with open(script_path, "r", encoding="utf-8") as f:
         content = f.read()
 

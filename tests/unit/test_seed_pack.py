@@ -18,13 +18,12 @@ def get_repo_root():
 def test_make_seed_pack_script_exists_and_executable():
     repo_root = get_repo_root()
     script_path = os.path.join(repo_root, "scripts", "make_seed_pack.sh")
-    symlink_path = os.path.join(repo_root, "make_seed_pack.sh")
+    legacy_path = os.path.join(repo_root, ".legacy", "make_seed_pack.sh")
 
     assert os.path.exists(script_path), f"Script missing at {script_path}"
     assert os.access(script_path, os.X_OK), "scripts/make_seed_pack.sh must be executable"
 
-    assert os.path.exists(symlink_path), f"Root symlink missing at {symlink_path}"
-    assert os.access(symlink_path, os.X_OK), "make_seed_pack.sh symlink must be executable"
+    assert os.path.exists(legacy_path), f"Archived legacy script missing at {legacy_path}"
 
 
 def test_make_seed_pack_default_tarball(tmp_path):
