@@ -22,8 +22,14 @@ COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
-echo -e "${COLOR_CYAN} ⚡ vllm_serv 서버 및 GPU 상태 리포트${COLOR_NC}"
+echo -e "${COLOR_CYAN} ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트${COLOR_NC}"
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
+
+# 멀티 플랫폼 CPU / GPU 하드웨어 및 프로필 실시간 감지 리포트
+uv run python -m src.core.cpu_detector --report 2>/dev/null || true
+
+echo -e "\n[서버 프로세스 및 서비스 상태]"
+
 
 PID=""
 if [ -f "$PID_FILE" ]; then

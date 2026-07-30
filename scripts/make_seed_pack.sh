@@ -140,19 +140,26 @@ fi
 SIZE_BYTES=$(stat -c%s "$ABS_OUTPUT_PATH" 2>/dev/null || stat -f%z "$ABS_OUTPUT_PATH" 2>/dev/null || echo "0")
 SIZE_KB=$((SIZE_BYTES / 1024))
 
-log_info "✓ Seed Pack 압축 성공! (파일 용량: ${SIZE_KB} KB)"
-
-# 10MB (10485760 bytes) 경고 검증
-if [ "$SIZE_BYTES" -gt 10485760 ]; then
-    log_warn "경고: 생성된 Seed Pack 용량이 10MB를 초과합니다 (${SIZE_KB} KB). 제외 규칙을 확인하세요."
+# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json)
+if [ "$USE_ZIP" -eq 1 ]; then
+    ARCHIVE_FILES=$(unzip -l "$ABS_OUTPUT_PATH" 2>/dev/null || true)
+else
+    ARCHIVE_FILES=$(tar -tzf "$ABS_OUTPUT_PATH" 2>/dev/null || true)
 fi
 
-log_info "\n[타 시스템 마이그레이션 안내]"
-log_info "  1. 타겟 서버로 $OUTPUT_PATH 파일 복사"
+if ! echo "$ARCHIVE_FILES" | grep -q "platform_profiles.json"; then
+    log_err "아카이브 검증 실패: config/platform_profiles.json 파일이 수록되지 않았습니다."
+    exit 1
+fi
+log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이브 수록 검증 완료"
+
+
+log_info "\n[타 시스템 멀티 플랫폼 마이그레이션 안내]"
+log_info "  1. 타겟 서버(예: 레거시 i7-930 + GTX 1070 또는 개발 머신)로 $OUTPUT_PATH 파일 이관"
 if [ "$USE_ZIP" -eq 1 ]; then
     log_info "  2. unzip $OUTPUT_PATH -d vllm_serv && cd vllm_serv"
 else
     log_info "  2. mkdir -p vllm_serv && tar -xzf $(basename "$OUTPUT_PATH") -C vllm_serv && cd vllm_serv"
 fi
-log_info "  3. ./setup.sh 실행 (가상환경 동기화 & CUDA llama.cpp 컴파일)"
-log_info "  4. ./start_server.sh 실행 (모델 자동 받아오기 & 서빙 개설)\n"
+log_info "  3. ./setup.sh 실행 (하드웨어 자동 감지 & platform_profiles.json 기반 동적 CMAKE_ARGS 컴파일)"
+log_info "  4. ./start_server.sh 실행 (사전 하드웨어 가속 점검 & 백그라운드 서빙 구동)\n"

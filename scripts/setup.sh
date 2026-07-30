@@ -96,12 +96,16 @@ GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
 VRAM_TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader | head -n 1)
 log_info "✓ NVIDIA GPU 감지 완료: $GPU_NAME (총 VRAM: $VRAM_TOTAL)"
 
-# FR-001 / FR-002: CPU & GPU 하드웨어 명령어 세트 감지 및 CMAKE_ARGS 동적 생성
-log_info "CPU 명령어 세트 및 GPU Compute Capability 감지 수행 중..."
+# FR-001 / FR-002 / FR-003: CPU & GPU 하드웨어 명령어 세트 감지 및 CMAKE_ARGS 동적 생성
+log_info "CPU 명령어 세트, GPU Compute Capability 및 플랫폼 프로필 감지 수행 중..."
 uv run python -m src.core.cpu_detector --report || true
+
+MATCHED_PROFILE=$(uv run python -m src.core.cpu_detector --match-profile 2>/dev/null || echo "legacy-i7-930-gtx1070")
+log_info "✓ 감지 및 매칭된 타겟 플랫폼 프로필: $MATCHED_PROFILE"
 
 DETECTED_CMAKE_ARGS=$(uv run python -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF")
 log_info "적용할 동적 CMAKE_ARGS: $DETECTED_CMAKE_ARGS"
+
 
 log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 소스 컴파일 중..."
 log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
@@ -198,9 +202,18 @@ if [ -n "$CURRENT_RUNNING" ]; then
 fi
 
 echo -e "${COLOR_CYAN}[SERVER] vllm_serv 인퍼런스 서빙 서버 구동 파이프라인을 시작합니다...${COLOR_NC}"
+echo -e "${COLOR_CYAN}[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...${COLOR_NC}"
+if ! uv run python -m src.core.cpu_detector --check-preflight; then
+    echo -e "${COLOR_RED}[SERVER ERROR] 사전 하드웨어 점검 실패! 백그라운드 서버 데몬을 구동하지 않고 즉시 종료합니다.${COLOR_NC}"
+    echo -e "${COLOR_YELLOW}해결 가이드: NVIDIA GPU 드라이버(nvidia-smi) 및 CUDA Compiler(nvcc) 환경을 확인하세요.${COLOR_NC}"
+    exit 1
+fi
+echo -e "${COLOR_GREEN}[SERVER] ✓ 하드웨어 가속 사전 점검 완료 (GPU CUDA 가속 활성)${COLOR_NC}"
+
 echo -e "${COLOR_GREEN}[SERVER] 1. llama-server 바이너리 빌드 상태 및 모델 가중치 자동 다운로드 파이프라인 가동${COLOR_NC}"
 echo -e "${COLOR_GREEN}[SERVER] 2. 기본 VRAM 상주 서빙 모델(qwen3.5-4b) VRAM 100% 오프로드 검증 수행${COLOR_NC}"
 echo -e "${COLOR_GREEN}[SERVER] 3. 로그 파일 경로: $LOG_FILE${COLOR_NC}"
+
 
 mkdir -p "$BASE_DIR/logs"
 
@@ -337,8 +350,14 @@ COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
-echo -e "${COLOR_CYAN} ⚡ vllm_serv 서버 및 GPU 상태 리포트${COLOR_NC}"
+echo -e "${COLOR_CYAN} ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트${COLOR_NC}"
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
+
+# 멀티 플랫폼 CPU / GPU 하드웨어 및 프로필 실시간 감지 리포트
+uv run python -m src.core.cpu_detector --report 2>/dev/null || true
+
+echo -e "\n[서버 프로세스 및 서비스 상태]"
+
 
 PID=""
 if [ -f "$PID_FILE" ]; then

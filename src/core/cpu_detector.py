@@ -213,15 +213,100 @@ def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildF
     )
 
 
+def match_platform_profile(cpuinfo_path: str = "/proc/cpuinfo") -> str:
+    """
+    FR-001 & FR-003: Matches detected hardware against config/platform_profiles.json profiles.
+    Returns matching profile_id string (e.g. 'legacy-i7-930-gtx1070', 'dev-rtx3060').
+    """
+    try:
+        from src.core.config_manager import ConfigManager
+        cm = ConfigManager()
+        profiles = cm.get_platform_profiles()
+    except Exception:
+        profiles = {}
+
+    cpu_info = detect_cpu_features(cpuinfo_path=cpuinfo_path)
+    try:
+        gpu_info = detect_gpu_capability()
+        cc = gpu_info.compute_capability
+    except Exception:
+        cc = "unknown"
+
+    for pid, profile in profiles.items():
+        prof_cc = str(profile.get("compute_capability", ""))
+        if prof_cc and prof_cc == cc:
+            return pid
+
+    if not cpu_info.supports_avx:
+        return "legacy-i7-930-gtx1070"
+    return "dev-rtx3060"
+
+
+def check_hardware_preflight(cpuinfo_path: str = "/proc/cpuinfo") -> Dict[str, Any]:
+    """
+    FR-002: Performs pre-flight checks before server daemonization.
+    Verifies GPU driver (nvidia-smi) and CUDA compiler (nvcc).
+    """
+    results = {
+        "passed": False,
+        "nvidia_smi": False,
+        "nvcc": False,
+        "gpu_info": None,
+        "error_message": "",
+        "remediation_guide": ""
+    }
+
+    nvidia_smi = shutil.which("nvidia-smi")
+    if not nvidia_smi:
+        msg = (
+            "❌ [Pre-flight Fail] NVIDIA GPU 드라이버(nvidia-smi)가 설치되어 있지 않거나 PATH에 없습니다.\n"
+            "   해결 가이드: NVIDIA GPU 드라이버를 설치하고 `nvidia-smi` 커맨드가 작동하는지 확인하세요.\n"
+            "   `sudo apt install nvidia-driver-535` 또는 공식 드라이버를 설치해야 합니다."
+        )
+        results["error_message"] = msg
+        results["remediation_guide"] = "NVIDIA 드라이버 설치 필요: sudo apt install nvidia-driver-535"
+        return results
+    results["nvidia_smi"] = True
+
+    nvcc = shutil.which("nvcc")
+    if not nvcc:
+        cuda_home = os.environ.get("CUDA_HOME") or "/usr/local/cuda"
+        if os.path.exists(os.path.join(cuda_home, "bin", "nvcc")):
+            nvcc = os.path.join(cuda_home, "bin", "nvcc")
+
+    if not nvcc:
+        msg = (
+            "❌ [Pre-flight Fail] CUDA Compiler (nvcc)를 찾을 수 없습니다.\n"
+            "   해결 가이드: CUDA Toolkit 12.x 이상을 설치하거나 PATH 환경변수에 nvcc 경로를 추가하세요.\n"
+            "   예: export PATH=/usr/local/cuda/bin:$PATH"
+        )
+        results["error_message"] = msg
+        results["remediation_guide"] = "CUDA Toolkit 설치 및 PATH 추가 필요: export PATH=/usr/local/cuda/bin:$PATH"
+        return results
+    results["nvcc"] = True
+
+    try:
+        gpu_info = detect_gpu_capability()
+        results["gpu_info"] = gpu_info.model_dump()
+        results["passed"] = True
+    except GpuAccelerationError as e:
+        results["error_message"] = f"❌ [Pre-flight Fail] GPU 가속 검증 실패: {e}"
+        results["remediation_guide"] = "GPU 인식 및 드라이버 동작 상태를 nvidia-smi로 점검하세요."
+
+    return results
+
+
 def print_detection_report(cpuinfo_path: str = "/proc/cpuinfo") -> None:
     """FR-005: Prints human-readable hardware detection and selected CMake build flags report."""
     cpu_info = detect_cpu_features(cpuinfo_path=cpuinfo_path)
     gpu_info = detect_gpu_capability()
     flags = get_llama_build_flags(cpuinfo_path=cpuinfo_path)
+    profile_id = match_platform_profile(cpuinfo_path=cpuinfo_path)
 
     print("====================================================")
     print(" ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트")
     print("====================================================")
+    print(f" 매칭 플랫폼 프로필 : {profile_id}")
     print(f" CPU 모델명       : {cpu_info.model_name}")
     print(f" CPU 아키텍처     : {cpu_info.architecture}")
     print(f" CPU 폴백 모드   : {'예 (보수적 옵션 적용)' if cpu_info.is_fallback else '아니오 (정상 감지)'}")
@@ -239,11 +324,25 @@ def main():
     parser = argparse.ArgumentParser(description="CPU and GPU Hardware Capability Detector for llama.cpp Build")
     parser.add_argument("--format", choices=["report", "cmake", "json"], default="report", help="Output format (report, cmake, json)")
     parser.add_argument("--report", action="store_true", help="Print human-readable report (alias for --format report)")
+    parser.add_argument("--match-profile", action="store_true", help="Print matched platform profile ID")
+    parser.add_argument("--check-preflight", action="store_true", help="Run hardware acceleration pre-flight check")
     args = parser.parse_args()
+
+    if args.match_profile:
+        print(match_platform_profile())
+        sys.exit(0)
+
+    if args.check_preflight:
+        preflight = check_hardware_preflight()
+        if preflight["passed"]:
+            print("[INFO] Hardware pre-flight check passed.")
+            sys.exit(0)
+        else:
+            sys.stderr.write(f"{preflight['error_message']}\n")
+            sys.exit(1)
 
     if args.report:
         args.format = "report"
-
 
     if args.format == "cmake":
         try:
@@ -257,8 +356,10 @@ def main():
             cpu_info = detect_cpu_features()
             gpu_info = detect_gpu_capability()
             flags = get_llama_build_flags()
+            profile_id = match_platform_profile()
             import json
             data = {
+                "profile_id": profile_id,
                 "cpu": cpu_info.model_dump(),
                 "gpu": gpu_info.model_dump(),
                 "build_flags": flags.model_dump()
@@ -277,3 +378,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

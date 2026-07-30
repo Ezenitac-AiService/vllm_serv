@@ -8,6 +8,14 @@
 
 **Input**: User description: "작업 폴더에 보면, 시드 팩을 생성하는 쉘 파일과, 셋팅용 쉘 파일, 서버 실행, 상태 확인용 쉘 파일이 있어, 멀티 플렛폼 대응 스펙이 구현되었으니, 해당 파일들도 고도화 해야 하는거 아냐?"
 
+## Clarifications
+
+### Session 2026-07-30
+
+- Q: 플랫폼 프로필 매칭 판단 방식은? → A: `src/core/cpu_detector.py`에 프로필 매칭 로직 및 CLI 옵션(`--match-profile`)을 구현하여 쉘 스크립트에서 호출 활용
+- Q: `start_server.sh` 사전 점검 실패 시 처리 방식은? → A: 문제 원인별 구체적인 해결 안내문(nvcc/GPU 드라이버 설치 방법 등)을 출력한 후 exit 코드 1로 즉시 중단
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - status_server.sh의 멀티 플랫폼 하드웨어 실시간 리포트 고도화 (Priority: P1)
@@ -87,8 +95,8 @@
 ### Functional Requirements
 
 - **FR-001**: `status_server.sh`는 실행 시 `src.core.cpu_detector` 모듈을 활용하여 CPU 모델, SIMD 명령어 지원 현황(AVX/AVX2/F16C/FMA), GPU Compute Capability (`sm_61`, `sm_86` 등), 매칭된 플랫폼 프로필 정보를 로그로 출력해야 한다 (MUST).
-- **FR-002**: `start_server.sh`는 서버 데몬 실행 전 하드웨어 가속 사전 점검(NVIDIA GPU, `nvidia-smi`, `nvcc` 및 llama_cpp CUDA 지원 여부)을 수행하고, 감지 실패 시 데몬 프로세스를 생성하지 않고 1 이상의 에러 코드로 종료해야 한다 (MUST).
-- **FR-003**: `setup.sh`는 하드웨어 감지 결과를 프로젝트의 플랫폼 프로필 목록(`config/platform_profiles.json`)과 대조하여 현재 하드웨어와 가장 일치하는 프로필 이름을 사용자에게 출력하고 알맞은 CMAKE_ARGS를 전파해야 한다 (MUST).
+- **FR-002**: `start_server.sh`는 서버 데몬 실행 전 하드웨어 가속 사전 점검(NVIDIA GPU, `nvidia-smi`, `nvcc` 및 llama_cpp CUDA 지원 여부)을 수행하고, 감지 실패 시 데몬 프로세스를 생성하지 않고 문제 해결 안내문과 함께 exit 코드 1로 중단해야 한다 (MUST).
+- **FR-003**: `src.core.cpu_detector` 모듈에 `--match-profile` CLI 옵션을 추가하고, `setup.sh` 및 `status_server.sh`는 이를 호출하여 현재 하드웨어와 가장 일치하는 프로필 이름을 사용자에게 출력하고 알맞은 CMAKE_ARGS를 전파해야 한다 (MUST).
 - **FR-004**: `make_seed_pack.sh`는 아카이브 패키징 시 `config/platform_profiles.json` 설정을 반드시 포함해야 하며, 아카이브 생성 후 출력되는 이관 안내 메시지에 멀티 플랫폼 설정 및 `setup.sh` 감지 파이프라인에 대한 안내를 포함해야 한다 (MUST).
 - **FR-005**: 고도화된 모든 쉘 스크립트는 기존의 서버 구동, 종료, 포트 바인딩 및 VRAM 해제 기본 동작과 100% 하위 호환성을 유지해야 한다 (MUST).
 

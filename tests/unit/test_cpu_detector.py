@@ -175,3 +175,42 @@ def test_cli_output(capsys):
     assert "vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트" in captured.out
     assert "생성된 CMake 인자:" in captured.out
 
+
+def test_match_platform_profile(monkeypatch):
+    """T005: Verifies match_platform_profile returns legacy or dev profile ID based on compute capability."""
+    from src.core.cpu_detector import match_platform_profile, GpuCapabilityInfo
+
+    monkeypatch.setattr(
+        "src.core.cpu_detector.detect_gpu_capability",
+        lambda: GpuCapabilityInfo(
+            gpu_name="GeForce GTX 1070",
+            compute_capability="6.1",
+            cuda_arch_code="61",
+            total_vram_mb=8192
+        )
+    )
+    profile_id = match_platform_profile()
+    assert profile_id == "legacy-i7-930-gtx1070"
+
+    monkeypatch.setattr(
+        "src.core.cpu_detector.detect_gpu_capability",
+        lambda: GpuCapabilityInfo(
+            gpu_name="GeForce RTX 3060",
+            compute_capability="8.6",
+            cuda_arch_code="86",
+            total_vram_mb=12288
+        )
+    )
+    profile_id = match_platform_profile()
+    assert profile_id == "dev-rtx3060"
+
+
+def test_check_hardware_preflight():
+    """T005: Verifies check_hardware_preflight structure and execution."""
+    from src.core.cpu_detector import check_hardware_preflight
+    res = check_hardware_preflight()
+    assert "passed" in res
+    assert "nvidia_smi" in res
+    assert "nvcc" in res
+
+
