@@ -97,3 +97,13 @@ def test_setup_fallback_and_status_report():
 
     assert "vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트" in res.stdout, "status_server.sh report title missing"
     assert "llama-cpp-python GPU:" in res.stdout, "status_server.sh must report llama-cpp-python GPU status"
+
+
+def test_start_server_preflight_fail_fast():
+    """T008 / US2: Test check_hardware_preflight() fail-fast when llama_supports_gpu_offload() fails."""
+    from src.core.cpu_detector import check_hardware_preflight
+    res = check_hardware_preflight()
+    # When CUDA GPU environment is active, passed must be True and llama_gpu_offload must be True
+    assert "llama_gpu_offload" in res or "error_message" in res
+    if res.get("passed"):
+        assert res.get("llama_gpu_offload") is True, "llama_gpu_offload must be True when preflight passes"

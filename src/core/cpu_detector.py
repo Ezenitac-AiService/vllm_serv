@@ -311,6 +311,26 @@ def check_hardware_preflight(cpuinfo_path: str = "/proc/cpuinfo") -> Dict[str, A
     try:
         gpu_info = detect_gpu_capability()
         results["gpu_info"] = gpu_info.model_dump()
+
+        # FR-004 / US2: llama-cpp-python package CUDA offload support check
+        try:
+            import llama_cpp
+            fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+            if not fn or not fn():
+                msg = (
+                    "❌ [Pre-flight Fail] llama-cpp-python 패키지가 CUDA GPU 가속을 지원하지 않습니다 (CPU 전용 모드).\n"
+                    "   해결 가이드: ./setup.sh를 다시 실행하여 CUDA 최적화 C++ 컴파일 파이프라인을 완료하세요."
+                )
+                results["error_message"] = msg
+                results["remediation_guide"] = "./setup.sh 실행하여 llama-cpp-python CUDA 재컴파일 수행 필요"
+                return results
+            results["llama_gpu_offload"] = True
+        except Exception as e:
+            msg = f"❌ [Pre-flight Fail] llama-cpp-python 로드/검증 중 오류 발생: {e}"
+            results["error_message"] = msg
+            results["remediation_guide"] = "./setup.sh 실행하여 환경을 재설정하세요."
+            return results
+
         results["passed"] = True
     except GpuAccelerationError as e:
         results["error_message"] = f"❌ [Pre-flight Fail] GPU 가속 검증 실패: {e}"

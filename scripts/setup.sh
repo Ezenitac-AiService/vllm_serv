@@ -215,6 +215,7 @@ if [ -n "$WHEEL_PATH" ] && [ -f "$WHEEL_PATH" ]; then
     log_info "⚡ CLI 명시 커스텀 휠 경로($WHEEL_PATH) Fast-Track 복원을 시작합니다..."
     if uv pip install "$WHEEL_PATH" --force-reinstall --no-index; then
         log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
+        GPU_CHECK_STATUS=0
         GPU_CHECK_OUTPUT=$(uv run python -c "
 import sys, llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
@@ -224,8 +225,7 @@ if fn is None:
 if not fn():
     print('ERROR: llama_supports_gpu_offload() returned False', file=sys.stderr)
     sys.exit(2)
-" 2>&1 || true)
-        GPU_CHECK_STATUS=$?
+" 2>&1) || GPU_CHECK_STATUS=$?
 
         if [ "$GPU_CHECK_STATUS" -eq 0 ]; then
             log_info "✓ CLI 커스텀 휠 Fast-Track 설치 및 CUDA GPU 가속 활성화 확인 완료."
@@ -266,6 +266,7 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
         log_info "C++ 소스 재컴파일을 건너뛰고 사전 빌드 휠을 가상환경(.venv)에 고속 설치합니다..."
         if uv pip install "$LEGACY_WHEEL" --force-reinstall --no-index --find-links wheels/legacy_i7_930; then
             log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
+            GPU_CHECK_STATUS=0
             GPU_CHECK_OUTPUT=$(uv run python -c "
 import sys, llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
@@ -275,8 +276,7 @@ if fn is None:
 if not fn():
     print('ERROR: llama_supports_gpu_offload() returned False', file=sys.stderr)
     sys.exit(2)
-" 2>&1 || true)
-            GPU_CHECK_STATUS=$?
+" 2>&1) || GPU_CHECK_STATUS=$?
 
             if [ "$GPU_CHECK_STATUS" -eq 0 ]; then
                 log_info "✓ 사전 빌드 휠 Fast-Track 설치 및 CUDA GPU 가속 활성화 확인 완료 (C++ 소스 재컴파일 스킵됨)"
@@ -309,6 +309,9 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
         log_err "--skip-build 플래그가 설정되었으나 사전 휠 복원에 실패하여 setup.sh를 중단합니다."
         exit 1
     fi
+
+    log_info "기존/불일치 패키지 자동 정리 중 (uv pip uninstall llama-cpp-python)..."
+    uv pip uninstall llama-cpp-python 2>/dev/null || true
 
     log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 동적 C++ 소스 컴파일 중..."
     log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."

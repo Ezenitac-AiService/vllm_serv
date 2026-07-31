@@ -125,17 +125,25 @@ def test_setup_subshell_error_guard_and_fallback():
     with open(setup_path, "r", encoding="utf-8") as f:
         setup_content = f.read()
 
-    # 1. Subshell || true guard check
-    assert "2>&1 || true" in setup_content, (
-        "setup.sh subshell GPU_CHECK_OUTPUT assignment must use '2>&1 || true' guard to prevent set -e script aborts"
+    # 1. Subshell || GPU_CHECK_STATUS=$? exit code capture check (must NOT use || true which overwrites exit code with 0)
+    assert "|| GPU_CHECK_STATUS=$?" in setup_content, (
+        "setup.sh subshell GPU_CHECK_OUTPUT assignment must use '|| GPU_CHECK_STATUS=$?' to capture real exit status in set -e"
+    )
+    assert "2>&1 || true)" not in setup_content, (
+        "setup.sh must not use '2>&1 || true)' in GPU_CHECK_OUTPUT assignment because true overwrites $? with 0"
     )
 
-    # 2. --wheel-path CLI parameter support
+    # 2. Clean step: uv pip uninstall llama-cpp-python before Tier 4 C++ compilation
+    assert "uv pip uninstall llama-cpp-python" in setup_content, (
+        "setup.sh must execute 'uv pip uninstall llama-cpp-python' to clean bad prebuilt wheel before Tier 4 C++ compilation"
+    )
+
+    # 3. --wheel-path CLI parameter support
     assert "--wheel-path" in setup_content, (
         "setup.sh must support --wheel-path CLI option for custom wheel injection"
     )
 
-    # 3. 4-Tier fallback logic check
+    # 4. 4-Tier fallback logic check
     assert "INSTALLED_VIA_FAST_TRACK" in setup_content, (
         "setup.sh must maintain INSTALLED_VIA_FAST_TRACK fallback flag"
     )
