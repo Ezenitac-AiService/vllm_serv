@@ -10,7 +10,24 @@ from typing import Dict, List, Tuple
 
 
 def scan_so_with_python_bytes(so_file: str) -> int:
-    """Pure-python byte scanner inspecting ELF file executable code sections for VEX/AVX opcode sequences."""
+    """Inspects ELF shared library using objdump disassembly (or fallback) for AVX instructions."""
+    try:
+        # Prefer objdump for 100% accurate machine instruction disassembly
+        res = subprocess.run(["objdump", "-d", "--no-show-raw-insn", so_file], capture_output=True, text=True)
+        if res.returncode == 0:
+            pattern = re.compile(r"^\s*[0-9a-f]+:\s+(v[a-z0-9]+)\b")
+            avx_count = 0
+            for line in res.stdout.splitlines():
+                m = pattern.match(line)
+                if m:
+                    mnemonic = m.group(1)
+                    if mnemonic not in ("verr", "verw", "vmread", "vmwrite", "vmmcall", "vptr"):
+                        avx_count += 1
+            return avx_count
+    except Exception:
+        pass
+
+    # Pure Python fallback if objdump is not installed
     try:
         with open(so_file, "rb") as f:
             data = f.read()
@@ -38,8 +55,6 @@ def scan_so_with_python_bytes(so_file: str) -> int:
         target_bytes = bytes(exec_bytes) if exec_bytes else data
 
         # Simple VEX prefix heuristic in x86_64 ELF executable code
-        # 2-byte VEX: 0xC5 followed by byte with bit 7=1 (R bit) and opcode
-        # 3-byte VEX: 0xC4 followed by bytes
         avx_count = 0
         i = 0
         length = len(target_bytes)
@@ -53,10 +68,12 @@ def scan_so_with_python_bytes(so_file: str) -> int:
                     i += 2
                     continue
             elif b == 0xC4:
-                # 3-byte VEX prefix
-                avx_count += 1
-                i += 3
-                continue
+                # 3-byte VEX prefix: map select must be 1, 2, or 3
+                next_b = target_bytes[i + 1]
+                if (next_b & 0x1F) in (1, 2, 3):
+                    avx_count += 1
+                    i += 3
+                    continue
             i += 1
         return avx_count
     except Exception:
