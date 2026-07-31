@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DualModeTestExecutionContract",
+  "type": "object",
+  "required": [
+    "execution_mode",
+    "is_real_gpu_available",
+    "catalog_models_count",
+    "strict_mock_prohibited"
+  ],
+  "properties": {
+    "execution_mode": {
+      "type": "string",
+      "enum": ["mock", "real"],
+      "description": "Pytest execution mode specified via --real flag or TEST_MODE env var"
+    },
+    "is_real_gpu_available": {
+      "type": "boolean",
+      "description": "Indicates whether NVIDIA CUDA GPU hardware was detected via PyNVML/nvidia-smi"
+    },
+    "catalog_models_count": {
+      "type": "integer",
+      "minimum": 6,
+      "description": "Must be exactly 6 catalog models"
+    },
+    "strict_mock_prohibited": {
+      "type": "boolean",
+      "description": "When execution_mode is real, returning dummy mock responses without spawning process is strictly prohibited"
+    }
+  }
+}

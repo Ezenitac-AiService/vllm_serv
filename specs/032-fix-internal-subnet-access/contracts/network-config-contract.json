@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NetworkSubnetConfigContract",
+  "type": "object",
+  "properties": {
+    "bind_host": {
+      "type": "string",
+      "default": "0.0.0.0"
+    },
+    "api_port": {
+      "type": "integer",
+      "default": 8081
+    },
+    "backend_port": {
+      "type": "integer",
+      "default": 8089
+    },
+    "detected_active_ips": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_subnets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "127.0.0.1",
+        "192.168.0.0/16",
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    }
+  },
+  "required": [
+    "bind_host",
+    "api_port",
+    "allowed_subnets"
+  ]
+}

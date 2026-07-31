@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BuildBackendContract",
+  "description": "Interface Contract for PEP 517/518 scikit-build-core Wheel Generation in make_seed_pack.sh",
+  "type": "object",
+  "properties": {
+    "make_seed_pack_cmd": {
+      "type": "string",
+      "example": "./scripts/make_seed_pack.sh --build-legacy"
+    },
+    "wheel_build_cmd": {
+      "type": "string",
+      "example": "FORCE_CMAKE=1 CFLAGS=\"-march=x86-64\" CMAKE_ARGS=\"-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DGGML_NATIVE=OFF -DCMAKE_CUDA_ARCHITECTURES=61\" uv run pip wheel \"llama-cpp-python[server]\" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 --no-cache-dir"
+    },
+    "expected_outcome": {
+      "type": "object",
+      "properties": {
+        "backend_unavailable_errors": { "type": "integer", "enum": [0] },
+        "wheel_generated": { "type": "boolean", "enum": [true] },
+        "post_build_verification": { "type": "boolean", "enum": [true] }
+      }
+    }
+  }
+}

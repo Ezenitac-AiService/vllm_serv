@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SubshellStatusAndPreflightContract",
+  "description": "Schema for setup.sh subshell status evaluation and start_server.sh preflight checks",
+  "type": "object",
+  "properties": {
+    "subshell_execution": {
+      "type": "object",
+      "properties": {
+        "command": { "type": "string", "example": "uv run python -c 'import llama_cpp...'" },
+        "gpu_check_output": { "type": "string" },
+        "gpu_check_status": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "installed_via_fast_track": { "type": "integer", "enum": [0, 1] }
+      },
+      "required": ["gpu_check_output", "gpu_check_status", "installed_via_fast_track"]
+    },
+    "preflight_check": {
+      "type": "object",
+      "properties": {
+        "passed": { "type": "boolean" },
+        "nvidia_smi": { "type": "boolean" },
+        "nvcc": { "type": "boolean" },
+        "llama_gpu_offload": { "type": "boolean" },
+        "error_message": { "type": "string" }
+      },
+      "required": ["passed", "nvidia_smi", "nvcc", "llama_gpu_offload"]
+    }
+  },
+  "required": ["subshell_execution", "preflight_check"]
+}

@@ -40,7 +40,6 @@ data/*.db*
 .legacy/
 .pytest_cache/
 .specify/
-specs/
 tests/
 
 log.txt

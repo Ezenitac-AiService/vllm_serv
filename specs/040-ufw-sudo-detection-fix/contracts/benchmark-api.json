@@ -1,0 +1,66 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "vllm_serv Context Benchmark Management API",
+    "version": "1.0.0",
+    "description": "REST endpoints for inspecting and triggering context window scaling benchmark caches on Port 8089"
+  },
+  "paths": {
+    "/api/benchmark/profiles": {
+      "get": {
+        "summary": "Get cached context window profiles",
+        "responses": {
+          "200": {
+            "description": "Successful retrieval of profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generated_at": { "type": "string" },
+                    "system_hardware": { "type": "object" },
+                    "profiles": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/benchmark/rerun": {
+      "post": {
+        "summary": "Trigger asynchronous context scaling re-benchmark",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "full_rebench": { "type": "boolean", "default": false },
+                  "target_models": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Benchmark task started in background",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task_id": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

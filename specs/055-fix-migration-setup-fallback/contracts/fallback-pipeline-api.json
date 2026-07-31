@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SetupFallbackPipelineContract",
+  "description": "JSON Schema contract for setup.sh 4-tier wheel detection and fallback verification",
+  "type": "object",
+  "properties": {
+    "tier_level": {
+      "type": "integer",
+      "enum": [1, 2, 3, 4],
+      "description": "Tier 1: CLI wheel-path, Tier 2: venv cache, Tier 3: Seed pack bundle wheel, Tier 4: C++ Source compile"
+    },
+    "wheel_path": {
+      "type": ["string", "null"],
+      "description": "Path to the detected or compiled wheel file"
+    },
+    "verification_status": {
+      "type": "object",
+      "properties": {
+        "cpu_simd_compatible": { "type": "boolean" },
+        "gpu_offload_supported": { "type": "boolean" },
+        "compute_capability_matched": { "type": "boolean" }
+      },
+      "required": ["cpu_simd_compatible", "gpu_offload_supported", "compute_capability_matched"]
+    },
+    "installed_via_fast_track": {
+      "type": "boolean",
+      "description": "True if installed via prebuilt wheel without source compilation"
+    },
+    "symlinks_created": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of created root symlinks: start_server.sh, stop_server.sh, status_server.sh"
+    }
+  },
+  "required": ["tier_level", "verification_status", "installed_via_fast_track", "symlinks_created"]
+}
