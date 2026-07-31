@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SeedPackExclusionContract",
+  "description": "Contract defining directory exclusions and fast-track setup python runner for vllm_serv migration archive",
+  "type": "object",
+  "properties": {
+    "excluded_directories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["models", ".venv", ".bin", "logs", "build", "dist", "__pycache__", ".git", "specs", ".agents", ".specify"]
+    },
+    "retained_directories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["src", "config", "scripts", "wheels", "tests"]
+    },
+    "setup_python_runner": {
+      "type": "string",
+      "default": ".venv/bin/python"
+    }
+  },
+  "required": ["excluded_directories", "retained_directories", "setup_python_runner"]
+}
