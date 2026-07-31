@@ -1,7 +1,7 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `013-enhance-benchmark-report`
-**Generated Date**: 2026-07-30 14:53:49
+**Generated Date**: 2026-07-31 02:29:17
 **Execution Mode**: `STATIC PROFILING & FALLBACK SAMPLE MODE`
 **Golden Reference Ground Truth**: `data/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 
@@ -23,7 +23,7 @@
 | Evaluation Aspect | Recommended Model Preset | Metric Value | Rationale |
 |-------------------|--------------------------|--------------|-----------|
 | **최고 품질 (Best Quality)** | `Qwen 3.5 2B` | `Quality Score: 3.3 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
-| **최고 속도 가성비 (Quality/Speed)** | `Gemma 4 12B` | `Index: 0.83` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
+| **최고 속도 가성비 (Quality/Speed)** | `Qwen 3.5 2B` | `Index: 1.33` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
 | **최고 메모리 가성비 (Quality/VRAM)** | `Qwen 3.5 2B` | `Index: 1.38` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
 
 ---
@@ -32,12 +32,14 @@
 
 | Model Lineup | Quant | TTFT (ms) | TPOT (tok/s) | Peak VRAM (MB) | Quality Score (1~5) | Quality/Speed Index | Quality/VRAM Index | Status |
 |--------------|-------|-----------|--------------|----------------|---------------------|---------------------|--------------------|--------|
-| **Gemma 4 E2B** | `q4_k_m` | `184.5` | `50.94` | `2680` | **`1.2`** | `0.24` | `0.46` | `✅ SUCCESS` |
-| **Gemma 4 E4B** | `q4_k_m` | `227.7` | `39.53` | `4210` | **`1.67`** | `0.42` | `0.41` | `✅ SUCCESS` |
-| **Gemma 4 12B** | `q4_k_m` | `3960.9` | `24.84` | `8900` | **`2.05`** | `0.83` | `0.24` | `✅ SUCCESS` |
-| **Qwen 3.5 2B** | `q4_k_m` | `193.1` | `68.34` | `2450` | **`3.3`** | `0.48` | `1.38` | `✅ SUCCESS` |
-| **Qwen 3.5 4B** | `q4_k_m` | `336.2` | `46.99` | `3950` | **`3.3`** | `0.7` | `0.86` | `✅ SUCCESS` |
-| **Qwen 3.5 9B** | `q4_k_m` | `2993.4` | `34.21` | `7120` | **`1.2`** | `0.35` | `0.17` | `✅ SUCCESS` |
+| **Gemma 4 E2B** | `q4_k_m` | `555.7` | `16.92` | `2680` | **`1.2`** | `0.71` | `0.46` | `✅ SUCCESS` |
+| **Gemma 4 E4B** | `q4_k_m` | `616.1` | `14.61` | `4210` | **`1.67`** | `1.14` | `0.41` | `✅ SUCCESS` |
+| **Gemma 4 12B** | `q4_k_m` | `5939.8` | `16.57` | `8900` | **`2.05`** | `1.24` | `0.24` | `✅ SUCCESS` |
+| **Qwen 3.5 2B** | `q4_k_m` | `530.6` | `24.88` | `2450` | **`3.3`** | `1.33` | `1.38` | `✅ SUCCESS` |
+| **Qwen 3.5 4B** | `q4_k_m` | `443.7` | `35.61` | `3950` | **`3.3`** | `0.93` | `0.86` | `✅ SUCCESS` |
+| **Qwen 3.5 9B** | `q4_k_m` | `4896.8` | `20.91` | `7120` | **`1.2`** | `0.57` | `0.17` | `✅ SUCCESS` |
+| **BGE M3 (Q8_0 Embedding)** | `q8_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (Live Inference Request Failed)` |
+| **BGE Reranker v2 M3 (Q8_0 Cross-Encoder)** | `q8_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
 
 ---
 
@@ -521,18 +523,38 @@ Thinking Process:
 ---
 </details>
 
+<details>
+<summary>🔍 <b>[BGE M3 (Q8_0 Embedding)] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
+
+### Model: `BGE M3 (Q8_0 Embedding)` (Quant: `q8_0`, Quality: `5.0/5.0`)
+
+- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: Live Inference Request Failed*
+
+</details>
+
+<details>
+<summary>🔍 <b>[BGE Reranker v2 M3 (Q8_0 Cross-Encoder)] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
+
+### Model: `BGE Reranker v2 M3 (Q8_0 Cross-Encoder)` (Quant: `q8_0`, Quality: `5.0/5.0`)
+
+- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: HTTP Healthcheck Timeout*
+
+</details>
+
 ---
 
 ## 4. Context Window Capacity & Scaling Limits
 
 | Model Lineup | Supported `n_ctx` Steps | 2,048 VRAM / TTFT | 4,096 VRAM / TTFT | 8,192 VRAM / TTFT | 16,384 VRAM / TTFT | 32,768 VRAM / TTFT | VRAM Safety Threshold |
 |--------------|-------------------------|-------------------|-------------------|-------------------|--------------------|--------------------|-----------------------|
-| **Gemma 4 E2B** | `2K ~ 32K` | `2291.0MB / 124.5ms` | `2347.0MB / 125.1ms` | `2459.0MB / 124.4ms` | `2683.0MB / 121.8ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Gemma 4 E4B** | `2K ~ 32K` | `3855.0MB / 129.6ms` | `4015.0MB / 130.8ms` | `4335.0MB / 128.6ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Gemma 4 12B** | `2K ~ 32K` | `8547.0MB / 2242.3ms` | `9291.0MB / 2253.4ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`8,192 (Max Limit)`** |
-| **Qwen 3.5 2B** | `2K ~ 32K` | `2023.0MB / 130.2ms` | `2047.0MB / 127.2ms` | `2095.0MB / 125.9ms` | `2191.0MB / 131.8ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 4B** | `2K ~ 32K` | `3489.0MB / 459.4ms` | `3553.0MB / 453.4ms` | `3693.0MB / 457.6ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 9B** | `2K ~ 32K` | `5753.0MB / 2952.9ms` | `5817.0MB / 2951.4ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`16,384 (Safe)`** |
+| **Gemma 4 E2B** | `2K ~ 32K` | `2291.0MB / 365.9ms` | `2347.0MB / 325.9ms` | `2459.0MB / 480.6ms` | `2683.0MB / 404.2ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Gemma 4 E4B** | `2K ~ 32K` | `3855.0MB / 359.9ms` | `4015.0MB / 356.5ms` | `4335.0MB / 291.7ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Gemma 4 12B** | `2K ~ 32K` | `8547.0MB / 3416.8ms` | `9291.0MB / 3083.4ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`8,192 (Max Limit)`** |
+| **Qwen 3.5 2B** | `2K ~ 32K` | `2023.0MB / 395.6ms` | `2047.0MB / 361.0ms` | `2095.0MB / 398.0ms` | `2191.0MB / 403.3ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 4B** | `2K ~ 32K` | `3489.0MB / 1114.8ms` | `3553.0MB / 1135.8ms` | `3693.0MB / 955.2ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 9B** | `2K ~ 32K` | `5753.0MB / 3940.6ms` | `5817.0MB / 3409.2ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`16,384 (Safe)`** |
+| **BGE M3 (Q8_0 Embedding)** | `2K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
+| **BGE Reranker v2 M3 (Q8_0 Cross-Encoder)** | `2K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
 
 ---
 
