@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "vllm_serv Sample Scripts API Contract",
+  "type": "object",
+  "properties": {
+    "sample_01_chat": {
+      "endpoint": "/v1/chat/completions",
+      "port": 8081,
+      "method": "POST",
+      "request_body": {
+        "model": "qwen3.5-4b",
+        "messages": [
+          {"role": "user", "content": "안녕하세요!"}
+        ]
+      }
+    },
+    "sample_02_model_params": {
+      "endpoint": "/v1/chat/completions",
+      "port": 8081,
+      "method": "POST",
+      "request_body": {
+        "model": "qwen3.5-4b",
+        "messages": [
+          {"role": "user", "content": "창의적인 이야기를 써줘."}
+        ],
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "max_tokens": 150,
+        "stop": ["END", "\n\n"]
+      }
+    },
+    "sample_03_embedding": {
+      "endpoint": "/v1/embeddings",
+      "port": 8090,
+      "method": "POST",
+      "request_body": {
+        "input": "반도체 수혜 분석",
+        "model": "bge-m3"
+      }
+    },
+    "sample_04_reranking": {
+      "endpoint": "/v1/embeddings",
+      "port": 8091,
+      "method": "POST",
+      "request_body": {
+        "input": ["쿼리 문장", "문서 1", "문서 2"],
+        "model": "bge-reranker-v2-m3"
+      }
+    },
+    "sample_05_structured_output": {
+      "endpoint": "/v1/chat/completions",
+      "port": 8081,
+      "method": "POST",
+      "request_body": {
+        "model": "qwen3.5-4b",
+        "messages": [
+          {"role": "system", "content": "다음 JSON Schema 규격에 맞춰 JSON 구조로만 답변하세요..."},
+          {"role": "user", "content": "삼성전자 3분기 목표가 8만원 매수 리포트 요약"}
+        ]
+      }
+    }
+  }
+}

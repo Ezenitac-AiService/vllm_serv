@@ -208,21 +208,22 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
 
     try:
         # Preflight guard: Set connect & response header timeouts to prevent infinite proxy hanging (FR-007)
-        proxy_timeout = httpx.Timeout(connect=5.0, read=120.0, write=30.0, pool=5.0)
-        async with httpx.AsyncClient(timeout=proxy_timeout) as direct_client:
-            req = direct_client.build_request(
-                request.method,
-                backend_url,
-                headers=request.headers.raw,
-                content=body_content if body_content is not None else request.stream()
+        client = _get_http_client(request)
+        headers = [(k, v) for k, v in request.headers.raw if k.lower() not in (b"host", b"content-length")]
+        req = client.build_request(
+            request.method,
+            backend_url,
+            headers=headers,
+            content=body_content if body_content is not None else request.stream()
+        )
+        r = await client.send(req, stream=True)
+        if r.status_code == 503:
+            await r.aclose()
+            raise HTTPException(
+                status_code=503,
+                detail=f"Model server at port {target_port} is currently initializing. Please try again in a few seconds.",
+                headers={"Retry-After": "5"}
             )
-            r = await direct_client.send(req, stream=True)
-            if r.status_code == 503:
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"Model server at port {target_port} is currently initializing. Please try again in a few seconds.",
-                    headers={"Retry-After": "5"}
-                )
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.TimeoutException):
         raise HTTPException(
             status_code=503,
