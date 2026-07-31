@@ -174,7 +174,7 @@ if [ "$USE_ZIP" -eq 1 ]; then
     rm -f "$ABS_OUTPUT_PATH"
     zip -r -q "$ABS_OUTPUT_PATH" . \
         -x "models/*" ".venv/*" ".bin/*" "logs/*" "build/*" "dist/*" \
-        ".legacy/*" "config/model_context_profiles.json" "benchmark_results.json" "*.jsonl" \
+        ".legacy/*" "specs/*" ".agents/*" ".specify/*" "config/model_context_profiles.json" "benchmark_results.json" "*.jsonl" \
         "__pycache__/*" "*.pyc" "*.pyo" ".git/*" ".github/*" ".pytest_cache/*" \
         "*.tar.gz" "*.zip" "*.pid" ".coverage" "htmlcov/*"
 else
@@ -186,6 +186,9 @@ else
         --exclude="build" \
         --exclude="dist" \
         --exclude=".legacy" \
+        --exclude="specs" \
+        --exclude=".agents" \
+        --exclude=".specify" \
         --exclude="config/model_context_profiles.json" \
         --exclude="benchmark_results.json" \
         --exclude="*.jsonl" \

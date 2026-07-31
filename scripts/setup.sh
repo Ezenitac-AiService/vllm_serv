@@ -198,13 +198,18 @@ VRAM_TOTAL=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader | head -n
 log_info "✓ NVIDIA GPU 감지 완료: $GPU_NAME (총 VRAM: $VRAM_TOTAL)"
 
 # FR-001 / FR-002 / FR-003: CPU & GPU 하드웨어 명령어 세트 감지 및 CMAKE_ARGS 동적 생성
-log_info "CPU 명령어 세트, GPU Compute Capability 및 플랫폼 프로필 감지 수행 중..."
-uv run python -m src.core.cpu_detector --report || true
+VENV_PYTHON="$BASE_DIR/.venv/bin/python"
+if [ ! -f "$VENV_PYTHON" ]; then
+    VENV_PYTHON="python3"
+fi
 
-MATCHED_PROFILE=$(uv run python -m src.core.cpu_detector --match-profile 2>/dev/null || echo "unknown-hardware-profile")
+log_info "CPU 명령어 세트, GPU Compute Capability 및 플랫폼 프로필 감지 수행 중..."
+"$VENV_PYTHON" -m src.core.cpu_detector --report || true
+
+MATCHED_PROFILE=$("$VENV_PYTHON" -m src.core.cpu_detector --match-profile 2>/dev/null || echo "unknown-hardware-profile")
 log_info "✓ 감지 및 매칭된 타겟 플랫폼 프로필: $MATCHED_PROFILE"
 
-DETECTED_CMAKE_ARGS=$(uv run python -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF")
+DETECTED_CMAKE_ARGS=$("$VENV_PYTHON" -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF")
 log_info "적용할 동적 CMAKE_ARGS: $DETECTED_CMAKE_ARGS"
 
 # FR-001..FR-005 (055-fix-migration-setup-fallback): 4단계 결정론적 우선순위 휠 복원 & 3중 정합성 검증 파이프라인
@@ -216,7 +221,7 @@ if [ -n "$WHEEL_PATH" ] && [ -f "$WHEEL_PATH" ]; then
     if uv pip install "$WHEEL_PATH" --force-reinstall --no-index; then
         log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
         GPU_CHECK_STATUS=0
-        GPU_CHECK_OUTPUT=$(uv run python -c "
+        GPU_CHECK_OUTPUT=$("$VENV_PYTHON" -c "
 import sys, llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
 if fn is None:
@@ -239,7 +244,7 @@ fi
 # Tier 2: 현지 파이썬 가상환경 (.venv) 기존 휠 3중 정합성 검증 (0.05s 고속 리턴)
 if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
     log_info "기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중..."
-    PRECHECK_GPU=$(uv run python -c "
+    PRECHECK_GPU=$("$VENV_PYTHON" -c "
 import llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
 print('True' if fn and fn() else 'False')
@@ -267,7 +272,7 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
         if uv pip install "$LEGACY_WHEEL" --force-reinstall --no-index --find-links wheels/legacy_i7_930; then
             log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
             GPU_CHECK_STATUS=0
-            GPU_CHECK_OUTPUT=$(uv run python -c "
+            GPU_CHECK_OUTPUT=$("$VENV_PYTHON" -c "
 import sys, llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
 if fn is None:
@@ -313,7 +318,7 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
     log_info "1단계: uv 휠 캐시 정상 여부 실측 검증 중..."
     CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python 2>/dev/null || true
 
-    if uv run python "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live 2>/dev/null; then
+    if "$VENV_PYTHON" "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live 2>/dev/null; then
         log_info "✓ [UV CACHE REUSED] 캐시 휠의 CUDA 가속 검증을 통과했습니다. 고속 재사용을 진행합니다."
     else
         log_warn "⚠️ [UV CACHE INVALID] uv 캐시 휠이 CPU 전용으로 감지되었습니다. 캐시 무효화(--no-cache-dir) 및 C++ 소스 재컴파일을 수행합니다..."
@@ -338,8 +343,8 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
     fi
 
     log_info "CUDA GPU 가속 지원 최종 검증 중 (llama_supports_gpu_offload())..."
-    if ! uv run python "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live; then
-        log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
+    if ! "$VENV_PYTHON" "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live; then
+        log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습다."
         log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
         uv pip uninstall -y llama-cpp-python 2>/dev/null || true
         exit 1
