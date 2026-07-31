@@ -92,3 +92,29 @@ def test_make_seed_pack_zip_format(tmp_path):
             assert "model_context_profiles.json" not in n, f"Excluded model_context_profiles.json found in zip: {n}"
             assert "benchmark_results.json" not in n, f"Excluded benchmark_results.json found in zip: {n}"
 
+
+def test_setup_firewall_ports_and_required_files():
+    repo_root = get_repo_root()
+    setup_path = os.path.join(repo_root, "scripts", "setup.sh")
+    fw_path = os.path.join(repo_root, "scripts", "configure_firewall.sh")
+
+    with open(setup_path, "r", encoding="utf-8") as f:
+        setup_content = f.read()
+
+    with open(fw_path, "r", encoding="utf-8") as f:
+        fw_content = f.read()
+
+    # 1. Required files check
+    assert "src/core/auxiliary_manager.py" in setup_content, (
+        "src/core/auxiliary_manager.py must be in REQUIRED_FILES of setup.sh"
+    )
+
+    # 2. Firewall ports check (8081 8089 8090 8091)
+    assert "8090" in setup_content and "8091" in setup_content, (
+        "Ports 8090 and 8091 must be included in setup.sh firewall rules"
+    )
+    assert "8090" in fw_content and "8091" in fw_content, (
+        "Ports 8090 and 8091 must be included in configure_firewall.sh"
+    )
+
+

@@ -36,7 +36,17 @@ def test_seed_pack_extraction_and_structure(tmp_path):
     assert (sandbox_dir / "scripts" / "make_seed_pack.sh").exists()
     assert (sandbox_dir / "src" / "api" / "server.py").exists()
     assert (sandbox_dir / "src" / "core" / "process_manager.py").exists()
+    assert (sandbox_dir / "src" / "core" / "auxiliary_manager.py").exists(), "auxiliary_manager.py must exist in extracted seed pack"
     assert (sandbox_dir / "config" / "model_catalog.json").exists()
+
+    # Verify model catalog contents in extracted sandbox
+    with open(sandbox_dir / "config" / "model_catalog.json", "r", encoding="utf-8") as f:
+        catalog_data = f.read()
+    assert "bge-m3" in catalog_data, "bge-m3 must be in model_catalog.json"
+    assert "bge-reranker-v2-m3" in catalog_data, "bge-reranker-v2-m3 must be in model_catalog.json"
+
+    # Verify make_seed_pack.sh stdout output contains auxiliary_manager verification
+    assert "auxiliary_manager.py" in res.stdout, "make_seed_pack.sh stdout must mention auxiliary_manager.py verification"
 
     # Verify excluded directories do NOT exist
     assert not (sandbox_dir / "models").exists()

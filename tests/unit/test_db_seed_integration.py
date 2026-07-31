@@ -33,3 +33,14 @@ def test_seed_database_execution():
     assert payload is not None
     assert "prompt_text" in payload
     assert "completion_text" in payload
+
+    # 4. Check new endpoints (/v1/embeddings and /v1/rerank) seeded in DB (054-seedpack-setup-sync)
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT endpoint FROM api_key_logs")
+    endpoints = [row[0] for row in cursor.fetchall()]
+    conn.close()
+
+    assert "/v1/embeddings" in endpoints, "Expected /v1/embeddings in seeded database metrics"
+    assert "/v1/rerank" in endpoints, "Expected /v1/rerank in seeded database metrics"

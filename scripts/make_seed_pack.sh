@@ -205,6 +205,13 @@ else
     log_warn "⚠️ scripts/configure_firewall.sh 가 아카이브에 포함되지 않았습니다. setup.sh 실행 시 자동 생성됩니다."
 fi
 
+if echo "$ARCHIVE_FILES" | grep "auxiliary_manager.py" > /dev/null; then
+    log_info "✓ 임베딩/리랭커 보조 수명주기 관리자(src/core/auxiliary_manager.py) 아카이브 수록 검증 완료"
+else
+    log_err "아카이브 검증 실패: src/core/auxiliary_manager.py 파일이 수록되지 않았습니다."
+    exit 1
+fi
+
 if echo "$ARCHIVE_FILES" | grep "wheels/legacy_i7_930" > /dev/null; then
     log_info "✓ i7-930 사전 빌드 휠 디렉터리(wheels/legacy_i7_930) 아카이브 수록 검증 완료"
 fi

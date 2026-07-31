@@ -10,12 +10,32 @@ import pytest
 import httpx
 
 
-@pytest.fixture
-def target_host_ip():
-    return os.environ.get("HOST_IP", "10.0.0.41")
+import multiprocessing
+import uvicorn
 
+SERVER_PORT = 8081
 
-@pytest.fixture
+def _run_e2e_server():
+    os.environ["MOCK_LLAMA_SERVER"] = "1"
+    from src.api.server import app
+    uvicorn.run(app, host="0.0.0.0", port=SERVER_PORT, log_level="warning")
+
+@pytest.fixture(scope="module", autouse=True)
+def e2e_test_server(target_host_ip):
+    # Check if 8081 is already bound
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    is_bound = sock.connect_ex((target_host_ip, SERVER_PORT)) == 0
+    sock.close()
+    if not is_bound:
+        proc = multiprocessing.Process(target=_run_e2e_server, daemon=True)
+        proc.start()
+        time.sleep(1.5)
+        yield
+        proc.terminate()
+    else:
+        yield
+
+@pytest.fixture(scope="session")
 def target_dashboard_url(target_host_ip):
     return f"http://{target_host_ip}:8081/dashboard/"
 

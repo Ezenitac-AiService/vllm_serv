@@ -106,6 +106,55 @@ def seed_database(reset: bool = False) -> None:
             "is_error": False,
             "prompt_text": "How do I clear local cache in browser?",
             "completion_text": "Press Ctrl+Shift+Delete (or Cmd+Shift+Delete on Mac) to open browser privacy settings and clear cached images and files."
+        },
+        # 054-seedpack-setup-sync: Embedding & Reranker Seed Metrics
+        {
+            "api_key": "sk-vllm-dev-demo1",
+            "endpoint": "/v1/embeddings",
+            "status_code": 200,
+            "prompt_tokens": 14,
+            "completion_tokens": 0,
+            "ttft_ms": 12.4,
+            "tps": 0.0,
+            "is_error": False,
+            "prompt_text": "BGE-M3 Dense Vector Embedding Sample Input",
+            "completion_text": "[Dense Vector float array (1024 dims) generated successfully]"
+        },
+        {
+            "api_key": "sk-vllm-mobile-app",
+            "endpoint": "/v1/embeddings",
+            "status_code": 200,
+            "prompt_tokens": 28,
+            "completion_tokens": 0,
+            "ttft_ms": 15.1,
+            "tps": 0.0,
+            "is_error": False,
+            "prompt_text": "Multilingual text representation for semantic retrieval",
+            "completion_text": "[Dense Vector float array (1024 dims) generated successfully]"
+        },
+        {
+            "api_key": "sk-vllm-mobile-app",
+            "endpoint": "/v1/rerank",
+            "status_code": 200,
+            "prompt_tokens": 32,
+            "completion_tokens": 0,
+            "ttft_ms": 18.2,
+            "tps": 0.0,
+            "is_error": False,
+            "prompt_text": "Query: BGE-Reranker test | Docs: ['doc1', 'doc2']",
+            "completion_text": "[Relevance scores: doc1=0.95, doc2=0.12]"
+        },
+        {
+            "api_key": "sk-vllm-dev-demo1",
+            "endpoint": "/v1/rerank",
+            "status_code": 200,
+            "prompt_tokens": 45,
+            "completion_tokens": 0,
+            "ttft_ms": 22.0,
+            "tps": 0.0,
+            "is_error": False,
+            "prompt_text": "Query: High-throughput reranking | Docs: ['passageA', 'passageB', 'passageC']",
+            "completion_text": "[Relevance scores: passageA=0.88, passageB=0.74, passageC=0.05]"
         }
     ]
 
