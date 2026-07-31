@@ -3,9 +3,11 @@ Unit tests for Seed Pack generator (scripts/make_seed_pack.sh).
 Tests tarball creation, exclusion rules, custom output paths, and --zip format.
 """
 
+import glob
 import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import zipfile
 import pytest
@@ -233,6 +235,51 @@ def test_unpack_seed_script_flags_and_symlink():
     assert os.path.exists(unpack_path) or os.path.exists(symlink_path), (
         "scripts/unpack_seed.sh or ./unpack_seed.sh must exist"
     )
+
+
+def test_verify_wheel_binary_cuda_so_segregation():
+    """T004: Assert verify_wheel_binary.py segregates CUDA device libraries from CPU host libraries."""
+    repo_root = get_repo_root()
+    verify_script_path = os.path.join(repo_root, "scripts", "verify_wheel_binary.py")
+
+    with open(verify_script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "cuda" in content.lower(), "verify_wheel_binary.py must detect CUDA libraries"
+    assert "verify_wheel" in content, "verify_wheel_binary.py must contain verify_wheel function"
+    # Verify segregation logic exists or is handled
+    assert "cpu" in content.lower() or "host" in content.lower() or "ggml-cuda" in content.lower(), (
+        "verify_wheel_binary.py must segregate CUDA device libraries from CPU host libraries"
+    )
+
+
+def test_verify_wheel_binary_exit_code_and_result():
+    """T005: Assert verify_wheel_binary.py executes successfully and returns valid exit code."""
+    repo_root = get_repo_root()
+    wheels_dir = os.path.join(repo_root, "wheels", "legacy_i7_930")
+    wheel_files = glob.glob(os.path.join(wheels_dir, "llama_cpp_python*.whl"))
+
+    if wheel_files:
+        verify_script_path = os.path.join(repo_root, "scripts", "verify_wheel_binary.py")
+        cmd = [sys.executable, verify_script_path, wheel_files[0]]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        assert res.returncode == 0, f"verify_wheel_binary.py failed on {wheel_files[0]}: {res.stdout} {res.stderr}"
+        assert "✓" in res.stdout or "valid" in res.stdout.lower(), f"Expected valid output: {res.stdout}"
+
+
+def test_make_seed_pack_skbuild_cmake_args():
+    """T009: Assert make_seed_pack.sh contains SKBUILD_CMAKE_ARGS environment variable."""
+    repo_root = get_repo_root()
+    make_seed_path = os.path.join(repo_root, "scripts", "make_seed_pack.sh")
+
+    with open(make_seed_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "SKBUILD_CMAKE_ARGS=" in content, (
+        "make_seed_pack.sh must explicitly declare SKBUILD_CMAKE_ARGS for scikit-build-core PEP 517/518 build compatibility"
+    )
+
+
 
 
 

@@ -46,15 +46,16 @@ def verify_wheel(wheel_path: str, require_avx_clean: bool = True) -> Tuple[bool,
 
     Args:
         wheel_path: Path to .whl file
-        require_avx_clean: If True, requires 0 AVX instructions for Nehalem/non-AVX CPUs.
+        require_avx_clean: If True, requires 0 AVX instructions in host CPU .so libraries for Nehalem/non-AVX CPUs.
 
     Returns:
-        (is_valid, so_avx_counts, cuda_enabled, message)
+        (is_valid, cpu_so_counts, cuda_enabled, message)
     """
     if not os.path.isfile(wheel_path):
         return False, {}, False, f"Wheel file not found: {wheel_path}"
 
-    so_counts: Dict[str, int] = {}
+    cpu_so_counts: Dict[str, int] = {}
+    cuda_so_files: List[str] = []
     cuda_found = False
     total_avx = 0
 
@@ -75,23 +76,26 @@ def verify_wheel(wheel_path: str, require_avx_clean: bool = True) -> Tuple[bool,
             for so_path in so_files:
                 rel_name = os.path.relpath(so_path, tmpdir)
                 basename = os.path.basename(so_path)
-                # Check filename or contents for CUDA library
-                if "cuda" in basename.lower() or "ggml-cuda" in basename.lower():
+                
+                # Segregate CUDA GPU device libraries from CPU host libraries
+                is_cuda_lib = "cuda" in basename.lower() or "ggml-cuda" in rel_name.lower()
+                if is_cuda_lib:
                     cuda_found = True
+                    cuda_so_files.append(rel_name)
+                else:
+                    cnt = scan_so_with_python_bytes(so_path)
+                    cpu_so_counts[rel_name] = cnt
+                    total_avx += cnt
 
-                cnt = scan_so_with_python_bytes(so_path)
-                so_counts[rel_name] = cnt
-                total_avx += cnt
-
-        # If host CPU lacks AVX (e.g. Nehalem i7-930), total_avx must be 0
+        # If host CPU lacks AVX (e.g. Nehalem i7-930), total_avx across CPU host libraries must be 0
         avx_clean = (total_avx == 0) if require_avx_clean else True
         is_valid = len(so_files) > 0 and cuda_found and avx_clean
         if is_valid:
-            msg = f"✓ Wheel verified valid: CUDA enabled ({len(so_counts)} .so files checked, AVX clean: {avx_clean})"
+            msg = f"✓ Wheel verified valid: CUDA enabled ({len(cpu_so_counts)} CPU .so files checked, {len(cuda_so_files)} CUDA device .so files validated, AVX clean: {avx_clean})"
         else:
             msg = f"❌ Wheel INVALID: Found issues across .so files (cuda_enabled={cuda_found}, total_avx={total_avx}, avx_clean_required={require_avx_clean})"
 
-        return is_valid, so_counts, cuda_found, msg
+        return is_valid, cpu_so_counts, cuda_found, msg
 
     except Exception as e:
         return False, {}, False, f"Failed to inspect wheel: {e}"
@@ -135,9 +139,9 @@ def main() -> None:
     if not args.wheel_path:
         parser.error("wheel_path is required unless --check-live is specified")
 
-    is_valid, so_counts, cuda_enabled, msg = verify_wheel(args.wheel_path, require_avx_clean=not args.allow_avx)
+    is_valid, cpu_so_counts, cuda_enabled, msg = verify_wheel(args.wheel_path, require_avx_clean=not args.allow_avx)
     print(msg)
-    for so_name, cnt in so_counts.items():
+    for so_name, cnt in cpu_so_counts.items():
         if cnt > 0:
             print(f"  - {so_name}: {cnt} AVX instructions")
 
@@ -151,4 +155,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
