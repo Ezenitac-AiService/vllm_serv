@@ -8,9 +8,9 @@ BGE M3 임베딩 서버(기본 포트: 8090)의 OpenAI 규격 API(/v1/embeddings
 """
 
 import httpx
-from common import check_server_health, print_section_header
+from common import check_server_health, get_server_host, print_section_header
 
-SERVER_HOST = "http://127.0.0.1"
+SERVER_HOST = get_server_host()
 EMBEDDING_PORT = 8090
 API_URL = f"{SERVER_HOST}:{EMBEDDING_PORT}/v1/embeddings"
 MODEL_NAME = "bge-m3"

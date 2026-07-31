@@ -9,10 +9,10 @@ vllm_serv 메인 인퍼런스 서버(기본 포트: 8081)의 OpenAI 호환 API(/
 
 import json
 import httpx
-from common import check_server_health, print_section_header
+from common import check_server_health, get_server_host, print_section_header
 
-# 1. 서버 설정 정의
-SERVER_HOST = "http://127.0.0.1"
+# 1. 동적 서버 호스트 및 설정 정의 (IP 하드코딩 제거)
+SERVER_HOST = get_server_host()
 MAIN_PORT = 8081
 API_URL = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 MODEL_NAME = "qwen3.5-4b"

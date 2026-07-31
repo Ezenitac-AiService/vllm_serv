@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "vllm_serv Seed Pack Inclusion Contract",
+  "type": "object",
+  "properties": {
+    "make_seed_pack": {
+      "inputs": {
+        "output_path": "dist/vllm_serv_seed.tar.gz",
+        "format": "tar.gz or zip"
+      },
+      "required_included_paths": [
+        "samples/common.py",
+        "samples/sample_01_chat.py",
+        "samples/sample_02_model_params.py",
+        "samples/sample_03_embedding.py",
+        "samples/sample_04_reranking.py",
+        "samples/sample_05_structured_output.py",
+        "specs/",
+        ".legacy/"
+      ],
+      "required_excluded_paths": [
+        "models/*",
+        ".venv/*",
+        ".bin/*",
+        "logs/*",
+        "build/*",
+        "dist/*",
+        "__pycache__/*",
+        ".git/*"
+      ]
+    }
+  }
+}

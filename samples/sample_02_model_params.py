@@ -9,9 +9,9 @@ vllm_serv 메인 서버(8081 포트)로 다양한 생성 파라미터(temperatur
 
 import json
 import httpx
-from common import check_server_health, print_section_header
+from common import check_server_health, get_server_host, print_section_header
 
-SERVER_HOST = "http://127.0.0.1"
+SERVER_HOST = get_server_host()
 MAIN_PORT = 8081
 API_URL = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 MODEL_NAME = "qwen3.5-4b"

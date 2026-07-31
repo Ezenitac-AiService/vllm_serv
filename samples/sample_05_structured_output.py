@@ -19,9 +19,9 @@ LEGACY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 if LEGACY_DIR not in sys.path:
     sys.path.insert(0, LEGACY_DIR)
 
-from common import check_server_health, print_section_header
+from common import check_server_health, get_server_host, print_section_header
 
-SERVER_HOST = "http://127.0.0.1"
+SERVER_HOST = get_server_host()
 MAIN_PORT = 8081
 API_URL = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 MODEL_NAME = "qwen3.5-4b"

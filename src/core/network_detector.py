@@ -1,6 +1,6 @@
 """Network interface detection and active IP scanning utility for multi-NIC environments.
 
-Feature: 025-server-ip-management
+Feature: 025-server-ip-management & 064-sample-scripts-real-ip
 """
 
 import os
@@ -63,7 +63,7 @@ class NetworkDetector:
                     for addr in addr_list:
                         if addr.family == socket.AF_INET:
                             ip = addr.address
-                            is_loopback = (ip == "127.0.0.1" or iface_name.startswith("lo"))
+                            is_loopback = (ip.startswith("127.") or iface_name.startswith("lo"))
                             is_usable = (
                                 is_active and
                                 not is_loopback and
@@ -87,7 +87,7 @@ class NetworkDetector:
                 hostname = socket.gethostname()
                 addr_info = socket.gethostbyname_ex(hostname)
                 for ip in addr_info[2]:
-                    is_loopback = (ip == "127.0.0.1")
+                    is_loopback = ip.startswith("127.")
                     is_usable = not is_loopback and not ip.startswith("169.254.")
                     interfaces.append(NetworkInterfaceInfo(
                         name="primary",
@@ -98,6 +98,25 @@ class NetworkDetector:
                     ))
             except Exception as e:
                 logger.warning(f"[NetworkDetector] socket interface scan fallback failed: {e}")
+
+        # Secondary fallback: UDP routing socket check if no usable LAN IP found yet
+        usable_found = any(iface.is_usable_lan for iface in interfaces)
+        if not usable_found:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(("10.255.255.255", 1))
+                ip = s.getsockname()[0]
+                s.close()
+                if ip and not ip.startswith("127.") and not ip.startswith("169.254."):
+                    interfaces.append(NetworkInterfaceInfo(
+                        name="udp_route",
+                        ip_address=ip,
+                        is_active=True,
+                        is_loopback=False,
+                        is_usable_lan=True
+                    ))
+            except Exception as e:
+                logger.warning(f"[NetworkDetector] UDP route interface scan fallback failed: {e}")
 
         return interfaces
 

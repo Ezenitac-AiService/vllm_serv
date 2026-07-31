@@ -8,9 +8,9 @@ BGE Reranker v2 M3 Cross-Encoder 서빙(기본 포트: 8091)을 사용하여 쿼
 """
 
 import httpx
-from common import check_server_health, print_section_header
+from common import check_server_health, get_server_host, print_section_header
 
-SERVER_HOST = "http://127.0.0.1"
+SERVER_HOST = get_server_host()
 RERANK_PORT = 8091
 API_URL = f"{SERVER_HOST}:{RERANK_PORT}/v1/embeddings"
 MODEL_NAME = "bge-reranker-v2-m3"

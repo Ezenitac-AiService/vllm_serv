@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "vllm_serv Real IP Dynamic Detection Contract",
+  "type": "object",
+  "properties": {
+    "get_server_host": {
+      "inputs": {
+        "SERVER_HOST": "Optional string from os.environ"
+      },
+      "outputs": {
+        "host_url": "String matching http://<detected_active_lan_ip> or http://127.0.0.1"
+      },
+      "resolution_order": [
+        "1. os.getenv('SERVER_HOST') or os.getenv('OPENAI_BASE_URL')",
+        "2. NetworkDetector.get_active_lan_ips() first usable LAN IPv4",
+        "3. Fallback http://127.0.0.1"
+      ]
+    }
+  }
+}

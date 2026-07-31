@@ -174,7 +174,7 @@ if [ "$USE_ZIP" -eq 1 ]; then
     rm -f "$ABS_OUTPUT_PATH"
     zip -r -q "$ABS_OUTPUT_PATH" . \
         -x "models/*" ".venv/*" ".bin/*" "logs/*" "build/*" "dist/*" \
-        ".legacy/*" "specs/*" ".agents/*" ".specify/*" "config/model_context_profiles.json" "benchmark_results.json" "*.jsonl" \
+        ".agents/*" ".specify/*" "config/model_context_profiles.json" "benchmark_results.json" "*.jsonl" \
         "__pycache__/*" "*.pyc" "*.pyo" ".git/*" ".github/*" ".pytest_cache/*" \
         "*.tar.gz" "*.zip" "*.pid" ".coverage" "htmlcov/*"
 else
@@ -185,8 +185,6 @@ else
         --exclude="logs" \
         --exclude="build" \
         --exclude="dist" \
-        --exclude=".legacy" \
-        --exclude="specs" \
         --exclude=".agents" \
         --exclude=".specify" \
         --exclude="config/model_context_profiles.json" \
@@ -214,7 +212,7 @@ fi
 SIZE_BYTES=$(stat -c%s "$ABS_OUTPUT_PATH" 2>/dev/null || stat -f%z "$ABS_OUTPUT_PATH" 2>/dev/null || echo "0")
 SIZE_KB=$((SIZE_BYTES / 1024))
 
-# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json & wheels/legacy_i7_930)
+# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json & wheels/legacy_i7_930 & samples/ & specs/)
 if [ "$USE_ZIP" -eq 1 ]; then
     ARCHIVE_FILES=$(unzip -l "$ABS_OUTPUT_PATH" 2>/dev/null || true)
 else
@@ -226,6 +224,18 @@ if ! echo "$ARCHIVE_FILES" | grep "platform_profiles.json" > /dev/null; then
     exit 1
 fi
 log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이브 수록 검증 완료"
+
+if ! echo "$ARCHIVE_FILES" | grep "samples/common.py" > /dev/null; then
+    log_err "아카이브 검증 실패: samples/common.py 파일이 수록되지 않았습니다."
+    exit 1
+fi
+log_info "✓ API 예제 코드(samples/common.py) 아카이브 수록 검증 완료"
+
+if ! echo "$ARCHIVE_FILES" | grep "specs/" > /dev/null; then
+    log_err "아카이브 검증 실패: specs/ 기능 명세 디렉터리가 수록되지 않았습니다."
+    exit 1
+fi
+log_info "✓ 기능 명세서(specs/) 아카이브 수록 검증 완료"
 
 if echo "$ARCHIVE_FILES" | grep "configure_firewall.sh" > /dev/null; then
     log_info "✓ 방화벽 설정 헬퍼(scripts/configure_firewall.sh) 아카이브 수록 검증 완료"
