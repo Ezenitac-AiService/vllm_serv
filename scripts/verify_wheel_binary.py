@@ -34,25 +34,22 @@ def scan_so_with_python_bytes(so_file: str) -> int:
         with open(so_file, "rb") as f:
             data = f.read()
 
-        if not data.startswith(b"\x7fELF"):
-            return 0
-
-        # Parse ELF64 section headers to extract executable code (.text / SHF_EXECINSTR)
-        import struct
-        is_64 = data[4] == 2
         exec_bytes = bytearray()
-        if is_64 and len(data) >= 64:
-            e_shoff = struct.unpack("<Q", data[40:48])[0]
-            e_shentsize = struct.unpack("<H", data[58:60])[0]
-            e_shnum = struct.unpack("<H", data[60:62])[0]
-            for i in range(e_shnum):
-                sh_start = e_shoff + i * e_shentsize
-                if sh_start + 40 <= len(data):
-                    sh_flags = struct.unpack("<Q", data[sh_start + 8 : sh_start + 16])[0]
-                    sh_offset = struct.unpack("<Q", data[sh_start + 24 : sh_start + 32])[0]
-                    sh_size = struct.unpack("<Q", data[sh_start + 32 : sh_start + 40])[0]
-                    if (sh_flags & 0x4) != 0 and sh_offset + sh_size <= len(data):  # SHF_EXECINSTR
-                        exec_bytes.extend(data[sh_offset : sh_offset + sh_size])
+        if data.startswith(b"\x7fELF"):
+            import struct
+            is_64 = data[4] == 2
+            if is_64 and len(data) >= 64:
+                e_shoff = struct.unpack("<Q", data[40:48])[0]
+                e_shentsize = struct.unpack("<H", data[58:60])[0]
+                e_shnum = struct.unpack("<H", data[60:62])[0]
+                for i in range(e_shnum):
+                    sh_start = e_shoff + i * e_shentsize
+                    if sh_start + 40 <= len(data):
+                        sh_flags = struct.unpack("<Q", data[sh_start + 8 : sh_start + 16])[0]
+                        sh_offset = struct.unpack("<Q", data[sh_start + 24 : sh_start + 32])[0]
+                        sh_size = struct.unpack("<Q", data[sh_start + 32 : sh_start + 40])[0]
+                        if (sh_flags & 0x4) != 0 and sh_offset + sh_size <= len(data):  # SHF_EXECINSTR
+                            exec_bytes.extend(data[sh_offset : sh_offset + sh_size])
 
         target_bytes = bytes(exec_bytes) if exec_bytes else data
 

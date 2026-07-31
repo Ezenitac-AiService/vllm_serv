@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Auxiliary Model API Contracts",
+  "description": "API Contracts for Embedding and Reranker models in vllm_serv",
+  "endpoints": {
+    "/v1/embeddings": {
+      "method": "POST",
+      "request": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": ["string", "array"]
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": ["input"]
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": ["list"]
+          },
+          "data": {
+            "type": "array"
+          }
+        },
+        "required": ["object", "data"]
+      }
+    },
+    "/rerank": {
+      "method": "POST",
+      "request": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["query", "documents"]
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  }
+}

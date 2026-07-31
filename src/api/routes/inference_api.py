@@ -207,7 +207,9 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
         body_content = await request.body()
 
     try:
-        async with httpx.AsyncClient(timeout=None) as direct_client:
+        # Preflight guard: Set connect & response header timeouts to prevent infinite proxy hanging (FR-007)
+        proxy_timeout = httpx.Timeout(connect=5.0, read=120.0, write=30.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=proxy_timeout) as direct_client:
             req = direct_client.build_request(
                 request.method,
                 backend_url,
@@ -215,12 +217,20 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 content=body_content if body_content is not None else request.stream()
             )
             r = await direct_client.send(req, stream=True)
-    except httpx.ConnectError:
+            if r.status_code == 503:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Model server at port {target_port} is currently initializing. Please try again in a few seconds.",
+                    headers={"Retry-After": "5"}
+                )
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.TimeoutException):
         raise HTTPException(
             status_code=503,
-            detail=f"Model server at port {target_port} is currently unreachable. Please try again later.",
-            headers={"Retry-After": "10"}
+            detail=f"Model server at port {target_port} is currently unreachable or loading. Please try again in a few seconds.",
+            headers={"Retry-After": "5"}
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

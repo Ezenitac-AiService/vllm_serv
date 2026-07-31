@@ -186,6 +186,18 @@ class ProcessManager:
     def get_vram_limit(self, model_id: str) -> int:
         return self.hardware_limits.get(model_id, 16000)
 
+    def is_embedding_model(self, model_id: str) -> bool:
+        resolved_id = self._config_manager.resolve_model_id(model_id)
+        preset = self.model_presets.get(resolved_id, {})
+        task_type = str(preset.get("task_type", "llm")).lower()
+        return task_type in ("embedding", "tasktypeenum.embedding")
+
+    def is_rerank_model(self, model_id: str) -> bool:
+        resolved_id = self._config_manager.resolve_model_id(model_id)
+        preset = self.model_presets.get(resolved_id, {})
+        task_type = str(preset.get("task_type", "llm")).lower()
+        return task_type in ("rerank", "reranking", "tasktypeenum.rerank")
+
     @staticmethod
     def parse_vram_offload_log(line: str, model_id: str) -> Optional[VramOffloadStatus]:
         layers_match = re.search(r"offloaded (\d+)/(\d+) layers to GPU", line)
@@ -509,7 +521,7 @@ class ProcessManager:
             if task_type in ("embedding", "tasktypeenum.embedding"):
                 cmd.append("--embedding")
             elif task_type in ("rerank", "reranking", "tasktypeenum.rerank"):
-                cmd.append("--reranking")
+                cmd.extend(["--reranking", "--embedding"])
         else:
             cmd = [
                 sys.executable, "-m", "llama_cpp.server",
@@ -526,10 +538,8 @@ class ProcessManager:
                 cmd.extend(["--chat_format", target_preset["chat_template"]])
             
             task_type = str(target_preset.get("task_type", "llm")).lower()
-            if task_type in ("embedding", "tasktypeenum.embedding"):
+            if task_type in ("embedding", "rerank", "reranking", "tasktypeenum.embedding", "tasktypeenum.rerank"):
                 cmd.extend(["--embedding", "true"])
-            elif task_type in ("rerank", "reranking", "tasktypeenum.rerank"):
-                cmd.extend(["--reranking", "true"])
 
         try:
             self.state = ProcessState(

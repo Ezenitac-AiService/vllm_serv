@@ -1,75 +1,10 @@
 {
-  "generated_at": "2026-07-31T02:29:17Z",
+  "generated_at": "2026-07-31T06:02:01Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
     "cuda_version": "13.0",
     "is_cuda_available": true
   },
-  "profiles": {
-    "Gemma 4 E2B": {
-      "max_context_length": 16384,
-      "recommended_context_length": 8192,
-      "peak_vram_mb": 2680,
-      "tpot_tok_per_sec": 16.92,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "Gemma 4 E4B": {
-      "max_context_length": 8192,
-      "recommended_context_length": 4096,
-      "peak_vram_mb": 4210,
-      "tpot_tok_per_sec": 14.61,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "Gemma 4 12B": {
-      "max_context_length": 4096,
-      "recommended_context_length": 2048,
-      "peak_vram_mb": 8900,
-      "tpot_tok_per_sec": 16.57,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "Qwen 3.5 2B": {
-      "max_context_length": 16384,
-      "recommended_context_length": 8192,
-      "peak_vram_mb": 2450,
-      "tpot_tok_per_sec": 24.88,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "Qwen 3.5 4B": {
-      "max_context_length": 8192,
-      "recommended_context_length": 4096,
-      "peak_vram_mb": 3950,
-      "tpot_tok_per_sec": 35.61,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "Qwen 3.5 9B": {
-      "max_context_length": 4096,
-      "recommended_context_length": 2048,
-      "peak_vram_mb": 7120,
-      "tpot_tok_per_sec": 20.91,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "BGE M3 (Q8_0 Embedding)": {
-      "max_context_length": 4096,
-      "recommended_context_length": 2048,
-      "peak_vram_mb": 0,
-      "tpot_tok_per_sec": 0.0,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    },
-    "BGE Reranker v2 M3 (Q8_0 Cross-Encoder)": {
-      "max_context_length": 4096,
-      "recommended_context_length": 2048,
-      "peak_vram_mb": 0,
-      "tpot_tok_per_sec": 0.0,
-      "scaling_tested": true,
-      "last_tested_at": "2026-07-31T02:29:17Z"
-    }
-  }
+  "profiles": {}
 }

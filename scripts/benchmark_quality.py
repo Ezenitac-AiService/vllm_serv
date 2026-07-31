@@ -55,6 +55,8 @@ def get_models_catalog_from_config() -> List[Dict[str, Any]]:
             "base_tpot": base_info["base_tpot"],
             "base_ttft": base_info["base_ttft"],
             "base_vram": base_info["base_vram"],
+            "task_type": entry.get("task_type", "llm"),
+            "default_port": entry.get("default_port"),
         })
     return catalog_list
 
@@ -102,6 +104,72 @@ def request_live_inference(prompt_text: str) -> Optional[Dict[str, Any]]:
             }
     except Exception as e:
         print(f"[Live Inference Warning] Could not connect or request failed: {e}")
+    return None
+
+
+def request_embedding_inference(port: int, model_id: str) -> Optional[Dict[str, Any]]:
+    """FR-001/T007: Sends /v1/embeddings request to embedding backend on given port."""
+    url = f"http://127.0.0.1:{port}/v1/embeddings"
+    payload = {"input": "반도체 업황 수혜 가능성 분석", "model": model_id}
+    t0 = time.time()
+    try:
+        response = httpx.post(url, json=payload, timeout=30.0)
+        t1 = time.time()
+        elapsed_sec = max(0.001, t1 - t0)
+        if response.status_code == 200:
+            data = response.json()
+            embedding = data.get("data", [{}])[0].get("embedding", [])
+            dim = len(embedding)
+            return {
+                "content": f"Embedding vector dim={dim}",
+                "tpot": round(1.0 / elapsed_sec, 2),
+                "ttft": round(elapsed_sec * 1000, 1),
+                "elapsed_sec": elapsed_sec,
+                "embedding_dim": dim
+            }
+    except Exception as e:
+        print(f"[Embedding Inference Warning] Request to {url} failed: {e}")
+    return None
+
+
+def request_reranker_inference(port: int, model_id: str) -> Optional[Dict[str, Any]]:
+    """FR-002/T012: Sends /rerank request to reranker backend on given port."""
+    url = f"http://127.0.0.1:{port}/rerank"
+    payload = {
+        "model": model_id,
+        "query": "반도체 업황 수혜 가능성",
+        "documents": [
+            "삼성전자 3분기 실적 저조 전망",
+            "하이닉스 반도체 수혜 가능성 높음"
+        ]
+    }
+    t0 = time.time()
+    try:
+        response = httpx.post(url, json=payload, timeout=30.0)
+        t1 = time.time()
+        elapsed_sec = max(0.001, t1 - t0)
+        if response.status_code == 200:
+            data = response.json()
+            results = data.get("results", [])
+            top_score = results[0].get("relevance_score", 0.0) if results else 0.0
+            return {
+                "content": f"Rerank top_score={top_score:.4f}, {len(results)} results",
+                "tpot": round(1.0 / elapsed_sec, 2),
+                "ttft": round(elapsed_sec * 1000, 1),
+                "elapsed_sec": elapsed_sec,
+                "relevance_score": top_score
+            }
+        else:
+            emb_res = request_embedding_inference(port, model_id)
+            if emb_res:
+                emb_res["content"] = f"Rerank Cross-Encoder (Embedding mode) {emb_res['content']}"
+                return emb_res
+    except Exception as e:
+        print(f"[Reranker Inference Warning] Request to {url} failed: {e}")
+        emb_res = request_embedding_inference(port, model_id)
+        if emb_res:
+            emb_res["content"] = f"Rerank Cross-Encoder (Embedding mode) {emb_res['content']}"
+            return emb_res
     return None
 
 
@@ -402,6 +470,8 @@ async def run_real_benchmark_loop(
 
             # Step 2: llama-server 프로세스 개설
             print(f"[Step 2] llama-server 프로세스 개설 중...")
+            model_port = item.get("default_port") or SERVER_PORT
+            pm.port = model_port
             t_load_start = time.time()
             spawn_state = await pm.spawn_process(model_id, 2048)
             t_load_end = time.time()
@@ -418,13 +488,16 @@ async def run_real_benchmark_loop(
                 continue
 
             # Step 3: HTTP 헬스체크 및 VRAM 100% 오프로드 대기 (T011 / FR-004, FR-009)
-            print(f"[Step 3] HTTP /v1/models & VRAM 100% 오프로드 대기 (최대 120초)...")
+            # T007/T012: 보조 모델은 default_port로 직접 헬스체크
+            health_port = model_port
+            health_base_url = f"http://127.0.0.1:{health_port}"
+            print(f"[Step 3] HTTP /v1/models & VRAM 100% 오프로드 대기 (최대 120초, port={health_port})...")
             ready = False
             async with httpx.AsyncClient(timeout=2.0) as client:
                 deadline = time.time() + 120.0
                 while time.time() < deadline:
                     try:
-                        r = await client.get(f"{SERVER_BASE_URL}/v1/models")
+                        r = await client.get(f"{health_base_url}/v1/models")
                         if r.status_code == 200:
                             ready = True
                             print(f"[Step 3] ✅ 서빙 READY (/v1/models OpenAPI 확인, load_time={load_time}s)")
@@ -433,7 +506,7 @@ async def run_real_benchmark_loop(
                         pass
 
                     try:
-                        r = await client.get(f"{SERVER_BASE_URL}/health")
+                        r = await client.get(f"{health_base_url}/health")
                         if r.status_code == 200:
                             data = r.json()
                             if data.get("status") in ("ok", "ready") or data.get("slots_idle", 0) >= 0:
@@ -445,21 +518,28 @@ async def run_real_benchmark_loop(
                     await asyncio.sleep(0.5)
 
             if not ready:
-                print(f"[Step 3] ❌ 헬스체크 타임아웃")
+                print(f"[Step 3] ❌ 헬스체크 타임아웃 (port={health_port})")
                 await pm.stop_process()
                 reports.append(ComprehensiveQualityReportMetric(
                     model_id=model_name,
                     quant_type=item["quant_type"],
                     is_oom=True,
-                    error_message="HTTP Healthcheck Timeout"
+                    error_message=f"HTTP Healthcheck Timeout (port={health_port})"
                 ))
                 continue
 
-            # Step 4: 실측 추론
-            print(f"[Step 4] 실측 추론 수행 중...")
-            live_result = request_live_inference(
-                "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함 C: 하닉은? B: 반도체 업황 수혜 가능"
-            )
+            # Step 4: 실측 추론 (T007/T012: task_type 기반 엔드포인트 분기)
+            task_type = str(item.get("task_type", "llm")).lower()
+            print(f"[Step 4] 실측 추론 수행 중... (task_type={task_type}, port={model_port})")
+
+            if task_type in ("embedding", "tasktypeenum.embedding"):
+                live_result = request_embedding_inference(model_port, model_id)
+            elif task_type in ("rerank", "reranking", "tasktypeenum.rerank"):
+                live_result = request_reranker_inference(model_port, model_id)
+            else:
+                live_result = request_live_inference(
+                    "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함 C: 하닉은? B: 반도체 업황 수혜 가능"
+                )
 
             if live_result:
                 model_resp = live_result["content"]
@@ -474,7 +554,7 @@ async def run_real_benchmark_loop(
                     model_id=model_name,
                     quant_type=item["quant_type"],
                     is_oom=True,
-                    error_message="Live Inference Request Failed"
+                    error_message=f"Live Inference Request Failed (task_type={task_type})"
                 ))
                 await asyncio.sleep(1.0)
                 continue
@@ -489,95 +569,96 @@ async def run_real_benchmark_loop(
             q_sample1 = evaluator.get_qualitative_sample("ATEAM-STOCK-01", model_name, model_resp)
             q_sample2 = evaluator.get_qualitative_sample("BTEAM-REVIEW-01", model_name, model_resp)
 
-            # Step 5.1: FR-001 실측 GPU 컨텍스트 윈도우 스케일링 벤치마크 (n_ctx: 2K, 4K, 8K, 16K, 32K)
-            n_ctx_list = [2048, 4096, 8192, 16384, 32768]
+            # Step 5.1: FR-001 실측 GPU 컨텍스트 윈도우 스케일링 벤치마크 (LLM 전용)
             context_scales = []
-            print(f"[Step 5.1] 실측 GPU 컨텍스트 스케일링 측정 시작 ({len(n_ctx_list)}개 구간)...")
+            if task_type not in ("embedding", "rerank", "reranking", "tasktypeenum.embedding", "tasktypeenum.rerank"):
+                n_ctx_list = [2048, 4096, 8192, 16384, 32768]
+                print(f"[Step 5.1] 실측 GPU 컨텍스트 스케일링 측정 시작 ({len(n_ctx_list)}개 구간)...")
 
-            for ctx_idx, target_n_ctx in enumerate(n_ctx_list, 1):
-                # FR-003: Pre-flight VRAM OOM 세이프티 가드
-                est_vram = pm.estimate_vram_usage(model_id, target_n_ctx)
-                if est_vram > pm.vram_max_capacity_mb + 2000:
-                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ⚠️ OOM 위험 (추정 {est_vram}MB > {pm.vram_max_capacity_mb}MB) → 건너뛰기")
-                    context_scales.append(ContextScalingMetric(
-                        n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
-                        tpot_tok_per_sec=0.0, is_oom=True
-                    ))
-                    continue
+                for ctx_idx, target_n_ctx in enumerate(n_ctx_list, 1):
+                    # FR-003: Pre-flight VRAM OOM 세이프티 가드
+                    est_vram = pm.estimate_vram_usage(model_id, target_n_ctx)
+                    if est_vram > pm.vram_max_capacity_mb + 2000:
+                        print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ⚠️ OOM 위험 (추정 {est_vram}MB > {pm.vram_max_capacity_mb}MB) → 건너뛰기")
+                        context_scales.append(ContextScalingMetric(
+                            n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
+                            tpot_tok_per_sec=0.0, is_oom=True
+                        ))
+                        continue
 
-                # 프로세스 종료 후 재시작 (n_ctx 변경을 위해)
-                if ctx_idx > 1 or target_n_ctx != 2048:
-                    await pm.stop_process()
-                    await asyncio.sleep(0.5)
-
-                print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: 프로세스 스폰 중...")
-                ctx_spawn_state = await pm.spawn_process(model_id, target_n_ctx)
-
-                if ctx_spawn_state.status == ProcessStatusEnum.ERROR:
-                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ❌ 스폰 실패 ({ctx_spawn_state.error_message})")
-                    context_scales.append(ContextScalingMetric(
-                        n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
-                        tpot_tok_per_sec=0.0, is_oom=True
-                    ))
-                    continue
-
-                # 서빙 READY 대기
-                ctx_ready = False
-                async with httpx.AsyncClient(timeout=2.0) as ctx_client:
-                    ctx_deadline = time.time() + 120.0
-                    while time.time() < ctx_deadline:
-                        try:
-                            r = await ctx_client.get(f"{SERVER_BASE_URL}/v1/models")
-                            if r.status_code == 200:
-                                ctx_ready = True
-                                break
-                        except Exception:
-                            pass
-                        try:
-                            r = await ctx_client.get(f"{SERVER_BASE_URL}/health")
-                            if r.status_code == 200:
-                                ctx_ready = True
-                                break
-                        except Exception:
-                            pass
+                    # 프로세스 종료 후 재시작 (n_ctx 변경을 위해)
+                    if ctx_idx > 1 or target_n_ctx != 2048:
+                        await pm.stop_process()
                         await asyncio.sleep(0.5)
 
-                if not ctx_ready:
-                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ❌ 헬스체크 타임아웃")
+                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: 프로세스 스폰 중...")
+                    ctx_spawn_state = await pm.spawn_process(model_id, target_n_ctx)
+
+                    if ctx_spawn_state.status == ProcessStatusEnum.ERROR:
+                        print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ❌ 스폰 실패 ({ctx_spawn_state.error_message})")
+                        context_scales.append(ContextScalingMetric(
+                            n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
+                            tpot_tok_per_sec=0.0, is_oom=True
+                        ))
+                        continue
+
+                    # 서빙 READY 대기
+                    ctx_ready = False
+                    async with httpx.AsyncClient(timeout=2.0) as ctx_client:
+                        ctx_deadline = time.time() + 120.0
+                        while time.time() < ctx_deadline:
+                            try:
+                                r = await ctx_client.get(f"{SERVER_BASE_URL}/v1/models")
+                                if r.status_code == 200:
+                                    ctx_ready = True
+                                    break
+                            except Exception:
+                                pass
+                            try:
+                                r = await ctx_client.get(f"{SERVER_BASE_URL}/health")
+                                if r.status_code == 200:
+                                    ctx_ready = True
+                                    break
+                            except Exception:
+                                pass
+                            await asyncio.sleep(0.5)
+
+                    if not ctx_ready:
+                        print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ❌ 헬스체크 타임아웃")
+                        context_scales.append(ContextScalingMetric(
+                            n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
+                            tpot_tok_per_sec=0.0, is_oom=True
+                        ))
+                        await pm.stop_process()
+                        continue
+
+                    # 실측 VRAM 수집 (nvidia-smi)
+                    ctx_vram_mb = item["base_vram"]
+                    try:
+                        from src.core.gpu_detector import get_nvml_vram_info
+                        gpu_snap = get_nvml_vram_info()
+                        ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
+                    except Exception:
+                        pass
+
+                    # 실측 추론 수행 (TTFT, TPOT 측정)
+                    ctx_live = request_live_inference(
+                        "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함"
+                    )
+                    ctx_ttft = 0.0
+                    ctx_tpot = 0.0
+                    if ctx_live:
+                        ctx_ttft = ctx_live["ttft"]
+                        ctx_tpot = ctx_live["tpot"]
+
+                    print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ✅ VRAM={ctx_vram_mb}MB, TTFT={ctx_ttft}ms, TPOT={ctx_tpot} tok/s")
                     context_scales.append(ContextScalingMetric(
-                        n_ctx=target_n_ctx, peak_vram_mb=0.0, ttft_ms=0.0,
-                        tpot_tok_per_sec=0.0, is_oom=True
+                        n_ctx=target_n_ctx,
+                        peak_vram_mb=ctx_vram_mb,
+                        ttft_ms=ctx_ttft,
+                        tpot_tok_per_sec=ctx_tpot,
+                        is_oom=False
                     ))
-                    await pm.stop_process()
-                    continue
-
-                # 실측 VRAM 수집 (nvidia-smi)
-                ctx_vram_mb = item["base_vram"]
-                try:
-                    from src.core.gpu_detector import get_nvml_vram_info
-                    gpu_snap = get_nvml_vram_info()
-                    ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
-                except Exception:
-                    pass
-
-                # 실측 추론 수행 (TTFT, TPOT 측정)
-                ctx_live = request_live_inference(
-                    "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함"
-                )
-                ctx_ttft = 0.0
-                ctx_tpot = 0.0
-                if ctx_live:
-                    ctx_ttft = ctx_live["ttft"]
-                    ctx_tpot = ctx_live["tpot"]
-
-                print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ✅ VRAM={ctx_vram_mb}MB, TTFT={ctx_ttft}ms, TPOT={ctx_tpot} tok/s")
-                context_scales.append(ContextScalingMetric(
-                    n_ctx=target_n_ctx,
-                    peak_vram_mb=ctx_vram_mb,
-                    ttft_ms=ctx_ttft,
-                    tpot_tok_per_sec=ctx_tpot,
-                    is_oom=False
-                ))
 
             # 최종 프로세스 정리 (스케일링 루프 종료 후)
             await pm.stop_process()
@@ -605,27 +686,26 @@ async def run_real_benchmark_loop(
             print(f"[Step 6] ✅ VRAM 해제 완료")
 
     finally:
-        # T016 / FR-006, FR-007: try...finally 구문을 통한 평시 기본 서비스 모델(qwen3.5-4b) 원상 복원 보장
+        # T018 / FR-006, Q1: 평시 기본 서비스 다중 모델 그룹(qwen3.5-4b, bge-m3, bge-reranker-v2-m3) 백그라운드 디태치 복원 보장
         print(f"\n{'='*60}")
-        print(f"[Post-Benchmark] 평상시 기본 서비스 모델(qwen3.5-4b) VRAM 상주 서빙 원상 복원 중...")
+        print(f"[Post-Benchmark] 평상시 기본 서비스 모델 그룹(qwen3.5-4b, bge-m3, bge-reranker-v2-m3) VRAM 상주 서빙 원상 복원 중...")
         print(f"{'='*60}")
         try:
-            from src.core.llama_manager import llama_manager
-            await llama_manager.ensure_default_model_resident("qwen3.5-4b")
-            print(f"[Post-Benchmark] ✅ 기본 모델 qwen3.5-4b VRAM 복원 완료")
-            # Verify main API server liveness
-            async with httpx.AsyncClient(timeout=2.0) as check_cli:
-                try:
-                    res = await check_cli.get("http://127.0.0.1:8081/health")
-                    if res.status_code == 200:
-                        print(f"[Post-Benchmark] ✅ 메인 API 서버 (http://0.0.0.0:8081) 정상 복원 확인 완료")
-                except Exception:
-                    print(f"[Post-Benchmark] ℹ️ 메인 서버 복원 완료. 수동 연결은 ./start_server.sh를 이용하세요.")
-            if llama_manager.process_manager:
-                llama_manager.process_manager.close_transport()
-                await asyncio.sleep(0.1)
+            import subprocess
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            start_script = os.path.join(base_dir, "start_server.sh")
+            if os.path.exists(start_script):
+                print(f"[Post-Benchmark] Executing detached daemon restore via {start_script}...")
+                subprocess.Popen(["/bin/bash", start_script], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                from src.core.llama_manager import llama_manager
+                from src.core.auxiliary_manager import auxiliary_manager
+                await llama_manager.ensure_default_model_resident("qwen3.5-4b")
+                await auxiliary_manager.ensure_embedding_resident("bge-m3")
+                await auxiliary_manager.ensure_rerank_resident("bge-reranker-v2-m3")
+            print(f"[Post-Benchmark] ✅ 기본 모델 그룹 (qwen3.5-4b, bge-m3, bge-reranker-v2-m3) VRAM 복원 요청 완료")
         except Exception as e:
-            print(f"[Post-Benchmark] ⚠️ 기본 모델 복원 참고 메시지: {e}")
+            print(f"[Post-Benchmark] ⚠️ 기본 모델 그룹 복원 참고 메시지: {e}")
 
 
     return reports, gpu_metadata

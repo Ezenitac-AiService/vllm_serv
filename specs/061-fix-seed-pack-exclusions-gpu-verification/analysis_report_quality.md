@@ -1,7 +1,7 @@
 # Qwen 3.5 vs Gemma 4 3차원 종합 품질-속도-VRAM 교차 비교 분석 보고서
 
 **Feature Branch**: `013-enhance-benchmark-report`
-**Generated Date**: 2026-07-31 05:52:04
+**Generated Date**: 2026-07-31 04:31:54
 **Execution Mode**: `STATIC PROFILING & FALLBACK SAMPLE MODE`
 **Golden Reference Ground Truth**: `data/golden_dataset.json` (Teacher LLM: Antigravity Gemini 3.6 Flash)
 
@@ -23,8 +23,8 @@
 | Evaluation Aspect | Recommended Model Preset | Metric Value | Rationale |
 |-------------------|--------------------------|--------------|-----------|
 | **최고 품질 (Best Quality)** | `Qwen 3.5 2B` | `Quality Score: 3.3 / 5.0` | 슬롯 추출 정밀도 및 정제문 문맥 완성도 최고 수준 |
-| **최고 속도 가성비 (Quality/Speed)** | `BGE Reranker v2 M3 (Q8_0 Cross-Encoder)` | `Index: 0.99` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
-| **최고 메모리 가성비 (Quality/VRAM)** | `BGE M3 (Q8_0 Embedding)` | `Index: 2.03` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
+| **최고 속도 가성비 (Quality/Speed)** | `Gemma 4 12B` | `Index: 0.8` | 높은 TPOT 속도 대비 탁월한 품질 점수 유지 |
+| **최고 메모리 가성비 (Quality/VRAM)** | `Qwen 3.5 2B` | `Index: 1.38` | 11GB VRAM 제약 환경에서 최소 메모리 점유 대비 최대 품질 제공 |
 
 ---
 
@@ -32,14 +32,14 @@
 
 | Model Lineup | Quant | TTFT (ms) | TPOT (tok/s) | Peak VRAM (MB) | Quality Score (1~5) | Quality/Speed Index | Quality/VRAM Index | Status |
 |--------------|-------|-----------|--------------|----------------|---------------------|---------------------|--------------------|--------|
-| **Gemma 4 E2B** | `q4_k_m` | `178.2` | `52.74` | `2680` | **`1.2`** | `0.23` | `0.46` | `✅ SUCCESS` |
-| **Gemma 4 E4B** | `q4_k_m` | `220.8` | `40.76` | `4210` | **`1.67`** | `0.41` | `0.41` | `✅ SUCCESS` |
-| **Gemma 4 12B** | `q4_k_m` | `3808.0` | `25.84` | `8900` | **`2.05`** | `0.79` | `0.24` | `✅ SUCCESS` |
-| **Qwen 3.5 2B** | `q4_k_m` | `188.0` | `70.23` | `2450` | **`3.3`** | `0.47` | `1.38` | `✅ SUCCESS` |
-| **Qwen 3.5 4B** | `q4_k_m` | `327.7` | `48.21` | `3950` | **`3.3`** | `0.68` | `0.86` | `✅ SUCCESS` |
-| **Qwen 3.5 9B** | `q4_k_m` | `2813.0` | `36.4` | `7120` | **`1.2`** | `0.33` | `0.17` | `✅ SUCCESS` |
-| **BGE M3 (Q8_0 Embedding)** | `q8_0` | `76.2` | `13.13` | `605` | **`1.2`** | `0.91` | `2.03` | `✅ SUCCESS` |
-| **BGE Reranker v2 M3 (Q8_0 Cross-Encoder)** | `q8_0` | `82.4` | `12.14` | `606` | **`1.2`** | `0.99` | `2.03` | `✅ SUCCESS` |
+| **Gemma 4 E2B** | `q4_k_m` | `216.9` | `43.35` | `2680` | **`1.2`** | `0.28` | `0.46` | `✅ SUCCESS` |
+| **Gemma 4 E4B** | `q4_k_m` | `222.4` | `40.47` | `4210` | **`1.67`** | `0.41` | `0.41` | `✅ SUCCESS` |
+| **Gemma 4 12B** | `q4_k_m` | `3844.0` | `25.6` | `8900` | **`2.05`** | `0.8` | `0.24` | `✅ SUCCESS` |
+| **Qwen 3.5 2B** | `q4_k_m` | `218.3` | `60.47` | `2450` | **`3.3`** | `0.55` | `1.38` | `✅ SUCCESS` |
+| **Qwen 3.5 4B** | `q4_k_m` | `329.1` | `48.01` | `3950` | **`3.3`** | `0.69` | `0.86` | `✅ SUCCESS` |
+| **Qwen 3.5 9B** | `q4_k_m` | `2909.3` | `35.2` | `7120` | **`1.2`** | `0.34` | `0.17` | `✅ SUCCESS` |
+| **BGE M3 (Q8_0 Embedding)** | `q8_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (Live Inference Request Failed)` |
+| **BGE Reranker v2 M3 (Q8_0 Cross-Encoder)** | `q8_0` | `0.0` | `0.0` | `0` | **`5.0`** | `0.0` | `0.0` | `❌ FAILED (HTTP Healthcheck Timeout)` |
 
 ---
 
@@ -526,95 +526,19 @@ Thinking Process:
 <details>
 <summary>🔍 <b>[BGE M3 (Q8_0 Embedding)] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `BGE M3 (Q8_0 Embedding)` (Quant: `q8_0`, Quality: `1.2/5.0`)
+### Model: `BGE M3 (Q8_0 Embedding)` (Quant: `q8_0`, Quality: `5.0/5.0`)
 
-#### Sample 1: `ATEAM-STOCK-01`
-- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
+- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: Live Inference Request Failed*
 
-**[1. User Input Prompt]**
-```text
-A: 삼전 오늘 7만전자 뚫는거야? B: 걔네 3분기 실적 생각하면 힘들듯 C: 하닉은 어때? B: 이건 반도체 업황 개선 수혜 받아 가능해보임
-```
-
-**[2. Golden Reference Ground Truth]**
-```json
-Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대해 기대감을 드러냄."}, {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 우려함."}, {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스의 주가 전망에 대해 질문함."}, {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 반도체 업황 개선으로 상승 가능하다고 판단함."}]
-```
-
-**[3. Actual Model Output Response]**
-```text
-Embedding vector dim=1024
-```
-
----
-#### Sample 2: `BTEAM-REVIEW-01`
-- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
-
-**[1. User Input Prompt]**
-```text
-트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요! 가격도 합리적이네요. 다만 매장 청결도가 별로였고 서빙 직원이 불친절해서 아쉬웠습니다.
-```
-
-**[2. Golden Reference Ground Truth]**
-```json
-Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment": "positive", "sentence": "트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요!", "refined_sentence": "트러플 파스타의 생면 식감과 진한 풍미가 매우 만족스럽다."}, {"category": "가격", "target": "트러플 파스타", "sentiment": "positive", "sentence": "가격도 합리적이네요.", "refined_sentence": "트러플 파스타의 가격이 합리적이다."}, {"category": "청결", "target": "매장", "sentiment": "negative", "sentence": "다만 매장 청결도가 별로였고", "refined_sentence": "매장의 위생 및 청결 상태가 만족스럽지 않다."}, {"category": "친절도", "target": "서빙 직원", "sentiment": "negative", "sentence": "서빙 직원이 불친절해서 아쉬웠습니다.", "refined_sentence": "서빙 직원의 응대 태도가 불친절하여 아쉽다."}]
-```
-
-**[3. Actual Model Output Response]**
-```text
-Embedding vector dim=1024
-```
-
----
 </details>
 
 <details>
 <summary>🔍 <b>[BGE Reranker v2 M3 (Q8_0 Cross-Encoder)] 실측 답변 텍스트 & 골든 데이터셋 1:1 비교 (클릭하여 펼치기)</b></summary>
 
-### Model: `BGE Reranker v2 M3 (Q8_0 Cross-Encoder)` (Quant: `q8_0`, Quality: `1.2/5.0`)
+### Model: `BGE Reranker v2 M3 (Q8_0 Cross-Encoder)` (Quant: `q8_0`, Quality: `5.0/5.0`)
 
-#### Sample 1: `ATEAM-STOCK-01`
-- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
+- *실측 답변 비교 샘플 데이터 미수집 또는 모델 로드 실패: HTTP Healthcheck Timeout*
 
-**[1. User Input Prompt]**
-```text
-A: 삼전 오늘 7만전자 뚫는거야? B: 걔네 3분기 실적 생각하면 힘들듯 C: 하닉은 어때? B: 이건 반도체 업황 개선 수혜 받아 가능해보임
-```
-
-**[2. Golden Reference Ground Truth]**
-```json
-Expected Slots: [{"speaker": "A", "target": "삼성전자", "sentiment": "positive", "category": "투자가치", "refined_sentence": "A가 삼성전자의 주가 7만 원 돌파 가능성에 대해 기대감을 드러냄."}, {"speaker": "B", "target": "삼성전자", "sentiment": "negative", "category": "실적예상", "refined_sentence": "B가 삼성전자의 3분기 실적 저조를 우려함."}, {"speaker": "C", "target": "SK하이닉스", "sentiment": "neutral", "category": "전망문의", "refined_sentence": "C가 SK하이닉스의 주가 전망에 대해 질문함."}, {"speaker": "B", "target": "SK하이닉스", "sentiment": "positive", "category": "업황수혜", "refined_sentence": "B가 SK하이닉스는 메모리 반도체 업황 개선으로 상승 가능하다고 판단함."}]
-```
-
-**[3. Actual Model Output Response]**
-```text
-Rerank Cross-Encoder (Embedding mode) Embedding vector dim=10
-```
-
----
-#### Sample 2: `BTEAM-REVIEW-01`
-- **오류 분류 태그**: `[JSON Format Failure], [Omission / Slot Mismatch]`
-- **ROUGE-L F1**: `0.24` | **Exact Match**: `False` | **JSON Schema Valid**: `False`
-
-**[1. User Input Prompt]**
-```text
-트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요! 가격도 합리적이네요. 다만 매장 청결도가 별로였고 서빙 직원이 불친절해서 아쉬웠습니다.
-```
-
-**[2. Golden Reference Ground Truth]**
-```json
-Expected Slots: [{"category": "맛", "target": "트러플 파스타", "sentiment": "positive", "sentence": "트러플 파스타는 면도 생면이고 진해서 너무 맛있었어요!", "refined_sentence": "트러플 파스타의 생면 식감과 진한 풍미가 매우 만족스럽다."}, {"category": "가격", "target": "트러플 파스타", "sentiment": "positive", "sentence": "가격도 합리적이네요.", "refined_sentence": "트러플 파스타의 가격이 합리적이다."}, {"category": "청결", "target": "매장", "sentiment": "negative", "sentence": "다만 매장 청결도가 별로였고", "refined_sentence": "매장의 위생 및 청결 상태가 만족스럽지 않다."}, {"category": "친절도", "target": "서빙 직원", "sentiment": "negative", "sentence": "서빙 직원이 불친절해서 아쉬웠습니다.", "refined_sentence": "서빙 직원의 응대 태도가 불친절하여 아쉽다."}]
-```
-
-**[3. Actual Model Output Response]**
-```text
-Rerank Cross-Encoder (Embedding mode) Embedding vector dim=10
-```
-
----
 </details>
 
 ---
@@ -623,12 +547,12 @@ Rerank Cross-Encoder (Embedding mode) Embedding vector dim=10
 
 | Model Lineup | Supported `n_ctx` Steps | 2,048 VRAM / TTFT | 4,096 VRAM / TTFT | 8,192 VRAM / TTFT | 16,384 VRAM / TTFT | 32,768 VRAM / TTFT | VRAM Safety Threshold |
 |--------------|-------------------------|-------------------|-------------------|-------------------|--------------------|--------------------|-----------------------|
-| **Gemma 4 E2B** | `2K ~ 32K` | `2291.0MB / 124.9ms` | `2347.0MB / 122.7ms` | `2459.0MB / 125.6ms` | `2683.0MB / 127.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Gemma 4 E4B** | `2K ~ 32K` | `3855.0MB / 130.8ms` | `4015.0MB / 134.0ms` | `4335.0MB / 131.3ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Gemma 4 12B** | `2K ~ 32K` | `8547.0MB / 2134.5ms` | `9291.0MB / 2141.8ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`8,192 (Max Limit)`** |
-| **Qwen 3.5 2B** | `2K ~ 32K` | `2023.0MB / 121.7ms` | `2047.0MB / 129.8ms` | `2095.0MB / 120.7ms` | `2191.0MB / 123.9ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 4B** | `2K ~ 32K` | `3489.0MB / 441.6ms` | `3553.0MB / 439.3ms` | `3693.0MB / 442.3ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
-| **Qwen 3.5 9B** | `2K ~ 32K` | `5753.0MB / 2817.7ms` | `5817.0MB / 2809.8ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`16,384 (Safe)`** |
+| **Gemma 4 E2B** | `2K ~ 32K` | `2291.0MB / 121.0ms` | `2347.0MB / 122.4ms` | `2459.0MB / 125.0ms` | `2683.0MB / 120.9ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Gemma 4 E4B** | `2K ~ 32K` | `3855.0MB / 124.3ms` | `4015.0MB / 124.6ms` | `4335.0MB / 124.7ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Gemma 4 12B** | `2K ~ 32K` | `8547.0MB / 2189.0ms` | `9291.0MB / 2147.5ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`8,192 (Max Limit)`** |
+| **Qwen 3.5 2B** | `2K ~ 32K` | `2023.0MB / 133.1ms` | `2047.0MB / 129.7ms` | `2095.0MB / 121.6ms` | `2191.0MB / 130.9ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 4B** | `2K ~ 32K` | `3489.0MB / 441.9ms` | `3553.0MB / 438.3ms` | `3693.0MB / 434.5ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`32,768 (Safe)`** |
+| **Qwen 3.5 9B** | `2K ~ 32K` | `5753.0MB / 2853.1ms` | `5817.0MB / 2817.1ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | `0.0MB / 0.0ms` | **`16,384 (Safe)`** |
 | **BGE M3 (Q8_0 Embedding)** | `2K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
 | **BGE Reranker v2 M3 (Q8_0 Cross-Encoder)** | `2K ~ 32K` | `N/A` | `N/A` | `N/A` | `N/A` | `N/A` | **`32,768 (Safe)`** |
 

@@ -124,6 +124,21 @@ class AuxiliaryModelManager:
                         return True
                 except Exception:
                     pass
+
+                try:
+                    resp = await client.get(f"http://127.0.0.1:{port}/v1/models", timeout=2.0)
+                    if resp.status_code == 200:
+                        pm.state = ProcessState(
+                            status=ProcessStatusEnum.READY,
+                            model_id=pm.state.model_id,
+                            port=port,
+                            pid=pm.process.pid if pm.process else None,
+                            vram_offloaded=True,
+                            vram_offloaded_100pct=True
+                        )
+                        return True
+                except Exception:
+                    pass
                 await asyncio.sleep(0.5)
 
         pm.state = ProcessState(
