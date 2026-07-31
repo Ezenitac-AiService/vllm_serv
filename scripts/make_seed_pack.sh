@@ -129,7 +129,7 @@ fi
 if [ "$BUILD_LEGACY" -eq 1 ]; then
     log_info "i7-930 (Nehalem) 전용 사전 컴파일 휠 패키지 검증 수행 중..."
     mkdir -p wheels/legacy_i7_930
-    EXISTING_WHEEL=$(ls wheels/legacy_i7_930/*.whl 2>/dev/null | head -n 1 || true)
+    EXISTING_WHEEL=$(ls wheels/legacy_i7_930/llama_cpp_python*.whl 2>/dev/null | head -n 1 || true)
     NEED_REBUILD=1
 
     if [ -n "$EXISTING_WHEEL" ]; then
@@ -144,15 +144,27 @@ if [ "$BUILD_LEGACY" -eq 1 ]; then
 
     if [ "$NEED_REBUILD" -eq 1 ]; then
         if command -v uv &> /dev/null; then
-            log_info "i7-930 전용 휠 생성 중 (CFLAGS=-march=x86-64, sm_61 GTX1070)..."
+            log_info "i7-930 전용 휠 생성 중 (CFLAGS=-march=x86-64, sm_61 GTX1070, --no-cache-dir)..."
             FORCE_CMAKE=1 \
             CFLAGS="-march=x86-64" \
             CMAKE_ARGS="-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DGGML_NATIVE=OFF -DCMAKE_CUDA_ARCHITECTURES=61" \
-            uv run pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 --no-build-isolation || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
+            uv run pip wheel "llama-cpp-python[server]" --no-binary llama-cpp-python --wheel-dir wheels/legacy_i7_930 --no-cache-dir || log_warn "i7-930 사전 휠 컴파일 실패 (온디맨드 컴파일 Fallback 적용 예정)"
+
+            NEW_WHEEL=$(ls wheels/legacy_i7_930/llama_cpp_python*.whl 2>/dev/null | head -n 1 || true)
+            if [ -n "$NEW_WHEEL" ]; then
+                log_info "Post-Build 3중 실측 검증 수행 중 ($NEW_WHEEL)..."
+                if uv run python scripts/verify_wheel_binary.py "$NEW_WHEEL" 2>/dev/null; then
+                    log_info "✓ [POST-BUILD SUCCESS] 생성된 i7-930 휠 검증 통과 (AVX=0, CUDA=1)."
+                else
+                    log_err "❌ [POST-BUILD FAIL] 생성된 i7-930 휠 검증 실패 (AVX 유입 또는 CUDA 미지원). 결함 휠을 자동 삭제(rm -f)합니다."
+                    rm -f wheels/legacy_i7_930/*.whl
+                fi
+            fi
         else
             log_warn "uv 패키지 매니저 미설치로 i7-930 휠 사전 컴파일 스킵 (기존 아티팩트 활용)"
         fi
     fi
+
 fi
 
 # 2. 아카이브 생성

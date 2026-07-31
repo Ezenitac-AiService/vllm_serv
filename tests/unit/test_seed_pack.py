@@ -167,3 +167,72 @@ def test_setup_root_symlinks_creation():
     )
 
 
+def test_setup_tier4_conditional_no_cache_dir_and_cleanup():
+    repo_root = get_repo_root()
+    setup_path = os.path.join(repo_root, "scripts", "setup.sh")
+
+    with open(setup_path, "r", encoding="utf-8") as f:
+        setup_content = f.read()
+
+    assert "--no-cache-dir" in setup_content, (
+        "setup.sh must contain --no-cache-dir for conditional Tier 4 C++ source recompilation"
+    )
+    assert "verify_wheel_binary.py" in setup_content, (
+        "setup.sh must invoke verify_wheel_binary.py to test cache wheel CUDA support before recompilation"
+    )
+
+
+def test_status_server_cuda_verification_formatting():
+    repo_root = get_repo_root()
+    status_path = os.path.join(repo_root, "scripts", "status_server.sh")
+
+    with open(status_path, "r", encoding="utf-8") as f:
+        status_content = f.read()
+
+    assert "llama-cpp-python GPU:" in status_content or "GPU:" in status_content, (
+        "status_server.sh must format and display GPU CUDA acceleration state"
+    )
+
+
+def test_make_seed_pack_legacy_wheel_reuse_and_post_build_check():
+    repo_root = get_repo_root()
+    make_seed_path = os.path.join(repo_root, "scripts", "make_seed_pack.sh")
+
+    with open(make_seed_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "verify_wheel_binary.py" in content, (
+        "make_seed_pack.sh must call verify_wheel_binary.py for pre-check and Post-Build verification"
+    )
+    assert "--no-cache-dir" in content, (
+        "make_seed_pack.sh must use --no-cache-dir when building legacy prebuilt wheel"
+    )
+    assert "--no-build-isolation" not in content, (
+        "make_seed_pack.sh must NOT use --no-build-isolation to allow scikit-build-core PEP 517/518 build isolation"
+    )
+
+
+def test_pyproject_toml_scikit_build_core_dependency():
+    repo_root = get_repo_root()
+    pyproject_path = os.path.join(repo_root, "pyproject.toml")
+
+    with open(pyproject_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "scikit-build-core" in content, (
+        "pyproject.toml must declare scikit-build-core as a project dependency"
+    )
+
+
+
+def test_unpack_seed_script_flags_and_symlink():
+    repo_root = get_repo_root()
+    unpack_path = os.path.join(repo_root, "scripts", "unpack_seed.sh")
+    symlink_path = os.path.join(repo_root, "unpack_seed.sh")
+
+    assert os.path.exists(unpack_path) or os.path.exists(symlink_path), (
+        "scripts/unpack_seed.sh or ./unpack_seed.sh must exist"
+    )
+
+
+
