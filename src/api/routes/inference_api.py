@@ -315,8 +315,15 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 except Exception:
                     pass
 
+    # Filter out hop-by-hop & content length/encoding headers to prevent Uvicorn h11 LocalProtocolError
+    excluded_headers = {"content-length", "transfer-encoding", "connection", "content-encoding"}
+    response_headers = {
+        k: v for k, v in r.headers.items()
+        if k.lower() not in excluded_headers
+    }
+
     return StreamingResponse(
         stream_generator(),
         status_code=r.status_code,
-        headers=r.headers
+        headers=response_headers
     )
