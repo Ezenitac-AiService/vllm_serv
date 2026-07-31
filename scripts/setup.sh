@@ -303,39 +303,50 @@ if not fn():
     fi
 fi
 
-# Tier 4: 동적 C++ 소스 재컴파일 Fallback
+# Tier 4: 동적 C++ 소스 재컴파일 Fallback 및 조건부 uv 캐시 검증 파이프라인
 if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
     if [ "$SKIP_BUILD" -eq 1 ]; then
         log_err "--skip-build 플래그가 설정되었으나 사전 휠 복원에 실패하여 setup.sh를 중단합니다."
         exit 1
     fi
 
-    log_info "기존/불일치 패키지 자동 정리 중 (uv pip uninstall llama-cpp-python)..."
-    uv pip uninstall llama-cpp-python 2>/dev/null || true
+    log_info "1단계: uv 휠 캐시 정상 여부 실측 검증 중..."
+    CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python 2>/dev/null || true
 
-    log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 동적 C++ 소스 컴파일 중..."
-    log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
-    CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python
-    if [ $? -ne 0 ]; then
-        log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
-        log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
-        exit 1
+    if uv run python "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live 2>/dev/null; then
+        log_info "✓ [UV CACHE REUSED] 캐시 휠의 CUDA 가속 검증을 통과했습니다. 고속 재사용을 진행합니다."
+    else
+        log_warn "⚠️ [UV CACHE INVALID] uv 캐시 휠이 CPU 전용으로 감지되었습니다. 캐시 무효화(--no-cache-dir) 및 C++ 소스 재컴파일을 수행합니다..."
+        log_info "기존 결함 패키지 정리 중 (uv pip uninstall llama-cpp-python)..."
+        uv pip uninstall llama-cpp-python 2>/dev/null || true
+
+        trap 'log_err "❌ C++ 컴파일 중단 감지. 결함 가상환경을 원자적으로 cleanup(uninstall)합니다."; uv pip uninstall -y llama-cpp-python 2>/dev/null || true' ERR INT TERM
+
+        log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python C++ 소스 재컴파일 구동 중 (--no-cache-dir)..."
+        log_info "이 과정은 C++ 소스 재컴파일이므로 수 분이 소요될 수 있습니다..."
+        CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install --no-cache-dir "llama-cpp-python[server]" --no-binary llama-cpp-python
+        BUILD_STATUS=$?
+
+        trap - ERR INT TERM
+
+        if [ "$BUILD_STATUS" -ne 0 ]; then
+            log_err "llama-cpp-python CUDA 재컴파일에 실패했습니다."
+            uv pip uninstall -y llama-cpp-python 2>/dev/null || true
+            exit 1
+        fi
+        log_info "✓ llama-cpp-python C++ 소스 동적 재컴파일 및 설치 완료"
     fi
-    log_info "✓ llama-cpp-python 동적 최적화 컴파일 및 설치 완료"
 
-    log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
-    if ! uv run python -c "
-import llama_cpp
-fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
-assert fn is not None, 'No GPU check function found'
-assert fn(), 'GPU offload not supported'
-"; then
+    log_info "CUDA GPU 가속 지원 최종 검증 중 (llama_supports_gpu_offload())..."
+    if ! uv run python "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live; then
         log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
         log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+        uv pip uninstall -y llama-cpp-python 2>/dev/null || true
         exit 1
     fi
-    log_info "✓ CUDA GPU 가속 활성화 확인 완료"
+    log_info "✓ CUDA GPU 가속 활성화 최종 확인 완료"
 fi
+
 
 log_step "3. 서버 포트 조회 및 네트워크 방화벽 등록"
 

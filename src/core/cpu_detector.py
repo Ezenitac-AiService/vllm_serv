@@ -179,12 +179,30 @@ def detect_gpu_capability() -> GpuCapabilityInfo:
         raise GpuAccelerationError(f"GPU 가속 장치 감지 실패: {str(e)}")
 
 
+def detect_gpu_capability_safe() -> GpuCapabilityInfo:
+    """
+    Safely attempts GPU capability detection via nvidia-smi.
+    Falls back to safe default (Compute Capability 6.1 / sm_61) on failure/missing driver.
+    """
+    try:
+        return detect_gpu_capability()
+    except Exception as e:
+        print(f"[CpuDetector] Warning: GPU detection via nvidia-smi failed ({e}). Falling back to safe default GPU profile (sm_61).")
+        return GpuCapabilityInfo(
+            gpu_name="Fallback NVIDIA GPU",
+            compute_capability="6.1",
+            cuda_arch_code="61",
+            total_vram_mb=8192
+        )
+
+
 def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildFlags:
     """
-    FR-002, FR-003, FR-004, FR-007: Combines CPU & GPU inspection to generate exact CMake arguments.
+    FR-001, FR-002, FR-003, FR-004: Combines CPU & GPU inspection to generate exact CMake arguments.
+    Falls back safely if nvidia-smi or /proc/cpuinfo fails.
     """
     cpu_info = detect_cpu_features(cpuinfo_path=cpuinfo_path)
-    gpu_info = detect_gpu_capability()
+    gpu_info = detect_gpu_capability_safe()
 
     avx_flag = "ON" if cpu_info.supports_avx else "OFF"
     avx2_flag = "ON" if cpu_info.supports_avx2 else "OFF"
@@ -213,6 +231,7 @@ def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildF
         cmake_args_list=args_list,
         cmake_args_str=args_str
     )
+
 
 
 def match_platform_profile(cpuinfo_path: str = "/proc/cpuinfo") -> str:

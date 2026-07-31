@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FallbackPipelineContracts",
+  "description": "Contracts and Interface Specifications for Tier 4 uv Cache Verification, Source Recompilation, and Seed Pack Unpack Pipeline",
+  "type": "object",
+  "properties": {
+    "verify_wheel_binary_cli": {
+      "type": "object",
+      "description": "Interface contract for scripts/verify_wheel_binary.py CLI invocation",
+      "properties": {
+        "command": {
+          "type": "string",
+          "enum": ["uv run python scripts/verify_wheel_binary.py"]
+        },
+        "exit_codes": {
+          "type": "object",
+          "properties": {
+            "0": "CUDA GPU offload supported AND CPU SIMD matches expectation (PASS)",
+            "1": "CPU-only binary detected (llama_supports_gpu_offload() == False)",
+            "2": "AVX/AVX2 SIMD mismatch detected (Illegal Instruction risk on target CPU)"
+          }
+        }
+      }
+    },
+    "unpack_seed_script_cli": {
+      "type": "object",
+      "description": "Interface contract for scripts/unpack_seed.sh and ./unpack_seed.sh shortcut",
+      "properties": {
+        "command_template": {
+          "type": "string",
+          "example": "./unpack_seed.sh [vllm_serv_seed.tar.gz]"
+        },
+        "flags_applied": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["-x", "-v", "-k", "-p", "-f"]
+        },
+        "behavior": {
+          "type": "string",
+          "value": "Extracts tar archive into current working directory (vllm_serv/). Skips overwriting existing valid binaries if present and verified."
+        }
+      }
+    },
+    "tier4_conditional_recompile_cmd": {
+      "type": "object",
+      "description": "Command specification for Tier 4 dynamic C++ source recompilation when uv cache invalidation is triggered",
+      "properties": {
+        "step_1_uninstall": {
+          "type": "string",
+          "value": "uv pip uninstall llama-cpp-python"
+        },
+        "step_2_install_no_cache": {
+          "type": "string",
+          "example": "CMAKE_ARGS=\"$DETECTED_CMAKE_ARGS\" uv pip install --no-cache-dir \"llama-cpp-python[server]\" --no-binary llama-cpp-python"
+        },
+        "step_3_cleanup_on_failure": {
+          "type": "string",
+          "value": "trap 'uv pip uninstall -y llama-cpp-python' ERR INT TERM"
+        }
+      }
+    }
+  }
+}

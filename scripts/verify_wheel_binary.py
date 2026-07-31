@@ -141,8 +141,14 @@ def main() -> None:
         if cnt > 0:
             print(f"  - {so_name}: {cnt} AVX instructions")
 
-    sys.exit(0 if is_valid else 1)
+    if is_valid:
+        sys.exit(0)
+    elif not cuda_enabled:
+        sys.exit(1)  # 1 = CPU-only binary
+    else:
+        sys.exit(2)  # 2 = SIMD mismatch (AVX in non-AVX wheel)
 
 
 if __name__ == "__main__":
     main()
+
