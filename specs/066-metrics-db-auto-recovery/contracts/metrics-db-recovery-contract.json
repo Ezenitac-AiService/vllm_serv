@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MetricsDB Auto-Recovery Contract",
+  "type": "object",
+  "properties": {
+    "MetricsDB": {
+      "error_triggers": [
+        "sqlite3.DatabaseError",
+        "sqlite3.OperationalError",
+        "database disk image is malformed",
+        "disk I/O error"
+      ],
+      "recovery_actions": [
+        "quarantine_corrupt_files",
+        "recreate_fresh_sqlite_db",
+        "fallback_to_in_memory_if_fs_readonly"
+      ],
+      "quarantine_pattern": "data/metrics.db.corrupt_%Y%m%d_%H%M%S"
+    }
+  }
+}
