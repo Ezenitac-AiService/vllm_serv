@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Server Control Script Contract",
+  "type": "object",
+  "properties": {
+    "start_server": {
+      "daemon_cmd": "nohup setsid uv run python -m src.api.server < /dev/null > logs/server.log 2>&1 &",
+      "curl_host_fallback": "127.0.0.1",
+      "fail_fast_diagnostics_tail_lines": 15
+    },
+    "metrics_db": {
+      "initialization_mode": "lazy_singleton_proxy"
+    }
+  }
+}

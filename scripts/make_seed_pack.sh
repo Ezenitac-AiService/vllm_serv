@@ -237,16 +237,10 @@ if ! echo "$ARCHIVE_FILES" | grep "specs/" > /dev/null; then
 fi
 log_info "✓ 기능 명세서(specs/) 아카이브 수록 검증 완료"
 
-if echo "$ARCHIVE_FILES" | grep "configure_firewall.sh" > /dev/null; then
-    log_info "✓ 방화벽 설정 헬퍼(scripts/configure_firewall.sh) 아카이브 수록 검증 완료"
+if echo "$ARCHIVE_FILES" | grep "start_server.sh" > /dev/null; then
+    log_info "✓ 데몬 제어 스크립트(scripts/start_server.sh, status_server.sh) 아카이브 수록 검증 완료"
 else
-    log_warn "⚠️ scripts/configure_firewall.sh 가 아카이브에 포함되지 않았습니다. setup.sh 실행 시 자동 생성됩니다."
-fi
-
-if echo "$ARCHIVE_FILES" | grep "auxiliary_manager.py" > /dev/null; then
-    log_info "✓ 임베딩/리랭커 보조 수명주기 관리자(src/core/auxiliary_manager.py) 아카이브 수록 검증 완료"
-else
-    log_err "아카이브 검증 실패: src/core/auxiliary_manager.py 파일이 수록되지 않았습니다."
+    log_err "아카이브 검증 실패: scripts/start_server.sh 파일이 수록되지 않았습니다."
     exit 1
 fi
 

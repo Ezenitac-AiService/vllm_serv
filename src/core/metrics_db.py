@@ -1,39 +1,92 @@
-"""
-SQLite Metrics Database Manager Module for vllm_serv (043-api-key-auth-toggle).
-Manages async SQLite logging, WAL journal mode, 30-day retention cleanup, and SQL metrics aggregation.
-"""
-
 import os
+import shutil
 import sqlite3
 import datetime
+import logging
 from typing import Dict, Any, List
+
+logger = logging.getLogger("MetricsDB")
 
 DB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data")
 DB_PATH = os.path.join(DB_DIR, "metrics.db")
 
 
 class MetricsDB:
-    """Manages SQLite metrics database with WAL mode and busy timeout."""
+    """Manages SQLite metrics database with WAL mode, busy timeout, and auto-healing quarantine."""
 
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        is_new_db = not os.path.exists(self.db_path)
-        self._init_db()
-        if is_new_db:
+        self._is_in_memory = (self.db_path == ":memory:")
+        if not self._is_in_memory:
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        is_new_db = not self._is_in_memory and not os.path.exists(self.db_path)
+        try:
+            self._init_db()
+        except (sqlite3.DatabaseError, sqlite3.OperationalError) as e:
+            logger.warning(f"[MetricsDB] Database corruption or operational error detected: {e}. Initiating auto-recovery quarantine.")
+            self._quarantine_and_recreate_db()
+
+        if is_new_db and not self._is_in_memory:
             try:
                 from scripts.seed_db import seed_database
                 seed_database(reset=False)
             except Exception:
                 pass
 
+    def _quarantine_and_recreate_db(self):
+        """Quarantines malformed/corrupted DB and WAL/SHM files, then recreates a healthy DB instance."""
+        if self.db_path == ":memory:":
+            return
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        target_dir = os.path.dirname(self.db_path)
+        base_name = os.path.basename(self.db_path)
+
+        for ext in ["", "-wal", "-shm"]:
+            src_file = self.db_path + ext
+            if os.path.exists(src_file):
+                src_base = os.path.basename(src_file)
+                corrupt_file = os.path.join(target_dir, f"{src_base}.corrupt_{timestamp}")
+                try:
+                    shutil.move(src_file, corrupt_file)
+                    logger.warning(f"[MetricsDB QUARANTINE] Moved corrupt file {src_file} -> {corrupt_file}")
+                except Exception as move_err:
+                    logger.error(f"[MetricsDB ERROR] Failed to quarantine corrupt file {src_file}: {move_err}")
+                    try:
+                        os.remove(src_file)
+                    except Exception:
+                        pass
+
+        # Try recreating file-based DB
+        try:
+            self._init_db()
+            logger.info("[MetricsDB RECOVERY] Successfully recreated fresh healthy MetricsDB instance.")
+        except (sqlite3.DatabaseError, sqlite3.OperationalError, Exception) as rec_err:
+            logger.error(f"[MetricsDB ERROR] Recreating file-based DB failed: {rec_err}. Falling back to In-Memory DB (:memory:).")
+            self.db_path = ":memory:"
+            self._is_in_memory = True
+            self._init_db()
+
     def _get_connection(self) -> sqlite3.Connection:
         """Returns SQLite connection with WAL mode and timeout=10.0 per C2 critique."""
-        conn = sqlite3.connect(self.db_path, timeout=10.0)
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA synchronous=NORMAL;")
-        conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=10.0)
+            if not self._is_in_memory and self.db_path != ":memory:":
+                conn.execute("PRAGMA journal_mode=WAL;")
+                conn.execute("PRAGMA synchronous=NORMAL;")
+            conn.row_factory = sqlite3.Row
+            return conn
+        except (sqlite3.DatabaseError, sqlite3.OperationalError) as e:
+            if not self._is_in_memory and self.db_path != ":memory:":
+                logger.warning(f"[MetricsDB Connection ERROR] {e}. Triggering database recovery.")
+                self._quarantine_and_recreate_db()
+                conn = sqlite3.connect(self.db_path, timeout=10.0)
+                if not self._is_in_memory and self.db_path != ":memory:":
+                    conn.execute("PRAGMA journal_mode=WAL;")
+                    conn.execute("PRAGMA synchronous=NORMAL;")
+                conn.row_factory = sqlite3.Row
+                return conn
+            raise
 
     def _init_db(self):
         """Creates tables and indexes if not exists."""
@@ -235,4 +288,27 @@ class MetricsDB:
             return dict(row)
 
 
-metrics_db = MetricsDB()
+
+_metrics_db_instance = None
+
+
+def get_metrics_db() -> MetricsDB:
+    """Returns global singleton MetricsDB instance, initializing on first access."""
+    global _metrics_db_instance
+    if _metrics_db_instance is None:
+        _metrics_db_instance = MetricsDB()
+    return _metrics_db_instance
+
+
+class _LazyMetricsDBProxy:
+    """Lazy Proxy for MetricsDB to prevent disk I/O and DB initialization at module import time."""
+    def __getattr__(self, name: str):
+        return getattr(get_metrics_db(), name)
+
+    def __setattr__(self, name: str, value: Any):
+        setattr(get_metrics_db(), name, value)
+
+
+metrics_db = _LazyMetricsDBProxy()
+
+
