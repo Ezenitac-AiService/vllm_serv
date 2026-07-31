@@ -431,6 +431,12 @@ async def run_playground_stream(request: Request, body: PlaygroundRequest):
         completion_tokens = 0
         prompt_tokens = len((body.prompt or "").split()) + len((body.system_prompt or "").split())
 
+        if not await check_llama_status():
+            err_msg = "[Model loading or offline] Backend llama-server engine is currently offline or loading. Please wait."
+            yield f"data: {json.dumps({'text': err_msg})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
         try:
             req = _default_client.build_request("POST", "/v1/chat/completions", json=payload)
             res = await _default_client.send(req, stream=True, timeout=60.0)
@@ -444,8 +450,26 @@ async def run_playground_stream(request: Request, body: PlaygroundRequest):
                         break
                     try:
                         chunk_json = json.loads(data_str)
-                        delta = chunk_json.get("choices", [{}])[0].get("delta", {})
-                        content_piece = delta.get("content", "")
+                        choices = chunk_json.get("choices", [])
+                        if not choices:
+                            continue
+                        choice = choices[0]
+                        delta = choice.get("delta", {})
+
+                        # 1. Handle reasoning_content / reasoning (DeepSeek-R1 / Qwen thinking format)
+                        reasoning_piece = delta.get("reasoning_content") or delta.get("reasoning") or ""
+                        if reasoning_piece:
+                            if first_token_time is None:
+                                first_token_time = time.perf_counter()
+                            completion_tokens += 1
+                            if not in_think_tag:
+                                in_think_tag = True
+                                yield "event: think_start\ndata: {}\n\n"
+                            full_thinking += reasoning_piece
+                            yield f"data: {json.dumps({'think': reasoning_piece})}\n\n"
+
+                        # 2. Handle standard content or text
+                        content_piece = delta.get("content") or choice.get("text") or ""
                         if content_piece:
                             if first_token_time is None:
                                 first_token_time = time.perf_counter()
@@ -472,8 +496,14 @@ async def run_playground_stream(request: Request, body: PlaygroundRequest):
                                 continue
 
                             if in_think_tag:
-                                full_thinking += content_piece
-                                yield f"data: {json.dumps({'think': content_piece})}\n\n"
+                                if reasoning_piece:
+                                    yield "event: think_end\ndata: {}\n\n"
+                                    in_think_tag = False
+                                    full_completion += content_piece
+                                    yield f"data: {json.dumps({'text': content_piece})}\n\n"
+                                else:
+                                    full_thinking += content_piece
+                                    yield f"data: {json.dumps({'think': content_piece})}\n\n"
                             else:
                                 full_completion += content_piece
                                 yield f"data: {json.dumps({'text': content_piece})}\n\n"
