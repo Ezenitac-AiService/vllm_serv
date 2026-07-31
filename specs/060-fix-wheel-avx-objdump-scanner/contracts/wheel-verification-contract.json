@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WheelVerificationContract",
+  "description": "Contract for verifying shared library binaries inside prebuilt wheel archives",
+  "type": "object",
+  "properties": {
+    "cuda_device_libraries": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["libggml-cuda.so", "ggml-cuda.so"]
+    },
+    "cpu_host_libraries": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["libggml-cpu.so", "libllama.so", "libllama-common.so", "libggml-base.so", "libggml.so", "libmtmd.so"]
+    },
+    "disassembler_command": {
+      "type": "string",
+      "default": "objdump -d --no-show-raw-insn {so_file}"
+    },
+    "avx_mnemonic_regex": {
+      "type": "string",
+      "default": "^\\s*[0-9a-f]+:\\s+(v[a-z0-9]+)\\b"
+    },
+    "excluded_mnemonics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["verr", "verw", "vmread", "vmwrite", "vmmcall", "vptr"]
+    }
+  },
+  "required": ["cuda_device_libraries", "cpu_host_libraries", "disassembler_command", "avx_mnemonic_regex"]
+}
