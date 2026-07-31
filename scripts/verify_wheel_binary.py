@@ -10,22 +10,44 @@ from typing import Dict, List, Tuple
 
 
 def scan_so_with_python_bytes(so_file: str) -> int:
-    """Pure-python byte scanner inspecting ELF file for VEX/AVX opcode sequences."""
+    """Pure-python byte scanner inspecting ELF file executable code sections for VEX/AVX opcode sequences."""
     try:
         with open(so_file, "rb") as f:
             data = f.read()
 
-        # Simple VEX prefix heuristic in x86_64 ELF code
+        if not data.startswith(b"\x7fELF"):
+            return 0
+
+        # Parse ELF64 section headers to extract executable code (.text / SHF_EXECINSTR)
+        import struct
+        is_64 = data[4] == 2
+        exec_bytes = bytearray()
+        if is_64 and len(data) >= 64:
+            e_shoff = struct.unpack("<Q", data[40:48])[0]
+            e_shentsize = struct.unpack("<H", data[58:60])[0]
+            e_shnum = struct.unpack("<H", data[60:62])[0]
+            for i in range(e_shnum):
+                sh_start = e_shoff + i * e_shentsize
+                if sh_start + 40 <= len(data):
+                    sh_flags = struct.unpack("<Q", data[sh_start + 8 : sh_start + 16])[0]
+                    sh_offset = struct.unpack("<Q", data[sh_start + 24 : sh_start + 32])[0]
+                    sh_size = struct.unpack("<Q", data[sh_start + 32 : sh_start + 40])[0]
+                    if (sh_flags & 0x4) != 0 and sh_offset + sh_size <= len(data):  # SHF_EXECINSTR
+                        exec_bytes.extend(data[sh_offset : sh_offset + sh_size])
+
+        target_bytes = bytes(exec_bytes) if exec_bytes else data
+
+        # Simple VEX prefix heuristic in x86_64 ELF executable code
         # 2-byte VEX: 0xC5 followed by byte with bit 7=1 (R bit) and opcode
         # 3-byte VEX: 0xC4 followed by bytes
         avx_count = 0
         i = 0
-        length = len(data)
+        length = len(target_bytes)
         while i < length - 3:
-            b = data[i]
+            b = target_bytes[i]
             if b == 0xC5:
                 # 2-byte VEX prefix
-                next_b = data[i + 1]
+                next_b = target_bytes[i + 1]
                 if (next_b & 0xC0) in (0x80, 0xC0, 0x00, 0x40):
                     avx_count += 1
                     i += 2
