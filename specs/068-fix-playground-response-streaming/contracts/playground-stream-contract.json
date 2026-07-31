@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Playground SSE Stream Response Contract",
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "enum": ["/dashboard/api/playground/stream"]
+    },
+    "supported_delta_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["reasoning_content", "reasoning", "content", "text"]
+    },
+    "supported_sse_events": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["think_start", "think_end", "metrics"]
+    }
+  }
+}
