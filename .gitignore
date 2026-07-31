@@ -36,3 +36,11 @@ llama.cpp/build/
 data/*.db*
 
 
+.agents/
+.legacy/
+.pytest_cache/
+.specify/
+specs/
+tests/
+
+log.txt
