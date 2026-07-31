@@ -83,3 +83,17 @@ def test_seed_pack_restored_make_seed_pack_execution(tmp_path):
 
     assert res.returncode == 0, f"make_seed_pack.sh in sandbox failed: {res.stderr}"
     assert output_sandbox_tar.exists(), "Sandbox generated seed pack must exist"
+
+
+def test_setup_fallback_and_status_report():
+    """T014: Test status_server.sh output contains 3-way platform state & CUDA status."""
+    repo_root = get_repo_root()
+    status_script = os.path.join(repo_root, "scripts", "status_server.sh")
+
+    assert os.path.exists(status_script), "status_server.sh script must exist"
+
+    res = subprocess.run(["bash", status_script], capture_output=True, text=True, cwd=repo_root)
+    assert res.returncode == 0, f"status_server.sh failed: {res.stderr}"
+
+    assert "vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트" in res.stdout, "status_server.sh report title missing"
+    assert "llama-cpp-python GPU:" in res.stdout, "status_server.sh must report llama-cpp-python GPU status"

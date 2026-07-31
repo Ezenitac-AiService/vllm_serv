@@ -46,6 +46,7 @@ cd "$BASE_DIR"
 OUTPUT_PATH=""
 USE_ZIP=0
 BUILD_LEGACY=1
+CUSTOM_WHEEL_PATH=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -64,6 +65,10 @@ while [[ $# -gt 0 ]]; do
         --skip-legacy-build)
             BUILD_LEGACY=0
             shift
+            ;;
+        --wheel-path)
+            CUSTOM_WHEEL_PATH="$2"
+            shift 2
             ;;
         -h|--help)
             show_help
@@ -115,6 +120,12 @@ log_info "저장 목표 경로: $OUTPUT_PATH"
 log_info "제외 항목: models/, .venv/, .bin/, logs/, build/, dist/, __pycache__/, .git/"
 
 # 1.5 i7-930 (Nehalem) 사전 빌드 휠 검증 및 컴파일
+if [ -n "$CUSTOM_WHEEL_PATH" ] && [ -f "$CUSTOM_WHEEL_PATH" ]; then
+    log_info "CLI 커스텀 휠 경로($CUSTOM_WHEEL_PATH) 감지! wheels/legacy_i7_930/에 번들링 복사합니다..."
+    mkdir -p wheels/legacy_i7_930
+    cp -f "$CUSTOM_WHEEL_PATH" wheels/legacy_i7_930/
+fi
+
 if [ "$BUILD_LEGACY" -eq 1 ]; then
     log_info "i7-930 (Nehalem) 전용 사전 컴파일 휠 패키지 검증 수행 중..."
     mkdir -p wheels/legacy_i7_930

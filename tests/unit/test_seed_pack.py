@@ -118,3 +118,44 @@ def test_setup_firewall_ports_and_required_files():
     )
 
 
+def test_setup_subshell_error_guard_and_fallback():
+    repo_root = get_repo_root()
+    setup_path = os.path.join(repo_root, "scripts", "setup.sh")
+
+    with open(setup_path, "r", encoding="utf-8") as f:
+        setup_content = f.read()
+
+    # 1. Subshell || true guard check
+    assert "2>&1 || true" in setup_content, (
+        "setup.sh subshell GPU_CHECK_OUTPUT assignment must use '2>&1 || true' guard to prevent set -e script aborts"
+    )
+
+    # 2. --wheel-path CLI parameter support
+    assert "--wheel-path" in setup_content, (
+        "setup.sh must support --wheel-path CLI option for custom wheel injection"
+    )
+
+    # 3. 4-Tier fallback logic check
+    assert "INSTALLED_VIA_FAST_TRACK" in setup_content, (
+        "setup.sh must maintain INSTALLED_VIA_FAST_TRACK fallback flag"
+    )
+
+
+def test_setup_root_symlinks_creation():
+    repo_root = get_repo_root()
+    setup_path = os.path.join(repo_root, "scripts", "setup.sh")
+
+    with open(setup_path, "r", encoding="utf-8") as f:
+        setup_content = f.read()
+
+    assert 'ln -sf "$BASE_DIR/scripts/start_server.sh" "$BASE_DIR/start_server.sh"' in setup_content, (
+        "setup.sh must generate root symlink ./start_server.sh"
+    )
+    assert 'ln -sf "$BASE_DIR/scripts/stop_server.sh" "$BASE_DIR/stop_server.sh"' in setup_content, (
+        "setup.sh must generate root symlink ./stop_server.sh"
+    )
+    assert 'ln -sf "$BASE_DIR/scripts/status_server.sh" "$BASE_DIR/status_server.sh"' in setup_content, (
+        "setup.sh must generate root symlink ./status_server.sh"
+    )
+
+

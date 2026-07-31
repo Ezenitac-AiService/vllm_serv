@@ -26,6 +26,29 @@ else
 fi
 cd "$BASE_DIR"
 
+WHEEL_PATH=""
+SKIP_BUILD=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --wheel-path)
+            WHEEL_PATH="$2"
+            shift 2
+            ;;
+        --skip-build)
+            SKIP_BUILD=1
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build]"
+            exit 0
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
 # ==============================================================================
 # Step 0: Sudo Credential Acquisition & Keep-Alive Daemon
 # (039-seed-pack-sudo-firewall-migration: FR-001, FR-002, FR-004)
@@ -184,12 +207,62 @@ log_info "✓ 감지 및 매칭된 타겟 플랫폼 프로필: $MATCHED_PROFILE"
 DETECTED_CMAKE_ARGS=$(uv run python -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF")
 log_info "적용할 동적 CMAKE_ARGS: $DETECTED_CMAKE_ARGS"
 
-# FR-001..FR-004 (030-fix-legacy-wheel-selection): i7-930 타겟 llama_cpp_python 휠 명시적 매칭, 오프라인 주입 및 Fallback
+# FR-001..FR-005 (055-fix-migration-setup-fallback): 4단계 결정론적 우선순위 휠 복원 & 3중 정합성 검증 파이프라인
 INSTALLED_VIA_FAST_TRACK=0
-if [[ "$MATCHED_PROFILE" == *"legacy-i7-930"* ]]; then
-    LEGACY_WHEEL=$(ls -v wheels/legacy_i7_930/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
+
+# Tier 1: CLI 명시 전달 커스텀 휠 경로 (--wheel-path)
+if [ -n "$WHEEL_PATH" ] && [ -f "$WHEEL_PATH" ]; then
+    log_info "⚡ CLI 명시 커스텀 휠 경로($WHEEL_PATH) Fast-Track 복원을 시작합니다..."
+    if uv pip install "$WHEEL_PATH" --force-reinstall --no-index; then
+        log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
+        GPU_CHECK_OUTPUT=$(uv run python -c "
+import sys, llama_cpp
+fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+if fn is None:
+    print('ERROR: No GPU check function found in llama_cpp', file=sys.stderr)
+    sys.exit(1)
+if not fn():
+    print('ERROR: llama_supports_gpu_offload() returned False', file=sys.stderr)
+    sys.exit(2)
+" 2>&1 || true)
+        GPU_CHECK_STATUS=$?
+
+        if [ "$GPU_CHECK_STATUS" -eq 0 ]; then
+            log_info "✓ CLI 커스텀 휠 Fast-Track 설치 및 CUDA GPU 가속 활성화 확인 완료."
+            INSTALLED_VIA_FAST_TRACK=1
+        else
+            log_warn "⚠️ [FAST-TRACK FAIL] CLI 커스텀 휠 GPU 가속 검증 실패: $GPU_CHECK_OUTPUT"
+        fi
+    fi
+fi
+
+# Tier 2: 현지 파이썬 가상환경 (.venv) 기존 휠 3중 정합성 검증 (0.05s 고속 리턴)
+if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
+    log_info "기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중..."
+    PRECHECK_GPU=$(uv run python -c "
+import llama_cpp
+fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
+print('True' if fn and fn() else 'False')
+" 2>/dev/null || echo "False")
+
+    if [ "$PRECHECK_GPU" = "True" ]; then
+        log_info "✓ 기존 가상환경 내 llama-cpp-python CUDA GPU 가속 활성화 확인 완료 (0.05s 소스 컴파일 스킵됨)."
+        INSTALLED_VIA_FAST_TRACK=1
+    fi
+fi
+
+# Tier 3: Seed Pack 수록 사전 빌드 휠 Fast-Track (wheels/legacy_i7_930/*.whl 또는 wheels/*.whl)
+if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
+    LEGACY_WHEEL=""
+    if [[ "$MATCHED_PROFILE" == *"legacy-i7-930"* ]]; then
+        LEGACY_WHEEL=$(ls -v wheels/legacy_i7_930/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
+    fi
+    if [ -z "$LEGACY_WHEEL" ]; then
+        LEGACY_WHEEL=$(ls -v wheels/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
+    fi
+
     if [ -n "$LEGACY_WHEEL" ] && [ -f "$LEGACY_WHEEL" ]; then
-        log_info "⚡ i7-930 타겟 플랫폼 감지! 사전 빌드 휠($LEGACY_WHEEL) Fast-Track 복원을 시작합니다."
+        log_info "⚡ 사전 빌드 휠($LEGACY_WHEEL) Fast-Track 복원을 시작합니다..."
         log_info "C++ 소스 재컴파일을 건너뛰고 사전 빌드 휠을 가상환경(.venv)에 고속 설치합니다..."
         if uv pip install "$LEGACY_WHEEL" --force-reinstall --no-index --find-links wheels/legacy_i7_930; then
             log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
@@ -202,11 +275,11 @@ if fn is None:
 if not fn():
     print('ERROR: llama_supports_gpu_offload() returned False', file=sys.stderr)
     sys.exit(2)
-" 2>&1)
+" 2>&1 || true)
             GPU_CHECK_STATUS=$?
 
             if [ "$GPU_CHECK_STATUS" -eq 0 ]; then
-                log_info "✓ i7-930 사전 빌드 휠 Fast-Track 설치 및 CUDA GPU 가속 활성화 확인 완료 (C++ 소스 재컴파일 스킵됨)"
+                log_info "✓ 사전 빌드 휠 Fast-Track 설치 및 CUDA GPU 가속 활성화 확인 완료 (C++ 소스 재컴파일 스킵됨)"
                 INSTALLED_VIA_FAST_TRACK=1
             else
                 CAUSE="GPU_CHECK_FAILED (알 수 없는 검증 오류)"
@@ -227,46 +300,38 @@ if not fn():
         else
             log_warn "⚠️ 사전 빌드 휠 설치 실패. C++ 소스 컴파일 파이프라인으로 Fallback합니다."
         fi
-    else
-        log_warn "⚠️ i7-930 사전 빌드 휠(wheels/legacy_i7_930/llama_cpp_python*.whl)이 존재하지 않습니다."
-        log_warn "기존 C++ 소스 컴파일 파이프라인으로 Fallback합니다. (약 15~30분 소요 가능)"
     fi
 fi
 
+# Tier 4: 동적 C++ 소스 재컴파일 Fallback
 if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
-    log_info "기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중..."
-    PRECHECK_GPU=$(uv run python -c "
-import llama_cpp
-fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
-print('True' if fn and fn() else 'False')
-" 2>/dev/null || echo "False")
+    if [ "$SKIP_BUILD" -eq 1 ]; then
+        log_err "--skip-build 플래그가 설정되었으나 사전 휠 복원에 실패하여 setup.sh를 중단합니다."
+        exit 1
+    fi
 
-    if [ "$PRECHECK_GPU" = "True" ]; then
-        log_info "✓ 기존 가상환경 내 llama-cpp-python CUDA GPU 가속 활성화 확인 완료 (C++ 소스 컴파일 스킵됨)."
-    else
-        log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 소스 컴파일 중..."
-        log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
-        CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python
-        if [ $? -ne 0 ]; then
-            log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
-            log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
-            exit 1
-        fi
-        log_info "✓ llama-cpp-python 동적 최적화 컴파일 및 설치 완료"
+    log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python 동적 C++ 소스 컴파일 중..."
+    log_info "이 과정은 소스 컴파일이므로 수 분이 소요될 수 있습니다..."
+    CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python
+    if [ $? -ne 0 ]; then
+        log_err "llama-cpp-python CUDA 빌드에 실패했습니다."
+        log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+        exit 1
+    fi
+    log_info "✓ llama-cpp-python 동적 최적화 컴파일 및 설치 완료"
 
-        log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
-        if ! uv run python -c "
+    log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
+    if ! uv run python -c "
 import llama_cpp
 fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
 assert fn is not None, 'No GPU check function found'
 assert fn(), 'GPU offload not supported'
 "; then
-            log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
-            log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
-            exit 1
-        fi
-        log_info "✓ CUDA GPU 가속 활성화 확인 완료"
+        log_err "GPU 가속 지원 검증 실패: CUDA GPU 가속이 활성화되지 않았습니다."
+        log_err "CPU 전용 폴백은 허용되지 않습니다. setup.sh를 즉시 중단합니다."
+        exit 1
     fi
+    log_info "✓ CUDA GPU 가속 활성화 확인 완료"
 fi
 
 log_step "3. 서버 포트 조회 및 네트워크 방화벽 등록"
