@@ -222,41 +222,68 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 pass
 
     target_port = _get_backend_target_port(path)
-    backend_url = f"http://127.0.0.1:{target_port}{request.url.path}"
-    if request.url.query:
-        backend_url += f"?{request.url.query}"
+    
+    # Candidate path resolution for Rerank and Embedding endpoints (FR-001 & FR-002)
+    candidate_paths = [request.url.path]
+    if clean_path in ("rerank", "reranking"):
+        for cp in ["/reranking", "/v1/rerank", "/rerank", "/v1/reranking"]:
+            if cp not in candidate_paths:
+                candidate_paths.append(cp)
+    elif clean_path in ("embeddings", "embedding"):
+        for cp in ["/v1/embeddings", "/embeddings", "/embedding"]:
+            if cp not in candidate_paths:
+                candidate_paths.append(cp)
 
     if body_content is None and request.method in ("POST", "PUT", "PATCH"):
         body_content = await request.body()
 
-    try:
-        # Preflight guard: Set connect & response header timeouts to prevent infinite proxy hanging (FR-007)
-        client = _get_http_client(request)
-        headers = [(k, v) for k, v in request.headers.raw if k.lower() not in (b"host", b"content-length")]
-        req = client.build_request(
-            request.method,
-            backend_url,
-            headers=headers,
-            content=body_content if body_content is not None else request.stream()
-        )
-        r = await client.send(req, stream=True)
-        if r.status_code == 503:
-            await r.aclose()
+    client = _get_http_client(request)
+    headers = [(k, v) for k, v in request.headers.raw if k.lower() not in (b"host", b"content-length")]
+    
+    r = None
+    for cand_path in candidate_paths:
+        backend_url = f"http://127.0.0.1:{target_port}{cand_path}"
+        if request.url.query:
+            backend_url += f"?{request.url.query}"
+
+        try:
+            req = client.build_request(
+                request.method,
+                backend_url,
+                headers=headers,
+                content=body_content if body_content is not None else request.stream()
+            )
+            r = await client.send(req, stream=True)
+            if r.status_code == 404 and len(candidate_paths) > 1 and cand_path != candidate_paths[-1]:
+                await r.aclose()
+                continue
+            if r.status_code == 503:
+                await r.aclose()
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Model server at port {target_port} is currently initializing. Please try again in a few seconds.",
+                    headers={"Retry-After": "5"}
+                )
+            break
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.TimeoutException):
+            if cand_path != candidate_paths[-1]:
+                continue
             raise HTTPException(
                 status_code=503,
-                detail=f"Model server at port {target_port} is currently initializing. Please try again in a few seconds.",
+                detail=f"Model server at port {target_port} is currently unreachable or loading. Please try again in a few seconds.",
                 headers={"Retry-After": "5"}
             )
-    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout, httpx.TimeoutException):
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    if r is None:
         raise HTTPException(
             status_code=503,
-            detail=f"Model server at port {target_port} is currently unreachable or loading. Please try again in a few seconds.",
+            detail=f"Model server at port {target_port} is unreachable.",
             headers={"Retry-After": "5"}
         )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
     captured_chunks = []
     start_time = time.perf_counter()

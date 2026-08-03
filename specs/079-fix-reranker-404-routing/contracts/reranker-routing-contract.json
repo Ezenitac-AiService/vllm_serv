@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RerankerRoutingContract",
+  "description": "079-fix-reranker-404-routing Reranker API 라우팅 규격",
+  "type": "object",
+  "properties": {
+    "client_endpoint": {
+      "type": "string",
+      "enum": ["/v1/rerank", "/rerank"],
+      "default": "/v1/rerank"
+    },
+    "candidate_backend_paths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["/reranking", "/v1/rerank", "/rerank", "/v1/reranking"]
+    }
+  },
+  "required": ["client_endpoint", "candidate_backend_paths"]
+}
