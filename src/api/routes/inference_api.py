@@ -140,7 +140,9 @@ def _get_backend_target_port(path: str) -> int:
 
 @router.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
 @router.api_route("/embedding", methods=["POST", "OPTIONS"])
+@router.api_route("/v1/embedding", methods=["POST", "OPTIONS"])
 @router.api_route("/rerank", methods=["POST", "OPTIONS"])
+@router.api_route("/v1/rerank", methods=["POST", "OPTIONS"])
 async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
     """FR-009 & FR-002: RAG, Agent, Embedding, Reranker 요청을 백엔드 싱글톤 인스턴스로 역방향 프록시 라우팅."""
     if not path:

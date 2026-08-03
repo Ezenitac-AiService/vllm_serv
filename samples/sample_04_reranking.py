@@ -1,7 +1,8 @@
-"""sample_04_reranking.py - vllm_serv BGE Reranker v2 M3 리랭킹 모델 호출 예제
+"""sample_04_reranking.py - [비전공자 초급] BGE Reranker v2 M3 검색 문서 재순위화 예제
 
-BGE Reranker v2 M3 Cross-Encoder 서빙(기본 포트: 8091)을 사용하여 쿼리 문장과
-검색된 문서들 간의 교차 벡터 표현 및 관련도 연동을 수행하는 예제 스크립트입니다.
+본 스크립트는 AI 서비스 개발자 양성과정 훈련생을 위한 RAG(검색 증강 생성) 문서 재순위화(Reranking) 실습 스크립트입니다.
+파이덴틱(Pydantic) 모델 대신 표준 파이썬 딕셔너리(dict)를 사용하여
+사용자 질문(Query)과 여러 문서(Documents) 간의 의미적 관련도 점수(Relevance Score)를 측정하고 재정렬합니다.
 
 실행 명령어:
     uv run python samples/sample_04_reranking.py
@@ -11,58 +12,62 @@ import httpx
 from common import check_server_health, get_server_host, print_section_header
 
 SERVER_HOST = get_server_host()
+MAIN_PORT = 8081
 RERANK_PORT = 8091
-API_URL = f"{SERVER_HOST}:{RERANK_PORT}/v1/embeddings"
 MODEL_NAME = "bge-reranker-v2-m3"
 
 
 def run_reranking_sample():
-    print_section_header("vllm_serv 04. BGE Reranker v2 M3 Cross-Encoder 호출 예제")
+    print_section_header("04. 비전공자용 BGE Reranker v2 M3 문서 관련도 재순위화 예제")
 
-    # 1. 리랭크 전용 서빙 포트(8091) 연결 상태 점검
-    if not check_server_health(SERVER_HOST, RERANK_PORT, "BGE Reranker v2 M3 서빙"):
-        print("💡 리랭킹 서버가 8091 포트에 구동 중인지 확인해 주세요.")
+    # 1. 메인 서빙 데몬(8081 포트) 구동 점검
+    if not check_server_health(SERVER_HOST, MAIN_PORT, "vllm_serv 메인 API"):
         return False
 
-    # 2. 쿼리 문장 및 관련도 평가 대상 문서 배치 정의
-    query = "반도체 수혜 가능성이 가장 높은 기업"
+    # 2. 질문(Query) 및 후보 문서 목록(Documents) 구성
+    query = "vllm_serv 서버의 주요 장점과 사용법은 무엇인가요?"
     documents = [
-        "삼성전자 3분기 메모리 반도체 실적 전망 및 수혜 분석",
-        "오늘 서울 날씨는 맑고 기온은 25도입니다.",
-        "SK하이닉스 고대역폭 메모리(HBM) 공급 확대로 인한 수혜 가능성 극대화"
+        "오늘 서울의 날씨는 맑고 기온은 25도입니다.",
+        "vllm_serv는 llama.cpp 기반으로 Qwen3.5 및 Gemma4 모델을 GPU VRAM 100% 오프 로딩하여 빠른 속도로 서빙하는 서버입니다.",
+        "파이썬 기초 문법에는 변수, 리스트, 딕셔너리, 조건문, 반복문 등이 있습니다."
     ]
 
+    # 3. HTTP 요청 페이로드 구성 (표준 파이썬 dict 사용)
     payload = {
         "model": MODEL_NAME,
-        "input": [query] + documents
+        "query": query,
+        "documents": documents
     }
 
-    print(f"📡 [POST] {API_URL} 요청 전송 중... (모델: {MODEL_NAME})")
-    print(f"🔍 검색 쿼리: \"{query}\"")
-    print(f"📚 대상 문서 개수: {len(documents)}개")
+    target_url = f"{SERVER_HOST}:{MAIN_PORT}/v1/rerank"
+    print(f"📡 [요청 전송] {target_url} (모델: {MODEL_NAME})")
+    print(f"❓ 질문 (Query): \"{query}\"")
+    print(f"📚 후보 문서 수: {len(documents)}개")
 
-    # 3. HTTP POST 요청 및 응답 처리
     try:
         with httpx.Client(timeout=30.0) as client:
-            response = client.post(API_URL, json=payload, headers={"Connection": "close"})
-            response.raise_for_status()
+            resp = client.post(target_url, json=payload, headers={"Connection": "close"})
+            resp.raise_for_status()
 
-            result = response.json()
-            data = result.get("data", [])
-            print("\n✅ [Cross-Encoder 리랭킹 벡터/응답 수신 성공]")
-            print(f"------------------------------------------------------------")
-            for idx, item in enumerate(data):
-                vec = item.get("embedding", [])
-                print(f"  📄 문서 batch #{idx} Vector Dimension: {len(vec)}차원 | 샘플: {vec[:3]}")
-            print(f"------------------------------------------------------------")
+            # 4. JSON 응답 파싱 및 재순위 결과 추출
+            result = resp.json()
+            rerank_results = result.get("results", [])
+
+            # 5. 결과 시각적 출력 (관련도 점수 높은 순으로 표시)
+            print("\n✅ [문서 재순위화(Reranking) 성공]")
+            print("-" * 65)
+            for idx, item in enumerate(rerank_results, 1):
+                doc_idx = item["index"]
+                score = item["relevance_score"]
+                doc_text = documents[doc_idx]
+                print(f"🥇 [{idx}위] (문서 인덱스: {doc_idx} | 관련도 점수: {score:.4f})")
+                print(f"   내용: \"{doc_text}\"")
+            print("-" * 65)
 
             return True
 
-    except httpx.HTTPStatusError as err:
-        print(f"❌ [HTTP 에러 발생]: {err.response.status_code} - {err.response.text}")
-        return False
     except Exception as err:
-        print(f"❌ [요청 실패]: {err}")
+        print(f"❌ [Reranking 실패]: {err}")
         return False
 
 

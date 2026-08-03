@@ -1,79 +1,90 @@
-"""sample_02_model_params.py - vllm_serv 모델 및 추론 파라미터 제어 예제
+"""sample_02_model_params.py - [비전공자 초급] LLM 제어 파라미터(Temperature, Top_P, Stop) 활용 예제
 
-vllm_serv 메인 서버(8081 포트)로 다양한 생성 파라미터(temperature, top_p, max_tokens, stop)를
-동적으로 전달하여 LLM 생성 결과를 비교 제어하는 예제 스크립트입니다.
+본 스크립트는 AI 서비스 개발자 양성과정 훈련생을 위한 파라미터 제어 표준 실습 스크립트입니다.
+파이덴틱(Pydantic) 없이 표준 파이썬 딕셔너리(dict) 구조를 사용하여
+Temperature(답변 창의성), Top_P(샘플링 범위), Stop(조기 중단) 단어 지정 방법을 실습합니다.
 
 실행 명령어:
     uv run python samples/sample_02_model_params.py
 """
 
-import json
 import httpx
 from common import check_server_health, get_server_host, print_section_header
 
 SERVER_HOST = get_server_host()
 MAIN_PORT = 8081
-API_URL = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 MODEL_NAME = "qwen3.5-4b"
 
 
-def send_completion_request(prompt: str, param_config: dict) -> dict:
-    """지정된 파라미터 구성으로 chat completion API 호출."""
-    messages = [
-        {"role": "system", "content": "당신은 유용한 AI 어시스턴트입니다."},
-        {"role": "user", "content": prompt}
-    ]
-    payload = {
-        "model": MODEL_NAME,
-        "messages": messages,
-        "stream": False,
-        **param_config
-    }
+def run_model_params_sample():
+    print_section_header("02. 비전공자용 모델 제어 파라미터(Temperature & Stop) 실습 예제")
 
-    transport = httpx.HTTPTransport(retries=1)
-    with httpx.Client(transport=transport, timeout=120.0) as client:
-        response = client.post(API_URL, json=payload, headers={"Connection": "close"})
-        response.raise_for_status()
-        return response.json()
-
-
-def run_params_sample():
-    print_section_header("vllm_serv 02. 모델 파라미터 제어(Temperature/Top_P/Stop) 예제")
-
-    if not check_server_health(SERVER_HOST, MAIN_PORT, "LLM 메인 서버"):
-        print("💡 서버 구동 후 스크립트를 재실행해 주세요.")
+    if not check_server_health(SERVER_HOST, MAIN_PORT, "vllm_serv 메인 API"):
         return False
 
-    # 실험 케이스 1: 결정론적 답변 (Temperature = 0.0)
-    print("\n🔹 [테스트 1] Low Temperature (0.0) - 정확하고 일관된 답변")
-    config_low_temp = {
-        "temperature": 0.0,
-        "max_tokens": 150
-    }
-    result_1 = send_completion_request("대한민국의 수도는 어디이고 인구는 대략 얼마인가요?", config_low_temp)
-    content_1 = result_1["choices"][0]["message"]["content"]
-    if "</think>" in content_1:
-        content_1 = content_1.split("</think>")[-1].strip()
-    print(f"👉 답변 1: {content_1[:120]}...")
+    target_url = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 
-    # 실험 케이스 2: 정지 문자열(Stop Sequence) 지정
-    print("\n🔹 [테스트 2] Stop Sequence 지정 - 특정 단어/줄바꿈 생성 중단 ('\n' 중단)")
-    config_stop = {
+    # =========================================================================
+    # [실습 1] Low Temperature (0.0): 창의성 최소화, 정밀하고 결정론적인 답변 유도
+    # =========================================================================
+    print("\n🔹 [실습 1] Low Temperature (0.0) - 정확도와 일관성이 필요한 지식 답변")
+    payload_low_temp = {
+        "model": MODEL_NAME,
+        "messages": [
+            {"role": "user", "content": "대한민국의 수도는 어디인가요?"}
+        ],
+        "temperature": 0.0,  # 0.0에 가까울수록 항상 같은 정답을 생성 (창의성 0%)
+        "max_tokens": 100
+    }
+
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            resp = client.post(target_url, json=payload_low_temp, headers={"Connection": "close"})
+            resp.raise_for_status()
+            res1 = resp.json()
+            content1 = res1["choices"][0]["message"]["content"]
+            if "</think>" in content1:
+                content1 = content1.split("</think>")[-1].strip()
+            print(f"👉 [Low Temp 답변]: {content1}")
+    except Exception as err:
+        print(f"❌ [실습 1 실패]: {err}")
+        return False
+
+    # =========================================================================
+    # [실습 2] Stop Sequence 지정: 특정 문자(예: 줄바꿈 '\n' 또는 특정 단어) 등장 시 조기 생성 정지
+    # =========================================================================
+    print("\n🔹 [실습 2] Stop Sequence 지정 - 줄바꿈('\\n')이 나오면 생성 자동 중단")
+    payload_stop = {
+        "model": MODEL_NAME,
+        "messages": [
+            {"role": "user", "content": "1부터 5까지 숫자를 줄바꿈으로 세어주세요."}
+        ],
         "temperature": 0.3,
-        "max_tokens": 100,
-        "stop": ["\n", "."]
+        "stop": ["\n"],  # '\n' (줄바꿈) 문자가 나오는 순간 답변 생성을 즉시 멈춤
+        "max_tokens": 100
     }
-    result_2 = send_completion_request("인공지능의 3대 핵심 요소를 번호 리스트로 작성하세요:", config_stop)
-    content_2 = result_2["choices"][0]["message"]["content"]
-    if "</think>" in content_2:
-        content_2 = content_2.split("</think>")[-1].strip()
-    finish_reason_2 = result_2["choices"][0].get("finish_reason", "")
-    print(f"👉 답변 2: {content_2}")
-    print(f"📊 정지 원인: {finish_reason_2}")
 
-    print("\n✅ 모든 파라미터 제어 테스트 완료!")
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            resp = client.post(target_url, json=payload_stop, headers={"Connection": "close"})
+            resp.raise_for_status()
+            res2 = resp.json()
+            choice2 = res2["choices"][0]
+            content2 = choice2["message"]["content"]
+            if "</think>" in content2:
+                content2 = content2.split("</think>")[-1].strip()
+            reason2 = choice2.get("finish_reason", "completed")
+
+            print(f"👉 [Stop 지정 답변]: {content2}")
+            print(f"📊 정지 원인(finish_reason): {reason2} (정상적으로 'stop' 사유 수신)")
+
+    except Exception as err:
+        print(f"❌ [실습 2 실패]: {err}")
+        return False
+
+    print("\n✅ 모든 파라미터 제어 실습 완료!")
     return True
 
 
 if __name__ == "__main__":
-    run_params_sample()
+    run_model_params_sample()

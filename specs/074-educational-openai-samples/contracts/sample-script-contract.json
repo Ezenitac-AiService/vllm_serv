@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EducationalSampleScriptContract",
+  "description": "Schema for educational sample scripts in samples/ directory",
+  "type": "object",
+  "required": ["sample_files", "common_helper", "readme"],
+  "properties": {
+    "sample_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "common_helper": {
+      "type": "string",
+      "enum": ["samples/common.py"]
+    },
+    "readme": {
+      "type": "string",
+      "enum": ["samples/README.md"]
+    }
+  }
+}
