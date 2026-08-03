@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProcessLifecycleContract",
+  "description": "077-sync-server-dashboard-lifecycle 스크립트 프로세스 생명주기 제어 규격 Contract",
+  "type": "object",
+  "properties": {
+    "scripts": {
+      "type": "object",
+      "properties": {
+        "start_server": {
+          "type": "object",
+          "properties": {
+            "ports": {
+              "type": "array",
+              "items": { "type": "integer" },
+              "default": [8081, 8082]
+            },
+            "pid_files": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["vllm_serv.pid", "vllm_dashboard.pid"]
+            },
+            "readiness_timeout_s": { "type": "integer", "default": 30 },
+            "atomic_rollback_on_failure": { "type": "boolean", "default": true },
+            "single_running_prevention": { "type": "boolean", "default": true }
+          },
+          "required": ["ports", "pid_files", "readiness_timeout_s", "atomic_rollback_on_failure"]
+        },
+        "stop_server": {
+          "type": "object",
+          "properties": {
+            "target_patterns": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["src.api.server", "uvicorn src.api.main:app", "llama-server"]
+            },
+            "sigterm_timeout_s": { "type": "integer", "default": 5 },
+            "force_sigkill_escalation": { "type": "boolean", "default": true },
+            "clean_pid_files": { "type": "boolean", "default": true }
+          },
+          "required": ["target_patterns", "sigterm_timeout_s", "clean_pid_files"]
+        },
+        "status_server": {
+          "type": "object",
+          "properties": {
+            "separated_process_report": { "type": "boolean", "default": true },
+            "vram_report_integration": { "type": "boolean", "default": true }
+          },
+          "required": ["separated_process_report", "vram_report_integration"]
+        }
+      },
+      "required": ["start_server", "stop_server", "status_server"]
+    }
+  },
+  "required": ["scripts"]
+}

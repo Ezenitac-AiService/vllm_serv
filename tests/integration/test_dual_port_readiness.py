@@ -45,7 +45,14 @@ def test_start_server_script_syntax():
     assert res.returncode == 0, f"start_server.sh syntax error: {res.stderr}"
 
 
-def test_status_server_script_syntax():
-    """Verify status_server.sh script syntax using bash -n."""
-    res = subprocess.run(["bash", "-n", "status_server.sh"], capture_output=True, text=True)
-    assert res.returncode == 0, f"status_server.sh syntax error: {res.stderr}"
+def test_stop_server_script_syntax():
+    """Verify stop_server.sh script syntax using bash -n."""
+    res = subprocess.run(["bash", "-n", "stop_server.sh"], capture_output=True, text=True)
+    assert res.returncode == 0, f"stop_server.sh syntax error: {res.stderr}"
+
+
+def test_setup_server_script_syntax():
+    """Verify scripts/setup.sh script syntax using bash -n."""
+    res = subprocess.run(["bash", "-n", "scripts/setup.sh"], capture_output=True, text=True)
+    assert res.returncode == 0, f"scripts/setup.sh syntax error: {res.stderr}"
+

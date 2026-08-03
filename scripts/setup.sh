@@ -457,12 +457,16 @@ COLOR_RED='\033[0;31m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
-CURRENT_RUNNING=$(pgrep -f "src.api.server" || true)
-if [ -n "$CURRENT_RUNNING" ]; then
-    echo -e "${COLOR_YELLOW}[SERVER] 이미 vllm_serv 서버가 구동 중입니다. (PID: $CURRENT_RUNNING)${COLOR_NC}"
-    echo -e "종료하려면 './stop_server.sh' 명령을 실행하세요."
-    exit 0
+SERVER_RUNNING=$(pgrep -f "src.api.server" || true)
+DASH_RUNNING=$(pgrep -f "uvicorn src.api.main:app" || true)
+if [ -n "$SERVER_RUNNING" ] || [ -n "$DASH_RUNNING" ]; then
+    echo -e "${COLOR_YELLOW}[SERVER WARN] 이미 구동 중이거나 단독 상주 중인 서버/대시보드 프로세스가 감지되었습니다.${COLOR_NC}"
+    [ -n "$SERVER_RUNNING" ] && echo -e "  - 8081 메인 서버 PID: $SERVER_RUNNING"
+    [ -n "$DASH_RUNNING" ] && echo -e "  - 8082 대시보드 PID: $DASH_RUNNING"
+    echo -e "${COLOR_YELLOW}기존 프로세스를 먼저 종료하려면 './stop_server.sh' 명령을 실행한 후 다시 시도하세요.${COLOR_NC}"
+    exit 1
 fi
+
 
 echo -e "${COLOR_CYAN}[SERVER] vllm_serv 인퍼런스 서빙 서버 및 웹 대시보드 구동 파이프라인을 시작합니다...${COLOR_NC}"
 echo -e "${COLOR_CYAN}[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...${COLOR_NC}"
@@ -558,6 +562,7 @@ fi
 cd "$BASE_DIR"
 
 PID_FILE="$BASE_DIR/vllm_serv.pid"
+DASHBOARD_PID_FILE="$BASE_DIR/vllm_dashboard.pid"
 
 COLOR_GREEN='\033[0;32m'
 COLOR_YELLOW='\033[1;33m'
@@ -567,7 +572,7 @@ COLOR_NC='\033[0m'
 
 stop_pid() {
     local target_pid=$1
-    if ps -p "$target_pid" > /dev/null 2>&1; then
+    if [ -n "$target_pid" ] && ps -p "$target_pid" > /dev/null 2>&1; then
         echo -e "${COLOR_CYAN}[STOP] vllm_serv 프로세스(PID: $target_pid) 종료 시도 중 (SIGTERM)...${COLOR_NC}"
         kill "$target_pid" 2>/dev/null || true
         for i in {1..10}; do
@@ -588,9 +593,22 @@ if [ -f "$PID_FILE" ]; then
     rm -f "$PID_FILE"
 fi
 
+if [ -f "$DASHBOARD_PID_FILE" ]; then
+    SAVED_DASH_PID=$(cat "$DASHBOARD_PID_FILE")
+    stop_pid "$SAVED_DASH_PID"
+    rm -f "$DASHBOARD_PID_FILE"
+fi
+
 SERVER_PIDS=$(pgrep -f "src.api.server" || true)
 if [ -n "$SERVER_PIDS" ]; then
     for pid in $SERVER_PIDS; do
+        stop_pid "$pid"
+    done
+fi
+
+DASH_PIDS=$(pgrep -f "uvicorn src.api.main:app" || true)
+if [ -n "$DASH_PIDS" ]; then
+    for pid in $DASH_PIDS; do
         stop_pid "$pid"
     done
 fi
@@ -604,12 +622,15 @@ if [ -n "$LLAMA_PIDS" ]; then
     done
 fi
 
+rm -f "$PID_FILE" "$DASHBOARD_PID_FILE" 2>/dev/null || true
+
 if command -v nvidia-smi &> /dev/null; then
     echo -e "${COLOR_GREEN}✓ VRAM 해제 상태 확인:${COLOR_NC}"
-    nvidia-smi --query-gpu=memory.used,memory.free --format=csv,noheader
+    nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader
 fi
 
-echo -e "${COLOR_GREEN}✓ vllm_serv 서버 및 관련 프로세스 종료 완료.${COLOR_NC}"
+echo -e "${COLOR_GREEN}✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.${COLOR_NC}"
+
 EOF
 
 chmod +x "$BASE_DIR/scripts/stop_server.sh"
@@ -634,6 +655,7 @@ fi
 cd "$BASE_DIR"
 
 PID_FILE="$BASE_DIR/vllm_serv.pid"
+DASHBOARD_PID_FILE="$BASE_DIR/vllm_dashboard.pid"
 
 COLOR_GREEN='\033[0;32m'
 COLOR_YELLOW='\033[1;33m'
@@ -650,7 +672,6 @@ uv run python -m src.core.cpu_detector --report 2>/dev/null || true
 
 echo -e "\n[서버 프로세스 및 서비스 상태]"
 
-
 PID=""
 if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")
@@ -661,27 +682,50 @@ if [ -z "$PID" ] || ! ps -p "$PID" > /dev/null 2>&1; then
 fi
 
 if [ -n "$PID" ] && ps -p "$PID" > /dev/null 2>&1; then
-    echo -e "프로세스 상태: ${COLOR_GREEN}🟢 구동 중 (RUNNING, PID: $PID)${COLOR_NC}"
+    echo -e "8081 메인 서버 프로세스: ${COLOR_GREEN}🟢 구동 중 (RUNNING, PID: $PID)${COLOR_NC}"
 else
-    echo -e "프로세스 상태: ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
+    echo -e "8081 메인 서버 프로세스: ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
+fi
+
+DASH_PID=""
+if [ -f "$DASHBOARD_PID_FILE" ]; then
+    DASH_PID=$(cat "$DASHBOARD_PID_FILE")
+fi
+if [ -z "$DASH_PID" ] || ! ps -p "$DASH_PID" > /dev/null 2>&1; then
+    DASH_PID=$(pgrep -f "uvicorn src.api.main:app" | tail -n 1 || echo "")
+fi
+
+if [ -n "$DASH_PID" ] && ps -p "$DASH_PID" > /dev/null 2>&1; then
+    echo -e "8082 대시보드 프로세스  : ${COLOR_GREEN}🟢 구동 중 (RUNNING, PID: $DASH_PID)${COLOR_NC}"
+else
+    echo -e "8082 대시보드 프로세스  : ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
 fi
 
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
 SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
-echo -e "\n[REST API 헬스체크 (http://$SERVER_HOST:$SERVER_PORT/health)]"
-if command -v curl &> /dev/null; then
-    curl -s "http://$SERVER_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
+CURL_HOST="$SERVER_HOST"
+if [ "$CURL_HOST" = "0.0.0.0" ]; then
+    CURL_HOST="127.0.0.1"
 fi
 
-echo -e "\n[웹 대시보드 헬스체크 (http://$SERVER_HOST:8082/)]"
+echo -e "\n[REST API 헬스체크 (http://$CURL_HOST:$SERVER_PORT/health)]"
 if command -v curl &> /dev/null; then
-    if curl -s "http://$SERVER_HOST:8082/" > /dev/null 2>&1; then
-        echo -e "${COLOR_GREEN}🟢 대시보드 서비스 정상 작동 중 (Port 8082 OPEN)${COLOR_NC}"
+    curl -s "http://$CURL_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
+fi
+
+echo -e "\n[웹 대시보드 헬스체크 (http://$CURL_HOST:8082/)]"
+if command -v curl &> /dev/null; then
+    DASH_HTML=$(curl -s "http://$CURL_HOST:8082/" || echo "")
+    if echo "$DASH_HTML" | grep -qE "vLLM|Dashboard|vllm_serv|대시보드"; then
+        echo -e "${COLOR_GREEN}🟢 대시보드 서비스 및 HTML DOM 정상 작동 중 (Port 8082 OPEN, DOM Verified)${COLOR_NC}"
+    elif [ -n "$DASH_HTML" ]; then
+        echo -e "${COLOR_YELLOW}⚠️ 대시보드 포트 응답 수신되나 HTML DOM 키워드 검증 미달 (Port 8082 OPEN, Keyword Missing)${COLOR_NC}"
     else
         echo -e "${COLOR_YELLOW}⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)${COLOR_NC}"
     fi
 fi
+
 
 if command -v nvidia-smi &> /dev/null; then
     echo -e "\n[NVIDIA GPU VRAM 실시간 현황]"

@@ -28,12 +28,16 @@ COLOR_RED='\033[0;31m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
-CURRENT_RUNNING=$(pgrep -f "src.api.server" || true)
-if [ -n "$CURRENT_RUNNING" ]; then
-    echo -e "${COLOR_YELLOW}[SERVER] 이미 vllm_serv 서버가 구동 중입니다. (PID: $CURRENT_RUNNING)${COLOR_NC}"
-    echo -e "종료하려면 './stop_server.sh' 명령을 실행하세요."
-    exit 0
+SERVER_RUNNING=$(pgrep -f "src.api.server" || true)
+DASH_RUNNING=$(pgrep -f "uvicorn src.api.main:app" || true)
+if [ -n "$SERVER_RUNNING" ] || [ -n "$DASH_RUNNING" ]; then
+    echo -e "${COLOR_YELLOW}[SERVER WARN] 이미 구동 중이거나 단독 상주 중인 서버/대시보드 프로세스가 감지되었습니다.${COLOR_NC}"
+    [ -n "$SERVER_RUNNING" ] && echo -e "  - 8081 메인 서버 PID: $SERVER_RUNNING"
+    [ -n "$DASH_RUNNING" ] && echo -e "  - 8082 대시보드 PID: $DASH_RUNNING"
+    echo -e "${COLOR_YELLOW}기존 프로세스를 먼저 종료하려면 './stop_server.sh' 명령을 실행한 후 다시 시도하세요.${COLOR_NC}"
+    exit 1
 fi
+
 
 echo -e "${COLOR_CYAN}[SERVER] vllm_serv 인퍼런스 서빙 서버 및 웹 대시보드 구동 파이프라인을 시작합니다...${COLOR_NC}"
 echo -e "${COLOR_CYAN}[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...${COLOR_NC}"
