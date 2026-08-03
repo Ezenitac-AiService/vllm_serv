@@ -1,46 +1,17 @@
-(vllm-serv) dev@dev:~/vllm_serv$ ./status_server.sh 
-====================================================
- ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트
-====================================================
-====================================================
- ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
-====================================================
- 매칭 플랫폼 프로필 : legacy-i7-930-gtx1070
- CPU 모델명       : Intel(R) Core(TM) i7 CPU         930  @ 2.80GHz
- CPU 아키텍처     : x86_64
- CPU 폴백 모드   : 아니오 (정상 감지)
- SIMD 지원 현황   : SSE4.2=✓, AVX=✗, AVX2=✗, F16C=✗, FMA=✗
-----------------------------------------------------
- GPU 모델명       : NVIDIA GeForce GTX 1070
- Compute Cap      : 6.1 (arch_code: sm_61)
- VRAM 용량       : 8192 MB
-----------------------------------------------------
- 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
-====================================================
-
-[서버 프로세스 및 서비스 상태]
-프로세스 상태: ⚪ 중지됨 (UNLOADED)
-
-[REST API 헬스체크 (http://0.0.0.0:8081/health)]
-응답 없음 (서버 미구현 또는 비활성)
-
-[NVIDIA GPU VRAM 실시간 현황]
-NVIDIA GeForce GTX 1070, 11 MiB, 8192 MiB, 44
-
-[GPU 컴퓨트 프로세스 목록]
-GPU 컴퓨트 프로세스 없음
-
-[CUDA 빌드 상태]
-nvcc: ✓ Cuda compilation tools, release 12.0, V12.0.140
-llama-cpp-python GPU: ✓ CUDA 가속 활성
+./specs/062-fix-aux-models-benchmark/quickstart.md
+./log.txt
+./.env.example
+[UNPACK INFO] ✓ Seed Pack 안전 압축 해제 완결!
+[UNPACK INFO] 다음 단계: ./setup.sh 실행하여 환경 및 서버 설정을 완료하세요.
 (vllm-serv) dev@dev:~/vllm_serv$ scripts/setup.sh
 
 ====================================================
 ▶ 0. Sudo 관리자 권한 확보 및 유지
 ====================================================
 [SETUP INFO] 대화형 TTY 환경 감지. sudo 비밀번호 1회 입력으로 관리자 권한을 확보합니다.
+[sudo] password for dev: 
 [SETUP INFO] ✓ sudo 관리자 권한 승격 성공
-[SETUP INFO] ✓ sudo 타임스탬프 갱신 데몬 가동 (PID: 996954)
+[SETUP INFO] ✓ sudo 타임스탬프 갱신 데몬 가동 (PID: 5458)
 
 ====================================================
 ▶ 1. 필수 프로젝트 기본 파일 존재 여부 검증
@@ -95,7 +66,16 @@ Skipping adding existing rule (v6)
 [SETUP INFO] ✓ sudo ufw allow 8081/tcp
 Skipping adding existing rule
 Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8082/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
 [SETUP INFO] ✓ sudo ufw allow 8089/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8090/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8091/tcp
 Status: active
 Logging: on (low)
 Default: deny (incoming), allow (outgoing), deny (routed)
@@ -110,12 +90,14 @@ Anywhere                   ALLOW IN    127.0.0.1
 8089/tcp                   ALLOW IN    Anywhere                  
 8090/tcp                   ALLOW IN    Anywhere                  
 8091/tcp                   ALLOW IN    Anywhere                  
+8082/tcp                   ALLOW IN    Anywhere                  
 22/tcp (v6)                ALLOW IN    Anywhere (v6)             
 8081 (v6)                  ALLOW IN    Anywhere (v6)             
 8081/tcp (v6)              ALLOW IN    Anywhere (v6)             
 8089/tcp (v6)              ALLOW IN    Anywhere (v6)             
 8090/tcp (v6)              ALLOW IN    Anywhere (v6)             
 8091/tcp (v6)              ALLOW IN    Anywhere (v6)             
+8082/tcp (v6)              ALLOW IN    Anywhere (v6)             
 
 
 ====================================================
@@ -139,6 +121,7 @@ Anywhere                   ALLOW IN    127.0.0.1
 ====================================================
 ▶ 5. setup.sh 설정 완결
 ====================================================
+[SETUP INFO] ✓ 전역 제어 스크립트 실행 권한 (chmod +x) 갱신 완료.
 [SETUP INFO] vllm_serv 환경 설정 및 제어 스크립트 생성이 완료되었습니다!
 
 사용 가능한 제어 명령어:
@@ -146,20 +129,6 @@ Anywhere                   ALLOW IN    127.0.0.1
   - 서버 종료: ./stop_server.sh (또는 ./scripts/stop_server.sh)
   - 상태 확인: ./status_server.sh (또는 ./scripts/status_server.sh)
 
-(vllm-serv) dev@dev:~/vllm_serv$ ./start_server.sh 
-[SERVER] vllm_serv 인퍼런스 서빙 서버 구동 파이프라인을 시작합니다...
-[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...
-ggml_cuda_init: found 1 CUDA devices (Total VRAM: 8105 MiB):
-  Device 0: NVIDIA GeForce GTX 1070, compute capability 6.1, VMM: yes, VRAM: 8105 MiB
-[INFO] Hardware pre-flight check passed.
-[SERVER] ✓ 하드웨어 가속 사전 점검 완료 (GPU CUDA 가속 활성)
-[SERVER] 1. llama-server 바이너리 빌드 상태 및 모델 가중치 자동 다운로드 파이프라인 가동
-[SERVER] 2. 기본 VRAM 상주 서빙 모델(qwen3.5-4b) VRAM 100% 오프로드 검증 수행
-[SERVER] 3. 로그 파일 경로: /home/dev/vllm_serv/logs/server.log
-✓ 서버 데몬 백그라운드 구동 성공! (PID: 997164)
-[SERVER] 서빙 READY 상태 대기 중....
-✓ 서버 준비 완료! (http://0.0.0.0:8081)
-OpenAI API 엔드포인트: http://0.0.0.0:8081/v1/chat/completions
 (vllm-serv) dev@dev:~/vllm_serv$ ./status_server.sh 
 ====================================================
  ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트
@@ -181,21 +150,25 @@ OpenAI API 엔드포인트: http://0.0.0.0:8081/v1/chat/completions
 ====================================================
 
 [서버 프로세스 및 서비스 상태]
-프로세스 상태: 🟢 구동 중 (RUNNING, PID: 997164)
+8081 메인 서버 프로세스: 🟢 구동 중 (RUNNING, PID: 2623)
+8082 대시보드 프로세스  : 🟢 구동 중 (RUNNING, PID: 2624)
 
-[REST API 헬스체크 (http://0.0.0.0:8081/health)]
+[REST API 헬스체크 (http://127.0.0.1:8081/health)]
 {
     "status": "alive",
-    "pid": 997216
+    "pid": null
 }
 
+[웹 대시보드 헬스체크 (http://127.0.0.1:8082/)]
+⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)
+
 [NVIDIA GPU VRAM 실시간 현황]
-NVIDIA GeForce GTX 1070, 3797 MiB, 8192 MiB, 49
+NVIDIA GeForce GTX 1070, 3817 MiB, 8192 MiB, 34
 
 [GPU 컴퓨트 프로세스 목록]
 PID, VRAM(MiB), Process
-997216, 3364 MiB, /home/dev/vllm_serv/.venv/bin/python
-997225, 420 MiB, /home/dev/vllm_serv/.venv/bin/python
+2701, 3364 MiB, /home/dev/vllm_serv/.venv/bin/python
+2713, 440 MiB, /home/dev/vllm_serv/.venv/bin/python
 
 [CUDA 빌드 상태]
 nvcc: ✓ Cuda compilation tools, release 12.0, V12.0.140
@@ -205,21 +178,220 @@ llama-cpp-python GPU: ✓ CUDA 가속 활성
 ====================================================
 🔍 vllm_serv LLM 서버 통합 진단 및 헬스체크 보고서
 ====================================================
-📡 감지된 유효 LAN IP : 127.0.1.1
+📡 감지된 유효 LAN IP : 192.168.0.80
+🌐 다중 탐색 루프백 IP : 127.0.0.1, localhost, 127.0.1.1, 192.168.0.80
 🤖 서빙 중인 LLM 모델  : gemma4-e2b, gemma4-e4b, gemma4-12b, qwen3.5-2b, qwen3.5-4b, qwen3.5-9b, bge-m3, bge-reranker-v2-m3
 
 [방화벽 및 포트 개방 상태]
   - Port 8081_llm_main: ✅ OPEN
-  - Port 8082_dashboard: ❌ CLOSED/BLOCKED
+  - Port 8082_dashboard: ✅ OPEN
+
+[API 엔드포인트 동작 상태]
+  - /v1/models: ✅ 200 OK
+  - /health: ✅ 200 OK
+  - /v1/chat/completions: ⚠️ UNREACHABLE
+
+🖥️ 웹 대시보드 E2E 렌더링 : ✅ ON
+
+STATUS: 💡 SERVER STANDBY / READY
+====================================================
+
+(vllm-serv) dev@dev:~/vllm_serv$ ./stop_server.sh 
+[STOP] vllm_serv 프로세스(PID: 2623) 종료 시도 중 (SIGTERM)...
+✓ 프로세스 2623 정상 종료 완료.
+[STOP] vllm_serv 프로세스(PID: 2624) 종료 시도 중 (SIGTERM)...
+✓ 프로세스 2624 정상 종료 완료.
+✓ VRAM 해제 상태 확인:
+11 MiB, 8192 MiB
+✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.
+(vllm-serv) dev@dev:~/vllm_serv$ ./start_server.sh 
+[SERVER] vllm_serv 인퍼런스 서빙 서버 및 웹 대시보드 구동 파이프라인을 시작합니다...
+[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 8105 MiB):
+  Device 0: NVIDIA GeForce GTX 1070, compute capability 6.1, VMM: yes, VRAM: 8105 MiB
+[INFO] Hardware pre-flight check passed.
+[SERVER] ✓ 하드웨어 가속 사전 점검 완료 (GPU CUDA 가속 활성)
+[SERVER] 1. llama-server 바이너리 빌드 상태 및 모델 가중치 자동 다운로드 파이프라인 가동
+[SERVER] 2. 기본 VRAM 상주 서빙 모델(qwen3.5-4b) VRAM 100% 오프로드 검증 수행
+[SERVER] 3. 8081 메인 로그: /home/dev/vllm_serv/logs/server.log | 8082 대시보드 로그: /home/dev/vllm_serv/logs/dashboard.log
+✓ 서버 데몬 백그라운드 구동 시작! (8081 PID: 5954, 8082 PID: 5953)
+[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 30초)....
+✓ 8081 메인 인퍼런스 서버 및 8082 웹 대시보드 동시 가동 완료!
+OpenAI API 엔드포인트: http://0.0.0.0:8081/v1/chat/completions
+웹 대시보드 URL: http://0.0.0.0:8082/
+(vllm-serv) dev@dev:~/vllm_serv$ ./status_server.sh 
+====================================================
+ ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트
+====================================================
+====================================================
+ ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
+====================================================
+ 매칭 플랫폼 프로필 : legacy-i7-930-gtx1070
+ CPU 모델명       : Intel(R) Core(TM) i7 CPU         930  @ 2.80GHz
+ CPU 아키텍처     : x86_64
+ CPU 폴백 모드   : 아니오 (정상 감지)
+ SIMD 지원 현황   : SSE4.2=✓, AVX=✗, AVX2=✗, F16C=✗, FMA=✗
+----------------------------------------------------
+ GPU 모델명       : NVIDIA GeForce GTX 1070
+ Compute Cap      : 6.1 (arch_code: sm_61)
+ VRAM 용량       : 8192 MB
+----------------------------------------------------
+ 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
+====================================================
+
+[서버 프로세스 및 서비스 상태]
+8081 메인 서버 프로세스: 🟢 구동 중 (RUNNING, PID: 5954)
+8082 대시보드 프로세스  : 🟢 구동 중 (RUNNING, PID: 5953)
+
+[REST API 헬스체크 (http://127.0.0.1:8081/health)]
+{
+    "status": "alive",
+    "pid": 6023
+}
+
+[웹 대시보드 헬스체크 (http://127.0.0.1:8082/)]
+⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)
+
+[NVIDIA GPU VRAM 실시간 현황]
+NVIDIA GeForce GTX 1070, 3967 MiB, 8192 MiB, 43
+
+[GPU 컴퓨트 프로세스 목록]
+PID, VRAM(MiB), Process
+6059, 84 MiB, /home/dev/vllm_serv/.venv/bin/python3
+6041, 420 MiB, /home/dev/vllm_serv/.venv/bin/python3
+6023, 3364 MiB, /home/dev/vllm_serv/.venv/bin/python3
+6063, 84 MiB, /home/dev/vllm_serv/.venv/bin/python3
+
+[CUDA 빌드 상태]
+nvcc: ✓ Cuda compilation tools, release 12.0, V12.0.140
+llama-cpp-python GPU: ✓ CUDA 가속 활성
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/scripts/diagnose_server_health.py
+
+====================================================
+🔍 vllm_serv LLM 서버 통합 진단 및 헬스체크 보고서
+====================================================
+📡 감지된 유효 LAN IP : 192.168.0.80
+🌐 다중 탐색 루프백 IP : 127.0.0.1, localhost, 127.0.1.1, 192.168.0.80
+🤖 서빙 중인 LLM 모델  : gemma4-e2b, gemma4-e4b, gemma4-12b, qwen3.5-2b, qwen3.5-4b, qwen3.5-9b, bge-m3, bge-reranker-v2-m3
+
+[방화벽 및 포트 개방 상태]
+  - Port 8081_llm_main: ✅ OPEN
+  - Port 8082_dashboard: ✅ OPEN
 
 [API 엔드포인트 동작 상태]
   - /v1/models: ✅ 200 OK
   - /health: ✅ 200 OK
   - /v1/chat/completions: ✅ 200 OK
 
-🖥️ 웹 대시보드 E2E 렌더링 : ⚠️ OFF
+🖥️ 웹 대시보드 E2E 렌더링 : ✅ ON
 
 STATUS: 🎉 SYSTEM HEALTHY
 ====================================================
 
+(vllm-serv) dev@dev:~/vllm_serv$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: enp6s0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:30:48:fb:80:b4 brd ff:ff:ff:ff:ff:ff
+3: enp7s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 00:30:48:fb:80:b5 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.0.80/24 metric 100 brd 192.168.0.255 scope global dynamic enp7s0
+       valid_lft 6080sec preferred_lft 6080sec
+    inet6 fe80::230:48ff:fefb:80b5/64 scope link 
+       valid_lft forever preferred_lft forever
+4: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default 
+    link/ether 06:c9:ee:63:0b:10 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_01_chat.py
+
+=================================================================
+📌 01. 비전공자용 OpenAI 규격 일반 대화 API 호출 예제
+=================================================================
+📡 [요청 전송] http://192.168.0.80:8081/v1/chat/completions (모델: qwen3.5-4b)
+
+✅ [응답 성공]
+-----------------------------------------------------------------
+💬 AI 답변: <think>
+Thinking Process:
+
+1.  **Analyze the Request:**
+    *   User: Asks for a summary of the main advantages of `vllm_server` (likely referring to vLLM, a high-throughput inference engine for LLMs) in one sentence.
+    *   Role: IT & AI Technology Expert Assistant.
+    *   Tone: Polite and helpful.
+    *   Constraint: Summarize in exactly **one sentence** (1 문장).
+
+2.  **Identify the Subject:** `vllm_server` usually refers to the vLLM service/inference engine used for Large Language Models (LLMs). Its core selling points are high throughput, low latency, efficient memory management (PagedAttention), and support for continuous batching.
+
+3.  **Drafting Initial Ideas:**
+    *   vLLM 서버는 LLM 추론 속도와 메모리 효율성을 극대화하여 고부하 환경에서 안정적인 서비스를 제공합니다. (vLLM server maximizes LLM inference speed and memory efficiency to provide stable service in high-load environments.)
+    *   vllm_server 는 PagedAttention 기술을 통해 대용량 모델의 지연 시간
+-----------------------------------------------------------------
+📊 정지 사유: length
+📊 토큰 사용량: 프롬프트 54토큰 | 생성 250토큰 | 총 304토큰
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_02_model_params.py
+
+=================================================================
+📌 02. 비전공자용 모델 제어 파라미터(Temperature & Stop) 실습 예제
+=================================================================
+
+🔹 [실습 1] Low Temperature (0.0) - 정확도와 일관성이 필요한 지식 답변
+👉 [Low Temp 답변]: <think>
+Thinking Process:
+
+1.  **Analyze the Request:**
+    *   Question: "대한민국의 수도는 어디인가요?" (Where is the capital of South Korea?)
+    *   Language: Korean.
+    *   Intent: Factual information retrieval.
+
+2.  **Retrieve Knowledge:**
+    *   Country: Republic of Korea (South Korea) - 대한민국.
+    *   Capital City: Seoul (서울).
+
+3.  **Formulate
+
+🔹 [실습 2] Stop Sequence 지정 - 줄바꿈('\n')이 나오면 생성 자동 중단
+👉 [Stop 지정 답변]: <think>
+📊 정지 원인(finish_reason): stop (정상적으로 'stop' 사유 수신)
+
+✅ 모든 파라미터 제어 실습 완료!
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_03_embedding.py
+
+=================================================================
+📌 03. 비전공자용 BGE M3 임베딩(Embedding) 벡터 추출 예제
+=================================================================
+📡 [요청 전송] http://192.168.0.80:8090/v1/embeddings (모델: bge-m3)
+📝 입력 텍스트: "vllm_serv는 고성능 LLM 및 임베딩/리랭킹 다중 모델 동시 서빙 플랫폼입니다."
+
+✅ [임베딩 추출 성공]
+-----------------------------------------------------------------
+📐 임베딩 벡터 차원 (Dimension): 1024차원
+🔢 벡터 수치 샘플 (상위 5개): [-2.0606131553649902, 0.17042015492916107, -0.21816347539424896, -0.13200658559799194, -0.8529728055000305]
+-----------------------------------------------------------------
+📊 프롬프트 토큰: 31토큰
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_04_reranking.py
+
+=================================================================
+📌 04. 비전공자용 BGE Reranker v2 M3 문서 관련도 재순위화 예제
+=================================================================
+📡 [요청 전송] http://192.168.0.80:8081/v1/rerank (모델: bge-reranker-v2-m3)
+❓ 질문 (Query): "vllm_serv 서버의 주요 장점과 사용법은 무엇인가요?"
+📚 후보 문서 수: 3개
+❌ [Reranking 실패]: Client error '404 Not Found' for url 'http://192.168.0.80:8081/v1/rerank'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_05_structured_output.py
+
+=================================================================
+📌 vllm_serv 05. Pydantic 스키마 기반 구조화된 출력(Structured Output) 예제
+=================================================================
+
+🔹 Pydantic `StockAnalysisResponse` 모델 기반 JSON 스키마 주석 및 파싱
+📡 [POST] http://192.168.0.80:8081/v1/chat/completions 요청 전송 중... (모델: qwen3.5-4b)
+
+✅ Pydantic 검증 객체 파싱 성공:
+  [1] 화자: 개미왕 | 대상: 삼성전자, SK하이닉스 | 감성: 매수 | 정제문: 삼성전자와 SK하이닉스가 시외 거래에서 급등하자마자 즉시 매수했습니다.
 (vllm-serv) dev@dev:~/vllm_serv$ 
