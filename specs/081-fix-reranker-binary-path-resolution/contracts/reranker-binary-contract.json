@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RerankerBinaryContract",
+  "description": "081-fix-reranker-binary-path-resolution llama-server 네이티브 바이너리 탐지 및 rerank 200 OK 규격 Contract",
+  "type": "object",
+  "properties": {
+    "binary_info": {
+      "type": "object",
+      "properties": {
+        "binary_path": { "type": "string", "example": "/usr/local/lib/ollama/llama-server" },
+        "build_source": { "type": "string", "example": "PATH" }
+      },
+      "required": ["binary_path", "build_source"]
+    },
+    "rerank_response": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "string", "example": "bge-reranker-v2-m3" },
+        "object": { "type": "string", "example": "list" },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": { "type": "integer" },
+              "relevance_score": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["results"]
+    }
+  }
+}

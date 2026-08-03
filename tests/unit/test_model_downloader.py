@@ -207,7 +207,7 @@ def test_verify_and_build_llama_server_resolution():
     info = ProcessManager.verify_and_build_llama_server()
     assert isinstance(info, LlamaServerBinaryInfo)
     assert info.binary_path is not None
-    assert info.build_source in ("PATH", "LOCAL_BIN", "CMAKE_BUILD", "PYTHON_MODULE_FALLBACK")
+    assert info.build_source in ("PATH", "LOCAL_BIN", "CMAKE_BUILD", "PYTHON_MODULE_FALLBACK", "OLLAMA_LIB", "SYSTEM_BIN")
 
 
 def test_gemma4_mmproj_availability_check():

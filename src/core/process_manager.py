@@ -344,13 +344,31 @@ class ProcessManager:
     @staticmethod
     def verify_and_build_llama_server() -> LlamaServerBinaryInfo:
         """FR-001: Verifies CUDA llama-server binary existence; compiles via CMake with GGML_CUDA=ON if missing."""
-        candidate = shutil.which("llama-server")
-        if candidate and "ollama" not in candidate:
-            return LlamaServerBinaryInfo(
-                binary_path=candidate,
-                is_cuda_enabled=True,
-                build_source="PATH"
-            )
+        # 1. Check PATH via shutil.which for standalone binary binaries
+        for binary_name in ["llama-server", "llama-cpp-server"]:
+            candidate = shutil.which(binary_name)
+            if candidate and "ollama" not in candidate:
+                return LlamaServerBinaryInfo(
+                    binary_path=candidate,
+                    is_cuda_enabled=True,
+                    build_source="PATH"
+                )
+
+        # 2. Check Ollama native C++ binaries and system paths
+        system_candidates = [
+            ("/usr/local/lib/ollama/llama-server", "OLLAMA_LIB"),
+            ("/opt/ollama/lib/ollama/llama-server", "OLLAMA_LIB"),
+            ("/usr/local/bin/llama-server", "SYSTEM_BIN"),
+            ("/usr/bin/llama-server", "SYSTEM_BIN"),
+        ]
+
+        for path, build_source in system_candidates:
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                return LlamaServerBinaryInfo(
+                    binary_path=path,
+                    is_cuda_enabled=True,
+                    build_source=build_source
+                )
 
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         bin_dir = os.path.join(base_dir, ".bin")
