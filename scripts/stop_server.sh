@@ -16,6 +16,7 @@ fi
 cd "$BASE_DIR"
 
 PID_FILE="$BASE_DIR/vllm_serv.pid"
+DASHBOARD_PID_FILE="$BASE_DIR/vllm_dashboard.pid"
 
 COLOR_GREEN='\033[0;32m'
 COLOR_YELLOW='\033[1;33m'
@@ -25,7 +26,7 @@ COLOR_NC='\033[0m'
 
 stop_pid() {
     local target_pid=$1
-    if ps -p "$target_pid" > /dev/null 2>&1; then
+    if [ -n "$target_pid" ] && ps -p "$target_pid" > /dev/null 2>&1; then
         echo -e "${COLOR_CYAN}[STOP] vllm_serv 프로세스(PID: $target_pid) 종료 시도 중 (SIGTERM)...${COLOR_NC}"
         kill "$target_pid" 2>/dev/null || true
         for i in {1..10}; do
@@ -46,9 +47,22 @@ if [ -f "$PID_FILE" ]; then
     rm -f "$PID_FILE"
 fi
 
+if [ -f "$DASHBOARD_PID_FILE" ]; then
+    SAVED_DASH_PID=$(cat "$DASHBOARD_PID_FILE")
+    stop_pid "$SAVED_DASH_PID"
+    rm -f "$DASHBOARD_PID_FILE"
+fi
+
 SERVER_PIDS=$(pgrep -f "src.api.server" || true)
 if [ -n "$SERVER_PIDS" ]; then
     for pid in $SERVER_PIDS; do
+        stop_pid "$pid"
+    done
+fi
+
+DASH_PIDS=$(pgrep -f "uvicorn src.api.main:app" || true)
+if [ -n "$DASH_PIDS" ]; then
+    for pid in $DASH_PIDS; do
         stop_pid "$pid"
     done
 fi
@@ -67,4 +81,4 @@ if command -v nvidia-smi &> /dev/null; then
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv,noheader
 fi
 
-echo -e "${COLOR_GREEN}✓ vllm_serv 서버 및 관련 프로세스 종료 완료.${COLOR_NC}"
+echo -e "${COLOR_GREEN}✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.${COLOR_NC}"

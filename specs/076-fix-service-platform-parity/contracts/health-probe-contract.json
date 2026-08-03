@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ServicePlatformHealthReportContract",
+  "type": "object",
+  "properties": {
+    "detected_lan_ip": { "type": "string" },
+    "probing_target_ips": { "type": "array", "items": { "type": "string" } },
+    "served_models": { "type": "array", "items": { "type": "string" } },
+    "firewall_ports": {
+      "type": "object",
+      "properties": {
+        "8081_llm_main": { "type": "boolean" },
+        "8082_dashboard": { "type": "boolean" }
+      },
+      "required": ["8081_llm_main", "8082_dashboard"]
+    },
+    "api_status": {
+      "type": "object",
+      "properties": {
+        "/v1/models": { "type": "boolean" },
+        "/health": { "type": "boolean" },
+        "/v1/chat/completions": { "type": "boolean" }
+      },
+      "required": ["/v1/models", "/health", "/v1/chat/completions"]
+    },
+    "dashboard_e2e_status": { "type": "boolean" },
+    "is_healthy": { "type": "boolean" }
+  },
+  "required": [
+    "detected_lan_ip",
+    "probing_target_ips",
+    "served_models",
+    "firewall_ports",
+    "api_status",
+    "dashboard_e2e_status",
+    "is_healthy"
+  ]
+}

@@ -14,6 +14,7 @@ fi
 cd "$BASE_DIR"
 
 PID_FILE="$BASE_DIR/vllm_serv.pid"
+DASHBOARD_PID_FILE="$BASE_DIR/vllm_dashboard.pid"
 
 COLOR_GREEN='\033[0;32m'
 COLOR_YELLOW='\033[1;33m'
@@ -30,7 +31,6 @@ uv run python -m src.core.cpu_detector --report 2>/dev/null || true
 
 echo -e "\n[서버 프로세스 및 서비스 상태]"
 
-
 PID=""
 if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")
@@ -41,23 +41,45 @@ if [ -z "$PID" ] || ! ps -p "$PID" > /dev/null 2>&1; then
 fi
 
 if [ -n "$PID" ] && ps -p "$PID" > /dev/null 2>&1; then
-    echo -e "프로세스 상태: ${COLOR_GREEN}🟢 구동 중 (RUNNING, PID: $PID)${COLOR_NC}"
+    echo -e "8081 메인 서버 프로세스: ${COLOR_GREEN}🟢 구동 중 (RUNNING, PID: $PID)${COLOR_NC}"
 else
-    echo -e "프로세스 상태: ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
+    echo -e "8081 메인 서버 프로세스: ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
+fi
+
+DASH_PID=""
+if [ -f "$DASHBOARD_PID_FILE" ]; then
+    DASH_PID=$(cat "$DASHBOARD_PID_FILE")
+fi
+if [ -z "$DASH_PID" ] || ! ps -p "$DASH_PID" > /dev/null 2>&1; then
+    DASH_PID=$(pgrep -f "uvicorn src.api.main:app" | tail -n 1 || echo "")
+fi
+
+if [ -n "$DASH_PID" ] && ps -p "$DASH_PID" > /dev/null 2>&1; then
+    echo -e "8082 대시보드 프로세스  : ${COLOR_GREEN}🟢 구동 중 (RUNNING, PID: $DASH_PID)${COLOR_NC}"
+else
+    echo -e "8082 대시보드 프로세스  : ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
 fi
 
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
 SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
-echo -e "\n[REST API 헬스체크 (http://$SERVER_HOST:$SERVER_PORT/health)]"
-if command -v curl &> /dev/null; then
-    curl -s "http://$SERVER_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
+CURL_HOST="$SERVER_HOST"
+if [ "$CURL_HOST" = "0.0.0.0" ]; then
+    CURL_HOST="127.0.0.1"
 fi
 
-echo -e "\n[웹 대시보드 헬스체크 (http://$SERVER_HOST:8082/)]"
+echo -e "\n[REST API 헬스체크 (http://$CURL_HOST:$SERVER_PORT/health)]"
 if command -v curl &> /dev/null; then
-    if curl -s "http://$SERVER_HOST:8082/" > /dev/null 2>&1; then
-        echo -e "${COLOR_GREEN}🟢 대시보드 서비스 정상 작동 중 (Port 8082 OPEN)${COLOR_NC}"
+    curl -s "http://$CURL_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
+fi
+
+echo -e "\n[웹 대시보드 헬스체크 (http://$CURL_HOST:8082/)]"
+if command -v curl &> /dev/null; then
+    DASH_HTML=$(curl -s "http://$CURL_HOST:8082/" || echo "")
+    if echo "$DASH_HTML" | grep -qE "vLLM|Dashboard|vllm_serv|대시보드"; then
+        echo -e "${COLOR_GREEN}🟢 대시보드 서비스 및 HTML DOM 정상 작동 중 (Port 8082 OPEN, DOM Verified)${COLOR_NC}"
+    elif [ -n "$DASH_HTML" ]; then
+        echo -e "${COLOR_YELLOW}⚠️ 대시보드 포트 응답 수신되나 HTML DOM 키워드 검증 미달 (Port 8082 OPEN, Keyword Missing)${COLOR_NC}"
     else
         echo -e "${COLOR_YELLOW}⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)${COLOR_NC}"
     fi
