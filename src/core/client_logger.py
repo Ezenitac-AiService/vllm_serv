@@ -9,7 +9,8 @@ import uuid
 import logging
 from logging.handlers import QueueHandler, QueueListener, RotatingFileHandler
 from queue import Queue
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 
@@ -50,6 +51,7 @@ class ClientLoggerManager:
 
         self.access_log_path = os.path.join(self.log_dir, "access.log")
         self.error_log_path = os.path.join(self.log_dir, "error.log")
+        self.server_log_path = os.path.join(self.log_dir, "server.log")
 
         # Create RotatingFileHandlers
         self.access_file_handler = RotatingFileHandler(
@@ -62,6 +64,11 @@ class ClientLoggerManager:
         )
         self.error_file_handler.setFormatter(logging.Formatter("%(message)s"))
 
+        self.server_file_handler = RotatingFileHandler(
+            self.server_log_path, maxBytes=self.max_bytes, backupCount=self.backup_count, encoding="utf-8"
+        )
+        self.server_file_handler.setFormatter(logging.Formatter("%(message)s"))
+
         # Setup Queue for Access Logger
         self.access_queue: Queue = Queue()
         self.access_queue_handler = QueueHandler(self.access_queue)
@@ -69,17 +76,17 @@ class ClientLoggerManager:
         self.access_logger.setLevel(logging.INFO)
         self.access_logger.addHandler(self.access_queue_handler)
 
-        self.access_listener = QueueListener(self.access_queue, self.access_file_handler)
+        self.access_listener = QueueListener(self.access_queue, self.access_file_handler, self.server_file_handler)
         self.access_listener.start()
 
-        # Setup Queue for Error Logger
+        # Setup Queue for Error Logger (writes to error.log and server.log)
         self.error_queue: Queue = Queue()
         self.error_queue_handler = QueueHandler(self.error_queue)
         self.error_logger = logging.getLogger("vllm_serv.error")
         self.error_logger.setLevel(logging.ERROR)
         self.error_logger.addHandler(self.error_queue_handler)
 
-        self.error_listener = QueueListener(self.error_queue, self.error_file_handler)
+        self.error_listener = QueueListener(self.error_queue, self.error_file_handler, self.server_file_handler)
         self.error_listener.start()
 
     def log_access(self, entry: AccessLogEntry) -> None:
@@ -101,7 +108,12 @@ class ClientLoggerManager:
         log_msg = " ".join(parts)
         self.access_logger.info(log_msg)
 
-    def log_error(self, entry: ErrorLogEntry) -> None:
+    def log_error(self, entry: Union[ErrorLogEntry, str]) -> None:
+        if isinstance(entry, str):
+            timestamp = datetime.now(timezone.utc).isoformat()
+            self.error_logger.error(f"[{timestamp}] {entry}")
+            return
+
         parts = [
             f"[{entry.timestamp}]",
             f"[{entry.client_ip}]",
@@ -116,6 +128,7 @@ class ClientLoggerManager:
 
         log_msg = " ".join(parts)
         self.error_logger.error(log_msg)
+
 
 
     def get_recent_access_logs(self, limit: int = 50) -> list:

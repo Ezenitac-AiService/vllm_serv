@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RerankApiContract",
+  "type": "object",
+  "required": ["results"],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "relevance_score"],
+        "properties": {
+          "index": { "type": "integer" },
+          "relevance_score": { "type": "number" }
+        }
+      }
+    }
+  }
+}

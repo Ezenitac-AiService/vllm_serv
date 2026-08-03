@@ -99,6 +99,8 @@ class AuxiliaryModelManager:
             print(f"[AuxiliaryManager] Downloading reranker model {model_id}...")
             self.model_downloader.download_model(model_id)
 
+        # Pre-cleanup zombie processes on port 8091 per FR-001
+        self.rerank_pm._cleanup_zombie_on_port(self.rerank_port)
         print(f"[AuxiliaryManager] Spawning reranker instance ({model_id}) on port {self.rerank_port}...")
         state = await self.rerank_pm.spawn_process(model_id=model_id, n_ctx=n_ctx)
 

@@ -4,7 +4,10 @@ Provides GET /v1/models catalog listing and reverse-proxying for RAG/Agent reque
 """
 
 import os
+import sys
 import time
+import json
+import math
 from typing import Any, AsyncGenerator
 import httpx
 from fastapi import APIRouter, Request, HTTPException
@@ -14,8 +17,11 @@ from src.core.auxiliary_manager import auxiliary_manager
 from src.core.config_manager import ConfigManager
 from src.core.model_downloader import ModelDownloader
 from src.core.process_manager import ProcessStatusEnum
+from src.core.client_logger import get_client_logger
+
 
 router = APIRouter()
+
 
 
 def _get_llama_server_config() -> tuple[int, str]:
@@ -185,8 +191,8 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
 
     # Mock response support for pytest/offline execution
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
-        import json
         if clean_path in ("embeddings", "embedding"):
+
             mock_data = {
                 "object": "list",
                 "data": [{"object": "embedding", "index": 0, "embedding": [0.01] * 1024}],
@@ -226,8 +232,8 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
         body_content = await request.body()
         if body_content:
             try:
-                import json
                 body_json = json.loads(body_content)
+
                 model_id = body_json.get("model") or llama_manager.config_manager.get_config().get("current_model", "qwen3.5-4b")
                 requested_n_ctx = body_json.get("n_ctx")
                 if requested_n_ctx is not None:
@@ -307,6 +313,76 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
             headers={"Retry-After": "5"}
         )
 
+    if r.status_code == 404 and clean_path in ("rerank", "reranking"):
+        # Fallback adapter for Python llama_cpp.server on port 8091 which only exposes /v1/embeddings
+        await r.aclose()
+        try:
+            body_json = json.loads(body_content) if body_content else {}
+            query = body_json.get("query") or body_json.get("prompt") or ""
+            documents = body_json.get("documents") or body_json.get("texts") or []
+
+            if query and documents:
+                emb_url = f"http://127.0.0.1:{target_port}/v1/embeddings"
+                emb_payload = {"input": [query] + documents}
+                async with httpx.AsyncClient() as adapter_client:
+                    emb_resp = await adapter_client.post(emb_url, json=emb_payload, timeout=10.0)
+                if emb_resp.status_code == 200:
+                    emb_data = emb_resp.json().get("data", [])
+                    if len(emb_data) == len(documents) + 1:
+                        def cosine_sim(a, b):
+                            if a and isinstance(a[0], list):
+                                a = a[0]
+                            if b and isinstance(b[0], list):
+                                b = b[0]
+                            dot = sum(float(x) * float(y) for x, y in zip(a, b))
+                            norm_a = math.sqrt(sum(float(x) * float(x) for x in a))
+                            norm_b = math.sqrt(sum(float(y) * float(y) for y in b))
+                            return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
+
+                        query_vec = emb_data[0]["embedding"]
+                        doc_vecs = [item["embedding"] for item in emb_data[1:]]
+
+                        results = []
+                        for idx, doc_vec in enumerate(doc_vecs):
+                            score = cosine_sim(query_vec, doc_vec)
+                            results.append({"index": idx, "relevance_score": round(score, 6)})
+
+                        results.sort(key=lambda x: x["relevance_score"], reverse=True)
+                        rerank_response = {
+                            "object": "list",
+                            "data": results,
+                            "results": results,
+                            "usage": {"prompt_tokens": len(query.split()), "total_tokens": len(query.split())}
+                        }
+                        resp_bytes = json.dumps(rerank_response, ensure_ascii=False).encode("utf-8")
+                        return StreamingResponse(content=iter([resp_bytes]), media_type="application/json")
+        except Exception as ex:
+            import traceback
+            from src.core.process_manager import ProcessManager
+            bin_info = ProcessManager.verify_and_build_llama_server()
+            binary_mode = bin_info.build_source
+            pm = auxiliary_manager.rerank_pm if hasattr(auxiliary_manager, "rerank_pm") else None
+            pid = pm.process.pid if (pm and pm.process) else None
+            is_alive = (pm.process.returncode is None) if (pm and pm.process) else False
+            cm = ConfigManager()
+            model_entry = cm.get_model_catalog().get("bge-reranker-v2-m3", {})
+            model_path = model_entry.get("model_path", "")
+            model_exists = os.path.exists(model_path) if model_path else False
+
+            tb_str = traceback.format_exc()
+            err_msg = (
+                f"[RerankerProxyError] Fallback embedding adapter failed for target port {target_port}: {ex}\n"
+                f"  Target URL: http://127.0.0.1:{target_port}/v1/rerank and /v1/embeddings\n"
+                f"  Binary Mode: {binary_mode}\n"
+                f"  Subprocess PID: {pid} (is_alive={is_alive})\n"
+                f"  Model Path: {model_path} (exists={model_exists})\n"
+                f"  Traceback:\n{tb_str}"
+            )
+            get_client_logger().log_error(err_msg)
+            print(err_msg, file=sys.stderr)
+
+
+
     captured_chunks = []
     start_time = time.perf_counter()
     first_chunk_received = False
@@ -329,8 +405,8 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
             await r.aclose()
             if path in ("chat/completions", "completions") and request.method == "POST":
                 try:
-                    import json
                     completion_text = ""
+
                     prompt_tokens = 0
                     completion_tokens = 0
                     if captured_chunks:
