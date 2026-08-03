@@ -110,13 +110,16 @@ class ModelDownloader:
             if not os.path.isdir(abs_dir):
                 continue
 
-            exact_main = os.path.join(abs_dir, catalog_entry["filename"])
-            has_main = os.path.isfile(exact_main)
-            if not has_main:
+            target_filename = catalog_entry.get("filename")
+            if target_filename:
+                exact_main = os.path.join(abs_dir, target_filename)
+                has_main = os.path.isfile(exact_main)
+            else:
                 has_main = any(f.endswith(".gguf") and "mmproj" not in f for f in os.listdir(abs_dir))
 
             if not has_main:
                 continue
+
 
             clip_name = catalog_entry.get("clip_filename")
             if clip_name:

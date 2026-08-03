@@ -133,4 +133,5 @@ if __name__ == "__main__":
     server_cfg = cm.get_server_config()
     port = server_cfg.get("port", 8081) if server_cfg else 8081
     host = server_cfg.get("host", "127.0.0.1") if server_cfg else "127.0.0.1"
-    uvicorn.run("src.api.server:app", host=host, port=port, reload=False)
+    uvicorn.run(app, host=host, port=port, reload=False)
+

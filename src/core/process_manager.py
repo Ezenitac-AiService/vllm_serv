@@ -342,28 +342,47 @@ class ProcessManager:
             pass
 
     @staticmethod
+    def _is_binary_executable_sanity(binary_path: str) -> bool:
+        """FR-001 & FR-002: Verifies if a binary candidate is standalone executable and not an internal Ollama library."""
+        if not binary_path:
+            return False
+        if "ollama" in binary_path.lower():
+            return False
+        if not (os.path.exists(binary_path) and os.access(binary_path, os.X_OK)):
+            return False
+        import subprocess
+        try:
+            res = subprocess.run(
+                [binary_path, "--help"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=1.5
+            )
+            return res.returncode in (0, 1, 2)
+        except Exception:
+            return False
+
+    @staticmethod
     def verify_and_build_llama_server() -> LlamaServerBinaryInfo:
-        """FR-001: Verifies CUDA llama-server binary existence; compiles via CMake with GGML_CUDA=ON if missing."""
+        """FR-001 & FR-002: Verifies CUDA llama-server binary existence; compiles via CMake with GGML_CUDA=ON if missing."""
         # 1. Check PATH via shutil.which for standalone binary binaries
         for binary_name in ["llama-server", "llama-cpp-server"]:
             candidate = shutil.which(binary_name)
-            if candidate and "ollama" not in candidate:
+            if candidate and ProcessManager._is_binary_executable_sanity(candidate):
                 return LlamaServerBinaryInfo(
                     binary_path=candidate,
                     is_cuda_enabled=True,
                     build_source="PATH"
                 )
 
-        # 2. Check Ollama native C++ binaries and system paths
+        # 2. Check system standalone C++ binary paths (excluding Ollama internal paths)
         system_candidates = [
-            ("/usr/local/lib/ollama/llama-server", "OLLAMA_LIB"),
-            ("/opt/ollama/lib/ollama/llama-server", "OLLAMA_LIB"),
             ("/usr/local/bin/llama-server", "SYSTEM_BIN"),
             ("/usr/bin/llama-server", "SYSTEM_BIN"),
         ]
 
         for path, build_source in system_candidates:
-            if os.path.exists(path) and os.access(path, os.X_OK):
+            if ProcessManager._is_binary_executable_sanity(path):
                 return LlamaServerBinaryInfo(
                     binary_path=path,
                     is_cuda_enabled=True,
@@ -374,7 +393,7 @@ class ProcessManager:
         bin_dir = os.path.join(base_dir, ".bin")
         local_binary = os.path.join(bin_dir, "llama-server")
 
-        if os.path.exists(local_binary) and os.access(local_binary, os.X_OK):
+        if ProcessManager._is_binary_executable_sanity(local_binary):
             return LlamaServerBinaryInfo(
                 binary_path=local_binary,
                 is_cuda_enabled=True,

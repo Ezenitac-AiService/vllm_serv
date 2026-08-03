@@ -66,7 +66,7 @@ def get_served_models(server_url: str, timeout: float = 3.0) -> List[str]:
     return []
 
 
-def check_api_endpoints(server_url: str, timeout: float = 3.0) -> Dict[str, bool]:
+def check_api_endpoints(server_url: str, timeout: float = 15.0) -> Dict[str, bool]:
     """주요 API 엔드포인트 (/v1/models, /v1/chat/completions, /health) 헬스 상태를 검증합니다."""
     results = {}
     with httpx.Client(timeout=timeout) as client:
