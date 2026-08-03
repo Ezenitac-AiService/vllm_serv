@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ServerHealthReport",
+  "type": "object",
+  "properties": {
+    "detected_lan_ip": { "type": "string" },
+    "served_models": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "api_status": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "firewall_ports": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "dashboard_e2e_status": { "type": "boolean" },
+    "is_healthy": { "type": "boolean" }
+  },
+  "required": [
+    "detected_lan_ip",
+    "served_models",
+    "api_status",
+    "firewall_ports",
+    "dashboard_e2e_status",
+    "is_healthy"
+  ]
+}

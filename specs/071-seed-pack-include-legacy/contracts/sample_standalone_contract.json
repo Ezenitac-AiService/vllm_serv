@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StockAnalysisResponse",
+  "type": "object",
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "speaker": { "type": "string" },
+          "category": { "type": "string" },
+          "sentiment": { "type": "string" },
+          "target": { "type": "string" },
+          "sentence": { "type": "string" },
+          "refined_sentence": { "type": "string" }
+        },
+        "required": ["speaker", "category", "sentiment", "target", "sentence", "refined_sentence"]
+      }
+    }
+  },
+  "required": ["results"]
+}

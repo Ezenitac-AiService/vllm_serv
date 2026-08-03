@@ -1,23 +1,18 @@
 """sample_05_structured_output.py - vllm_serv Pydantic 구조화된 출력 규격 추출 예제
 
-.legacy/ATEAM_ExtractionItem.py 및 .legacy/BTEAM_ExtractionItem.py에 정의된
-도메인 스키마를 활용하여 LLM 응답을 엄격한 Pydantic/JSON 스키마 데이터 객체로 파싱하는 예제입니다.
+Pydantic 데이터 모델과 OpenAI JSON Schema 규격을 활용하여 LLM 응답을
+엄격한 JSON 데이터 객체로 파싱하고 검증하는 단독(Self-contained) 예제 스크립트입니다.
 
 실행 명령어:
     uv run python samples/sample_05_structured_output.py
 """
 
-import sys
 import os
+import sys
 import json
 import httpx
 from pydantic import BaseModel, Field
 from typing import List
-
-# .legacy 디렉터리를 sys.path에 추가하여 ATEAM/BTEAM 스키마 모듈 임포트
-LEGACY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".legacy")
-if LEGACY_DIR not in sys.path:
-    sys.path.insert(0, LEGACY_DIR)
 
 from common import check_server_health, get_server_host, print_section_header
 
@@ -27,7 +22,7 @@ API_URL = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 MODEL_NAME = "qwen3.5-4b"
 
 
-# Pydantic 구조화 출력 데이터 모델 정의
+# 1. Pydantic 구조화 출력 데이터 모델 정의
 class StockCommentItem(BaseModel):
     speaker: str = Field(description="작성자 닉네임")
     category: str = Field(description="실적/재무, 매수/매도 의도, 차트/기술분석, 뉴스/호재·악재, 경영진/주주가치 중 하나")
@@ -44,29 +39,12 @@ class StockAnalysisResponse(BaseModel):
 def run_structured_output_sample():
     print_section_header("vllm_serv 05. Pydantic 스키마 기반 구조화된 출력(Structured Output) 예제")
 
+    # 2. 서버 구동 상태 점검
     if not check_server_health(SERVER_HOST, MAIN_PORT, "LLM 메인 서버"):
         print("💡 서버 구동 후 스크립트를 재실행해 주세요.")
         return False
 
-    print("\n🔹 [실습 1] 레거시 ATEAM 종목 토론 댓글 감성 파이프라인 호출")
-    try:
-        from ATEAM_ExtractionItem import process_stock_comment_sentiment_extraction
-        sample_timeline = "주식초보 (14:00): 오늘 개장하자마자 삼전 4분기 실적 발표 나온 거 보셨나요?\n차트분석가 (14:01): 넵 어닝 서프라이즈 나왔네요."
-        
-        # OpenAI API 호환 Custom Client 준비 (vllm_serv 8081 연동)
-        from openai import OpenAI
-        custom_client = OpenAI(base_url=f"{SERVER_HOST}:{MAIN_PORT}/v1", api_key="EMPTY")
-        
-        extracted_results = process_stock_comment_sentiment_extraction(
-            comments_timeline=sample_timeline,
-            llm_client=custom_client
-        )
-        print(f"✅ ATEAM 파이프라인 추출 결과 (총 {len(extracted_results)}건):")
-        print(json.dumps(extracted_results, ensure_ascii=False, indent=2))
-    except Exception as err:
-        print(f"⚠️ ATEAM 추출 중 예외 발생: {err}")
-
-    print("\n🔹 [실습 2] Pydantic `StockAnalysisResponse` 모델 직접 JSON 스키마 주석 및 파싱")
+    print("\n🔹 Pydantic `StockAnalysisResponse` 모델 기반 JSON 스키마 주석 및 파싱")
     json_schema_prompt = json.dumps(StockAnalysisResponse.model_json_schema(), ensure_ascii=False, indent=2)
     messages = [
         {
@@ -87,6 +65,8 @@ def run_structured_output_sample():
         "stream": False,
         "response_format": {"type": "json_object"}
     }
+
+    print(f"📡 [POST] {API_URL} 요청 전송 중... (모델: {MODEL_NAME})")
 
     try:
         transport = httpx.HTTPTransport(retries=1)
