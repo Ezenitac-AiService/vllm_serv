@@ -24,6 +24,7 @@ class ServerConfig(BaseModel):
     rerank_backend_port: int = 8091
     embedding_enabled: bool = True
     rerank_enabled: bool = True
+    auxiliary_max_crashes: int = 3
     allowed_subnets: List[str] = Field(default_factory=lambda: ["127.0.0.1", "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"])
     firewall_auto_allow: bool = True
     vram_limit_mb: int = 11264

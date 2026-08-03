@@ -26,6 +26,7 @@ class ProcessStatusEnum(str, Enum):
     VRAM_OFFLOADED = "VRAM_OFFLOADED"
     READY = "READY"
     ERROR = "ERROR"
+    DISABLED = "DISABLED"
 
 class TestExecutionMode(str, Enum):
     MOCK = "mock"

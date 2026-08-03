@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuxiliaryResponseContract",
+  "description": "080-fix-reranker-aux-crash-loop 보조 모델(Reranker/Embedding) 503 Service Unavailable 및 200 OK 응답 규격 Contract",
+  "type": "object",
+  "properties": {
+    "status_code_200": {
+      "type": "object",
+      "description": "보조 모델이 READY 상태일 때의 정상 응답",
+      "properties": {
+        "model": { "type": "string" },
+        "usage": { "type": "object" },
+        "results": {
+          "type": "array",
+          "description": "Rerank 결과 리스트"
+        }
+      }
+    },
+    "status_code_503": {
+      "type": "object",
+      "description": "보조 모델이 ERROR 또는 DISABLED 상태일 때 프록시 503 에러 응답",
+      "properties": {
+        "detail": {
+          "type": "string",
+          "examples": [
+            "Reranker model is not available. The model may have failed to load due to insufficient VRAM.",
+            "Embedding model is not available. The model may have failed to load due to insufficient VRAM."
+          ]
+        }
+      },
+      "required": ["detail"]
+    }
+  }
+}

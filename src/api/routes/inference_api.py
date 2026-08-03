@@ -13,6 +13,7 @@ from src.core.llama_manager import llama_manager
 from src.core.auxiliary_manager import auxiliary_manager
 from src.core.config_manager import ConfigManager
 from src.core.model_downloader import ModelDownloader
+from src.core.process_manager import ProcessStatusEnum
 
 router = APIRouter()
 
@@ -150,6 +151,35 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
         path = request.url.path.strip("/")
 
     clean_path = path.strip("/").split("/")[-1]
+    if clean_path in ("chat/completions", "completions") and not await check_llama_status():
+        raise HTTPException(
+            status_code=503,
+            detail="Model is currently loading or unloaded. Please try again later.",
+            headers={"Retry-After": "10"}
+        )
+    elif clean_path in ("rerank", "reranking"):
+        rerank_state = await auxiliary_manager.ensure_rerank_resident("bge-reranker-v2-m3")
+        if rerank_state.status != ProcessStatusEnum.READY:
+            err_detail = "Reranker model is not available. The model may have failed to load due to insufficient VRAM."
+            if rerank_state.status == ProcessStatusEnum.DISABLED:
+                err_detail = f"Reranker model is disabled due to repeated crashes. ({rerank_state.error_message or ''})"
+            raise HTTPException(
+                status_code=503,
+                detail=err_detail,
+                headers={"Retry-After": "10"}
+            )
+    elif clean_path in ("embeddings", "embedding"):
+        emb_state = await auxiliary_manager.ensure_embedding_resident("bge-m3")
+        if emb_state.status != ProcessStatusEnum.READY:
+            err_detail = "Embedding model is not available. The model may have failed to load due to insufficient VRAM."
+            if emb_state.status == ProcessStatusEnum.DISABLED:
+                err_detail = f"Embedding model is disabled due to repeated crashes. ({emb_state.error_message or ''})"
+            raise HTTPException(
+                status_code=503,
+                detail=err_detail,
+                headers={"Retry-After": "10"}
+            )
+
     # Mock response support for pytest/offline execution
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
         import json
@@ -186,17 +216,6 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20}
             }
             return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
-
-    if clean_path in ("chat/completions", "completions") and not await check_llama_status():
-        raise HTTPException(
-            status_code=503,
-            detail="Model is currently loading or unloaded. Please try again later.",
-            headers={"Retry-After": "10"}
-        )
-    elif clean_path in ("rerank", "reranking"):
-        await auxiliary_manager.ensure_rerank_resident("bge-reranker-v2-m3")
-    elif clean_path in ("embeddings", "embedding"):
-        await auxiliary_manager.ensure_embedding_resident("bge-m3")
 
     body_content = None
     prompt_text = None

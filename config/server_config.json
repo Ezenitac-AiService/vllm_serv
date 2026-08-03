@@ -6,6 +6,7 @@
     "rerank_backend_port": 8091,
     "embedding_enabled": true,
     "rerank_enabled": true,
+    "auxiliary_max_crashes": 3,
     "allowed_subnets": [
         "127.0.0.1",
         "192.168.0.0/16",
