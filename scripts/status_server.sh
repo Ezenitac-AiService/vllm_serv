@@ -85,6 +85,7 @@ if command -v curl &> /dev/null; then
     fi
 fi
 
+
 if command -v nvidia-smi &> /dev/null; then
     echo -e "\n[NVIDIA GPU VRAM 실시간 현황]"
     nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu --format=csv,noheader

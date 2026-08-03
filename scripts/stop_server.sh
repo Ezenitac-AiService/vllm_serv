@@ -76,9 +76,12 @@ if [ -n "$LLAMA_PIDS" ]; then
     done
 fi
 
+rm -f "$PID_FILE" "$DASHBOARD_PID_FILE" 2>/dev/null || true
+
 if command -v nvidia-smi &> /dev/null; then
     echo -e "${COLOR_GREEN}✓ VRAM 해제 상태 확인:${COLOR_NC}"
-    nvidia-smi --query-gpu=memory.used,memory.free --format=csv,noheader
+    nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader
 fi
 
 echo -e "${COLOR_GREEN}✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.${COLOR_NC}"
+
