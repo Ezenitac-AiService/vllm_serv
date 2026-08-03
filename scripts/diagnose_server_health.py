@@ -37,7 +37,7 @@ def get_served_models(server_url: str, timeout: float = 3.0) -> List[str]:
     url = f"{server_url}/v1/models"
     try:
         with httpx.Client(timeout=timeout) as client:
-            resp = client.get(url)
+            resp = client.get(url, headers={"Connection": "close"})
             if resp.status_code == 200:
                 data = resp.json()
                 models = [item.get("id", "") for item in data.get("data", []) if item.get("id")]
@@ -47,34 +47,33 @@ def get_served_models(server_url: str, timeout: float = 3.0) -> List[str]:
     return []
 
 
-def check_api_endpoints(server_url: str, timeout: float = 3.0) -> Dict[str, bool]:
+def check_api_endpoints(server_url: str, timeout: float = 5.0) -> Dict[str, bool]:
     """주요 API 엔드포인트 (/v1/models, /v1/chat/completions, /health) 헬스 상태를 검증합니다."""
     results = {}
     with httpx.Client(timeout=timeout) as client:
         # 1. /v1/models
         try:
-            r1 = client.get(f"{server_url}/v1/models")
+            r1 = client.get(f"{server_url}/v1/models", headers={"Connection": "close"})
             results["/v1/models"] = (r1.status_code == 200)
         except Exception:
             results["/v1/models"] = False
 
-        # 2. /health 또는 기본 핑
+        # 2. /health
         try:
-            r2 = client.get(f"{server_url}/health")
+            r2 = client.get(f"{server_url}/health", headers={"Connection": "close"})
             results["/health"] = (r2.status_code == 200)
         except Exception:
-            # vllm health fallback
             results["/health"] = results["/v1/models"]
 
-        # 3. /v1/chat/completions OPTIONS or minimal POST test
+        # 3. /v1/chat/completions (표준 파이썬 dict 페이로드 기반 정밀 검증)
         try:
             payload = {
                 "model": "qwen3.5-4b",
                 "messages": [{"role": "user", "content": "ping"}],
-                "max_tokens": 1
+                "max_tokens": 5
             }
-            r3 = client.post(f"{server_url}/v1/chat/completions", json=payload)
-            results["/v1/chat/completions"] = (r3.status_code in (200, 400, 422))
+            r3 = client.post(f"{server_url}/v1/chat/completions", json=payload, headers={"Connection": "close"})
+            results["/v1/chat/completions"] = (r3.status_code == 200)
         except Exception:
             results["/v1/chat/completions"] = False
 
@@ -84,8 +83,8 @@ def check_api_endpoints(server_url: str, timeout: float = 3.0) -> Dict[str, bool
 def check_dashboard_e2e(dashboard_url: str, timeout: float = 5.0) -> bool:
     """웹 대시보드(8082) 메인 브라우저 HTTP UI 렌더링 상태를 검증합니다."""
     try:
-        with httpx.Client(timeout=timeout) as client:
-            resp = client.get(dashboard_url)
+        with httpx.Client(timeout=timeout, follow_redirects=True) as client:
+            resp = client.get(dashboard_url, headers={"Connection": "close"})
             return resp.status_code == 200
     except Exception:
         return False
@@ -104,21 +103,17 @@ def run_diagnostics(verbose: bool = True) -> Dict[str, Any]:
     main_url = f"http://{active_ip}:{MAIN_PORT}"
     dashboard_url = f"http://{active_ip}:{DASHBOARD_PORT}"
 
-    # 3. 모델 수집 & API 헬스체크
+    # 3. 모델 수집 & API 헬스체크 (로컬 포인터 우선 fallback)
     models = get_served_models(main_url) if port_8081_open else []
     if not models and port_8081_open:
         models = get_served_models(f"http://127.0.0.1:{MAIN_PORT}")
 
-    api_status = check_api_endpoints(main_url) if port_8081_open else {"/v1/models": False, "/health": False, "/v1/chat/completions": False}
-    if not any(api_status.values()) and port_8081_open:
-        api_status = check_api_endpoints(f"http://127.0.0.1:{MAIN_PORT}")
+    api_status = check_api_endpoints(f"http://127.0.0.1:{MAIN_PORT}") if port_8081_open else {"/v1/models": False, "/health": False, "/v1/chat/completions": False}
 
     # 4. 웹 대시보드 E2E 검증
-    dashboard_status = check_dashboard_e2e(dashboard_url) if port_8082_open else False
-    if not dashboard_status and port_8082_open:
-        dashboard_status = check_dashboard_e2e(f"http://127.0.0.1:{DASHBOARD_PORT}")
+    dashboard_status = check_dashboard_e2e(f"http://127.0.0.1:{DASHBOARD_PORT}") if port_8082_open else False
 
-    is_healthy = port_8081_open and len(models) > 0 and api_status.get("/v1/models", False)
+    is_healthy = port_8081_open and port_8082_open and all(api_status.values()) and dashboard_status
 
     report = {
         "detected_lan_ip": active_ip,
@@ -155,7 +150,7 @@ def print_diagnostic_report(report: Dict[str, Any]):
         icon = "✅ 200 OK" if status else "⚠️ UNREACHABLE"
         print(f"  - {ep}: {icon}")
 
-    dash_icon = "✅ PASS" if report["dashboard_e2e_status"] else "⚠️ OFF"
+    dash_icon = "✅ ON" if report["dashboard_e2e_status"] else "⚠️ OFF"
     print(f"\n🖥️ 웹 대시보드 E2E 렌더링 : {dash_icon}")
     
     summary_icon = "🎉 SYSTEM HEALTHY" if report["is_healthy"] else "💡 SERVER STANDBY / READY"

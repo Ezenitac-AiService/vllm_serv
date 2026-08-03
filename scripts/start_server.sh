@@ -49,6 +49,7 @@ echo -e "${COLOR_GREEN}[SERVER] 3. 로그 파일 경로: $LOG_FILE${COLOR_NC}"
 mkdir -p "$BASE_DIR/logs"
 
 nohup setsid .venv/bin/python -m src.api.server < /dev/null > "$LOG_FILE" 2>&1 &
+nohup setsid .venv/bin/python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8082 < /dev/null > "$BASE_DIR/logs/dashboard.log" 2>&1 &
 sleep 0.5
 SERVER_PID=$(pgrep -f "src.api.server" | tail -n 1 || echo "")
 echo "$SERVER_PID" > "$PID_FILE"

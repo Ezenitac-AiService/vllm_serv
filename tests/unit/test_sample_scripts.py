@@ -14,7 +14,7 @@ if SAMPLES_DIR not in sys.path:
 
 from common import check_server_health, get_server_host
 from sample_01_chat import run_chat_sample
-from sample_02_model_params import run_params_sample
+from sample_02_model_params import run_model_params_sample
 from sample_03_embedding import run_embedding_sample
 from sample_04_reranking import run_reranking_sample
 from sample_05_structured_output import run_structured_output_sample
@@ -75,7 +75,7 @@ def test_sample_01_chat():
 
 def test_sample_02_model_params():
     """sample_02_model_params.py 파라미터 제어 실행 테스트."""
-    success = run_params_sample()
+    success = run_model_params_sample()
     assert success is True
 
 

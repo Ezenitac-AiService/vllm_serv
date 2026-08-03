@@ -54,6 +54,15 @@ if command -v curl &> /dev/null; then
     curl -s "http://$SERVER_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
 fi
 
+echo -e "\n[웹 대시보드 헬스체크 (http://$SERVER_HOST:8082/)]"
+if command -v curl &> /dev/null; then
+    if curl -s "http://$SERVER_HOST:8082/" > /dev/null 2>&1; then
+        echo -e "${COLOR_GREEN}🟢 대시보드 서비스 정상 작동 중 (Port 8082 OPEN)${COLOR_NC}"
+    else
+        echo -e "${COLOR_YELLOW}⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)${COLOR_NC}"
+    fi
+fi
+
 if command -v nvidia-smi &> /dev/null; then
     echo -e "\n[NVIDIA GPU VRAM 실시간 현황]"
     nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu --format=csv,noheader
