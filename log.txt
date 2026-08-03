@@ -1,17 +1,567 @@
+./specs/044-llm-response-payload-viewer/
+./specs/044-llm-response-payload-viewer/checklists/
+./specs/044-llm-response-payload-viewer/checklists/requirements.md
+./specs/044-llm-response-payload-viewer/spec.md
+./specs/044-llm-response-payload-viewer/research.md
+./specs/044-llm-response-payload-viewer/tasks.md
+./specs/044-llm-response-payload-viewer/data-model.md
+./specs/044-llm-response-payload-viewer/plan.md
+./specs/044-llm-response-payload-viewer/quickstart.md
+./specs/006-codebase-efficiency-refactoring/
+./specs/006-codebase-efficiency-refactoring/checklists/
+./specs/006-codebase-efficiency-refactoring/checklists/requirements.md
+./specs/006-codebase-efficiency-refactoring/spec.md
+./specs/006-codebase-efficiency-refactoring/research.md
+./specs/006-codebase-efficiency-refactoring/tasks.md
+./specs/006-codebase-efficiency-refactoring/data-model.md
+./specs/006-codebase-efficiency-refactoring/plan.md
+./specs/006-codebase-efficiency-refactoring/quickstart.md
+./specs/060-fix-wheel-avx-objdump-scanner/
+./specs/060-fix-wheel-avx-objdump-scanner/checklists/
+./specs/060-fix-wheel-avx-objdump-scanner/checklists/requirements.md
+./specs/060-fix-wheel-avx-objdump-scanner/spec.md
+./specs/060-fix-wheel-avx-objdump-scanner/research.md
+./specs/060-fix-wheel-avx-objdump-scanner/tasks.md
+./specs/060-fix-wheel-avx-objdump-scanner/data-model.md
+./specs/060-fix-wheel-avx-objdump-scanner/plan.md
+./specs/060-fix-wheel-avx-objdump-scanner/contracts/
+./specs/060-fix-wheel-avx-objdump-scanner/contracts/wheel-verification-contract.json
+./specs/060-fix-wheel-avx-objdump-scanner/quickstart.md
+./specs/019-seed-pack-generator/
+./specs/019-seed-pack-generator/checklists/
+./specs/019-seed-pack-generator/checklists/requirements.md
+./specs/019-seed-pack-generator/spec.md
+./specs/019-seed-pack-generator/research.md
+./specs/019-seed-pack-generator/tasks.md
+./specs/019-seed-pack-generator/data-model.md
+./specs/019-seed-pack-generator/plan.md
+./specs/019-seed-pack-generator/contracts/
+./specs/019-seed-pack-generator/contracts/seed_pack_cli_contract.md
+./specs/019-seed-pack-generator/quickstart.md
+./specs/076-fix-service-platform-parity/
+./specs/076-fix-service-platform-parity/checklists/
+./specs/076-fix-service-platform-parity/checklists/requirements.md
+./specs/076-fix-service-platform-parity/spec.md
+./specs/076-fix-service-platform-parity/research.md
+./specs/076-fix-service-platform-parity/tasks.md
+./specs/076-fix-service-platform-parity/data-model.md
+./specs/076-fix-service-platform-parity/plan.md
+./specs/076-fix-service-platform-parity/contracts/
+./specs/076-fix-service-platform-parity/contracts/health-probe-contract.json
+./specs/076-fix-service-platform-parity/quickstart.md
+./specs/073-fix-chat-peer-closed/
+./specs/073-fix-chat-peer-closed/checklists/
+./specs/073-fix-chat-peer-closed/checklists/requirements.md
+./specs/073-fix-chat-peer-closed/spec.md
+./specs/073-fix-chat-peer-closed/research.md
+./specs/073-fix-chat-peer-closed/tasks.md
+./specs/073-fix-chat-peer-closed/data-model.md
+./specs/073-fix-chat-peer-closed/plan.md
+./specs/073-fix-chat-peer-closed/contracts/
+./specs/073-fix-chat-peer-closed/contracts/chat-completion-contract.json
+./specs/073-fix-chat-peer-closed/quickstart.md
+./specs/036-legacy-extraction-llm/
+./specs/036-legacy-extraction-llm/checklists/
+./specs/036-legacy-extraction-llm/checklists/requirements.md
+./specs/036-legacy-extraction-llm/model_benchmark_comparison_report.md
+./specs/036-legacy-extraction-llm/spec.md
+./specs/036-legacy-extraction-llm/research.md
+./specs/036-legacy-extraction-llm/tasks.md
+./specs/036-legacy-extraction-llm/analysis_report_quality.md
+./specs/036-legacy-extraction-llm/data-model.md
+./specs/036-legacy-extraction-llm/plan.md
+./specs/036-legacy-extraction-llm/contracts/
+./specs/036-legacy-extraction-llm/contracts/legacy_extraction_contract.json
+./specs/036-legacy-extraction-llm/quickstart.md
+./specs/003-context-scaling/
+./specs/003-context-scaling/analysis_report.md
+./specs/003-context-scaling/checklists/
+./specs/003-context-scaling/checklists/requirements.md
+./specs/003-context-scaling/spec.md
+./specs/003-context-scaling/research.md
+./specs/003-context-scaling/tasks.md
+./specs/003-context-scaling/data-model.md
+./specs/003-context-scaling/plan.md
+./specs/003-context-scaling/contracts/
+./specs/003-context-scaling/quickstart.md
+./specs/065-seed-pack-specs-samples/
+./specs/065-seed-pack-specs-samples/checklists/
+./specs/065-seed-pack-specs-samples/checklists/requirements.md
+./specs/065-seed-pack-specs-samples/spec.md
+./specs/065-seed-pack-specs-samples/research.md
+./specs/065-seed-pack-specs-samples/tasks.md
+./specs/065-seed-pack-specs-samples/data-model.md
+./specs/065-seed-pack-specs-samples/plan.md
+./specs/065-seed-pack-specs-samples/contracts/
+./specs/065-seed-pack-specs-samples/contracts/seed-pack-contract.json
+./specs/065-seed-pack-specs-samples/quickstart.md
+./specs/045-db-seed-and-setup-integration/
+./specs/045-db-seed-and-setup-integration/checklists/
+./specs/045-db-seed-and-setup-integration/checklists/requirements.md
+./specs/045-db-seed-and-setup-integration/spec.md
+./specs/045-db-seed-and-setup-integration/research.md
+./specs/045-db-seed-and-setup-integration/tasks.md
+./specs/045-db-seed-and-setup-integration/data-model.md
+./specs/045-db-seed-and-setup-integration/plan.md
+./specs/045-db-seed-and-setup-integration/quickstart.md
+./specs/008-response-quality-eval/
+./specs/008-response-quality-eval/checklists/
+./specs/008-response-quality-eval/checklists/requirements.md
+./specs/008-response-quality-eval/spec.md
+./specs/008-response-quality-eval/research.md
+./specs/008-response-quality-eval/tasks.md
+./specs/008-response-quality-eval/analysis_report_quality.md
+./specs/008-response-quality-eval/data-model.md
+./specs/008-response-quality-eval/plan.md
+./specs/008-response-quality-eval/contracts/
+./specs/008-response-quality-eval/contracts/quality-eval-schema.json
+./specs/008-response-quality-eval/quickstart.md
+./specs/037-dashboard-enhancement/
+./specs/037-dashboard-enhancement/checklists/
+./specs/037-dashboard-enhancement/checklists/requirements.md
+./specs/037-dashboard-enhancement/spec.md
+./specs/037-dashboard-enhancement/research.md
+./specs/037-dashboard-enhancement/tasks.md
+./specs/037-dashboard-enhancement/data-model.md
+./specs/037-dashboard-enhancement/plan.md
+./specs/037-dashboard-enhancement/contracts/
+./specs/037-dashboard-enhancement/contracts/dashboard_enhancement_contract.json
+./specs/037-dashboard-enhancement/quickstart.md
+./specs/023-client-request-logging/
+./specs/023-client-request-logging/checklists/
+./specs/023-client-request-logging/checklists/requirements.md
+./specs/023-client-request-logging/spec.md
+./specs/023-client-request-logging/research.md
+./specs/023-client-request-logging/tasks.md
+./specs/023-client-request-logging/data-model.md
+./specs/023-client-request-logging/plan.md
+./specs/023-client-request-logging/contracts/
+./specs/023-client-request-logging/contracts/api_contracts.md
+./specs/023-client-request-logging/quickstart.md
+./specs/032-fix-internal-subnet-access/
+./specs/032-fix-internal-subnet-access/checklists/
+./specs/032-fix-internal-subnet-access/checklists/requirements.md
+./specs/032-fix-internal-subnet-access/spec.md
+./specs/032-fix-internal-subnet-access/research.md
+./specs/032-fix-internal-subnet-access/tasks.md
+./specs/032-fix-internal-subnet-access/data-model.md
+./specs/032-fix-internal-subnet-access/plan.md
+./specs/032-fix-internal-subnet-access/contracts/
+./specs/032-fix-internal-subnet-access/contracts/network-config-contract.json
+./specs/032-fix-internal-subnet-access/quickstart.md
+./specs/055-fix-migration-setup-fallback/
+./specs/055-fix-migration-setup-fallback/checklists/
+./specs/055-fix-migration-setup-fallback/checklists/requirements.md
+./specs/055-fix-migration-setup-fallback/spec.md
+./specs/055-fix-migration-setup-fallback/research.md
+./specs/055-fix-migration-setup-fallback/tasks.md
+./specs/055-fix-migration-setup-fallback/data-model.md
+./specs/055-fix-migration-setup-fallback/plan.md
+./specs/055-fix-migration-setup-fallback/contracts/
+./specs/055-fix-migration-setup-fallback/contracts/fallback-pipeline-api.json
+./specs/055-fix-migration-setup-fallback/quickstart.md
+./specs/011-fix-vram-offload-timing/
+./specs/011-fix-vram-offload-timing/checklists/
+./specs/011-fix-vram-offload-timing/checklists/requirements.md
+./specs/011-fix-vram-offload-timing/spec.md
+./specs/011-fix-vram-offload-timing/research.md
+./specs/011-fix-vram-offload-timing/tasks.md
+./specs/011-fix-vram-offload-timing/data-model.md
+./specs/011-fix-vram-offload-timing/plan.md
+./specs/011-fix-vram-offload-timing/contracts/
+./specs/011-fix-vram-offload-timing/contracts/process_timing_api.md
+./specs/011-fix-vram-offload-timing/quickstart.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/
+./specs/061-fix-seed-pack-exclusions-gpu-verification/checklists/
+./specs/061-fix-seed-pack-exclusions-gpu-verification/checklists/requirements.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/spec.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/research.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/tasks.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/analysis_report_quality.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/data-model.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/plan.md
+./specs/061-fix-seed-pack-exclusions-gpu-verification/contracts/
+./specs/061-fix-seed-pack-exclusions-gpu-verification/contracts/seedpack-exclusion-contract.json
+./specs/061-fix-seed-pack-exclusions-gpu-verification/quickstart.md
+./specs/017-codebase-refactoring-cleanup/
+./specs/017-codebase-refactoring-cleanup/checklists/
+./specs/017-codebase-refactoring-cleanup/checklists/requirements.md
+./specs/017-codebase-refactoring-cleanup/spec.md
+./specs/017-codebase-refactoring-cleanup/research.md
+./specs/017-codebase-refactoring-cleanup/tasks.md
+./specs/017-codebase-refactoring-cleanup/analysis_report_quality.md
+./specs/017-codebase-refactoring-cleanup/data-model.md
+./specs/017-codebase-refactoring-cleanup/plan.md
+./specs/017-codebase-refactoring-cleanup/contracts/
+./specs/017-codebase-refactoring-cleanup/contracts/subnet_filter_contract.json
+./specs/017-codebase-refactoring-cleanup/contracts/config_api_contract.json
+./specs/017-codebase-refactoring-cleanup/quickstart.md
+./specs/070-samples-platform-ip-separation/
+./specs/070-samples-platform-ip-separation/checklists/
+./specs/070-samples-platform-ip-separation/checklists/requirements.md
+./specs/070-samples-platform-ip-separation/spec.md
+./specs/070-samples-platform-ip-separation/research.md
+./specs/070-samples-platform-ip-separation/tasks.md
+./specs/070-samples-platform-ip-separation/data-model.md
+./specs/070-samples-platform-ip-separation/plan.md
+./specs/070-samples-platform-ip-separation/contracts/
+./specs/070-samples-platform-ip-separation/contracts/sample_config_contract.json
+./specs/070-samples-platform-ip-separation/quickstart.md
+./specs/051-fix-model-select-display/
+./specs/051-fix-model-select-display/checklists/
+./specs/051-fix-model-select-display/checklists/requirements.md
+./specs/051-fix-model-select-display/spec.md
+./specs/051-fix-model-select-display/research.md
+./specs/051-fix-model-select-display/tasks.md
+./specs/051-fix-model-select-display/data-model.md
+./specs/051-fix-model-select-display/plan.md
+./specs/051-fix-model-select-display/contracts/
+./specs/051-fix-model-select-display/contracts/model_select_display_fix_contract.md
+./specs/051-fix-model-select-display/quickstart.md
+./specs/021-enhance-shell-scripts/
+./specs/021-enhance-shell-scripts/checklists/
+./specs/021-enhance-shell-scripts/checklists/requirements.md
+./specs/021-enhance-shell-scripts/spec.md
+./specs/021-enhance-shell-scripts/research.md
+./specs/021-enhance-shell-scripts/tasks.md
+./specs/021-enhance-shell-scripts/data-model.md
+./specs/021-enhance-shell-scripts/plan.md
+./specs/021-enhance-shell-scripts/contracts/
+./specs/021-enhance-shell-scripts/contracts/cli_contracts.md
+./specs/021-enhance-shell-scripts/quickstart.md
+./specs/018-cuda-build-setup/
+./specs/018-cuda-build-setup/checklists/
+./specs/018-cuda-build-setup/checklists/requirements.md
+./specs/018-cuda-build-setup/spec.md
+./specs/018-cuda-build-setup/research.md
+./specs/018-cuda-build-setup/tasks.md
+./specs/018-cuda-build-setup/analysis_report_quality.md
+./specs/018-cuda-build-setup/data-model.md
+./specs/018-cuda-build-setup/plan.md
+./specs/018-cuda-build-setup/contracts/
+./specs/018-cuda-build-setup/contracts/cuda_build_api.md
+./specs/018-cuda-build-setup/quickstart.md
+./specs/026-archive-legacy-files/
+./specs/026-archive-legacy-files/checklists/
+./specs/026-archive-legacy-files/checklists/requirements.md
+./specs/026-archive-legacy-files/spec.md
+./specs/026-archive-legacy-files/research.md
+./specs/026-archive-legacy-files/tasks.md
+./specs/026-archive-legacy-files/data-model.md
+./specs/026-archive-legacy-files/plan.md
+./specs/026-archive-legacy-files/contracts/
+./specs/026-archive-legacy-files/contracts/legacy-archive-contract.json
+./specs/026-archive-legacy-files/quickstart.md
+./specs/015-gemma4-model-loading-fix/
+./specs/015-gemma4-model-loading-fix/checklists/
+./specs/015-gemma4-model-loading-fix/checklists/requirements.md
+./specs/015-gemma4-model-loading-fix/spec.md
+./specs/015-gemma4-model-loading-fix/research.md
+./specs/015-gemma4-model-loading-fix/tasks.md
+./specs/015-gemma4-model-loading-fix/analysis_report_quality.md
+./specs/015-gemma4-model-loading-fix/data-model.md
+./specs/015-gemma4-model-loading-fix/plan.md
+./specs/015-gemma4-model-loading-fix/contracts/
+./specs/015-gemma4-model-loading-fix/contracts/gemma4_loading_contract.json
+./specs/015-gemma4-model-loading-fix/quickstart.md
+./specs/064-sample-scripts-real-ip/
+./specs/064-sample-scripts-real-ip/checklists/
+./specs/064-sample-scripts-real-ip/checklists/requirements.md
+./specs/064-sample-scripts-real-ip/spec.md
+./specs/064-sample-scripts-real-ip/research.md
+./specs/064-sample-scripts-real-ip/tasks.md
+./specs/064-sample-scripts-real-ip/data-model.md
+./specs/064-sample-scripts-real-ip/plan.md
+./specs/064-sample-scripts-real-ip/contracts/
+./specs/064-sample-scripts-real-ip/contracts/real-ip-contract.json
+./specs/064-sample-scripts-real-ip/quickstart.md
+./specs/039-seed-pack-sudo-firewall-migration/
+./specs/039-seed-pack-sudo-firewall-migration/checklists/
+./specs/039-seed-pack-sudo-firewall-migration/checklists/requirements.md
+./specs/039-seed-pack-sudo-firewall-migration/spec.md
+./specs/039-seed-pack-sudo-firewall-migration/research.md
+./specs/039-seed-pack-sudo-firewall-migration/tasks.md
+./specs/039-seed-pack-sudo-firewall-migration/analysis_report_quality.md
+./specs/039-seed-pack-sudo-firewall-migration/data-model.md
+./specs/039-seed-pack-sudo-firewall-migration/plan.md
+./specs/039-seed-pack-sudo-firewall-migration/contracts/
+./specs/039-seed-pack-sudo-firewall-migration/contracts/firewall_manager_contract.md
+./specs/039-seed-pack-sudo-firewall-migration/contracts/setup_sh_contract.md
+./specs/039-seed-pack-sudo-firewall-migration/contracts/configure_firewall_sh_contract.md
+./specs/039-seed-pack-sudo-firewall-migration/quickstart.md
+./specs/028-update-platform-network-profiles/
+./specs/028-update-platform-network-profiles/checklists/
+./specs/028-update-platform-network-profiles/checklists/requirements.md
+./specs/028-update-platform-network-profiles/spec.md
+./specs/028-update-platform-network-profiles/research.md
+./specs/028-update-platform-network-profiles/tasks.md
+./specs/028-update-platform-network-profiles/data-model.md
+./specs/028-update-platform-network-profiles/plan.md
+./specs/028-update-platform-network-profiles/contracts/
+./specs/028-update-platform-network-profiles/contracts/admin-and-error-api.md
+./specs/028-update-platform-network-profiles/quickstart.md
+./specs/071-seed-pack-include-legacy/
+./specs/071-seed-pack-include-legacy/checklists/
+./specs/071-seed-pack-include-legacy/checklists/requirements.md
+./specs/071-seed-pack-include-legacy/spec.md
+./specs/071-seed-pack-include-legacy/research.md
+./specs/071-seed-pack-include-legacy/tasks.md
+./specs/071-seed-pack-include-legacy/data-model.md
+./specs/071-seed-pack-include-legacy/plan.md
+./specs/071-seed-pack-include-legacy/contracts/
+./specs/071-seed-pack-include-legacy/contracts/sample_standalone_contract.json
+./specs/071-seed-pack-include-legacy/quickstart.md
+./specs/054-seedpack-setup-sync/
+./specs/054-seedpack-setup-sync/checklists/
+./specs/054-seedpack-setup-sync/checklists/requirements.md
+./specs/054-seedpack-setup-sync/spec.md
+./specs/054-seedpack-setup-sync/research.md
+./specs/054-seedpack-setup-sync/tasks.md
+./specs/054-seedpack-setup-sync/data-model.md
+./specs/054-seedpack-setup-sync/plan.md
+./specs/054-seedpack-setup-sync/contracts/
+./specs/054-seedpack-setup-sync/contracts/seedpack-setup-api.json
+./specs/054-seedpack-setup-sync/quickstart.md
+./specs/012-audit-test-reliability/
+./specs/012-audit-test-reliability/checklists/
+./specs/012-audit-test-reliability/checklists/requirements.md
+./specs/012-audit-test-reliability/spec.md
+./specs/012-audit-test-reliability/research.md
+./specs/012-audit-test-reliability/tasks.md
+./specs/012-audit-test-reliability/analysis_report_quality.md
+./specs/012-audit-test-reliability/data-model.md
+./specs/012-audit-test-reliability/plan.md
+./specs/012-audit-test-reliability/contracts/
+./specs/012-audit-test-reliability/contracts/process-lifecycle-api.json
+./specs/012-audit-test-reliability/quickstart.md
+./specs/005-uv-package-management/
+./specs/005-uv-package-management/checklists/
+./specs/005-uv-package-management/checklists/requirements.md
+./specs/005-uv-package-management/spec.md
+./specs/005-uv-package-management/research.md
+./specs/005-uv-package-management/tasks.md
+./specs/005-uv-package-management/data-model.md
+./specs/005-uv-package-management/plan.md
+./specs/005-uv-package-management/quickstart.md
+./specs/031-fix-seed-pack-cuda-arch/
+./specs/031-fix-seed-pack-cuda-arch/checklists/
+./specs/031-fix-seed-pack-cuda-arch/checklists/requirements.md
+./specs/031-fix-seed-pack-cuda-arch/spec.md
+./specs/031-fix-seed-pack-cuda-arch/research.md
+./specs/031-fix-seed-pack-cuda-arch/tasks.md
+./specs/031-fix-seed-pack-cuda-arch/data-model.md
+./specs/031-fix-seed-pack-cuda-arch/plan.md
+./specs/031-fix-seed-pack-cuda-arch/contracts/
+./specs/031-fix-seed-pack-cuda-arch/contracts/seed-pack-cuda-contract.md
+./specs/031-fix-seed-pack-cuda-arch/quickstart.md
+./specs/020-cpu-build-detection/
+./specs/020-cpu-build-detection/checklists/
+./specs/020-cpu-build-detection/checklists/requirements.md
+./specs/020-cpu-build-detection/spec.md
+./specs/020-cpu-build-detection/research.md
+./specs/020-cpu-build-detection/tasks.md
+./specs/020-cpu-build-detection/data-model.md
+./specs/020-cpu-build-detection/plan.md
+./specs/020-cpu-build-detection/contracts/
+./specs/020-cpu-build-detection/contracts/cpu_detector_api.md
+./specs/020-cpu-build-detection/quickstart.md
+./specs/053-embedding-reranker-model-serving/
+./specs/053-embedding-reranker-model-serving/checklists/
+./specs/053-embedding-reranker-model-serving/checklists/requirements.md
+./specs/053-embedding-reranker-model-serving/spec.md
+./specs/053-embedding-reranker-model-serving/research.md
+./specs/053-embedding-reranker-model-serving/tasks.md
+./specs/053-embedding-reranker-model-serving/data-model.md
+./specs/053-embedding-reranker-model-serving/plan.md
+./specs/053-embedding-reranker-model-serving/contracts/
+./specs/053-embedding-reranker-model-serving/contracts/embeddings-api.json
+./specs/053-embedding-reranker-model-serving/contracts/rerank-api.json
+./specs/053-embedding-reranker-model-serving/quickstart.md
+./specs/007-qwen35-model-support/
+./specs/007-qwen35-model-support/checklists/
+./specs/007-qwen35-model-support/checklists/requirements.md
+./specs/007-qwen35-model-support/spec.md
+./specs/007-qwen35-model-support/research.md
+./specs/007-qwen35-model-support/analysis_report_qwen35.md
+./specs/007-qwen35-model-support/tasks.md
+./specs/007-qwen35-model-support/data-model.md
+./specs/007-qwen35-model-support/plan.md
+./specs/007-qwen35-model-support/quickstart.md
+./specs/049-playground-model-selection/
+./specs/049-playground-model-selection/checklists/
+./specs/049-playground-model-selection/checklists/requirements.md
+./specs/049-playground-model-selection/spec.md
+./specs/049-playground-model-selection/research.md
+./specs/049-playground-model-selection/tasks.md
+./specs/049-playground-model-selection/data-model.md
+./specs/049-playground-model-selection/plan.md
+./specs/049-playground-model-selection/contracts/
+./specs/049-playground-model-selection/contracts/playground_model_selection_contract.md
+./specs/049-playground-model-selection/quickstart.md
+./specs/027-architecture-refactoring-analysis/
+./specs/027-architecture-refactoring-analysis/checklists/
+./specs/027-architecture-refactoring-analysis/checklists/requirements.md
+./specs/027-architecture-refactoring-analysis/spec.md
+./specs/027-architecture-refactoring-analysis/research.md
+./specs/027-architecture-refactoring-analysis/tasks.md
+./specs/027-architecture-refactoring-analysis/data-model.md
+./specs/027-architecture-refactoring-analysis/plan.md
+./specs/027-architecture-refactoring-analysis/contracts/
+./specs/027-architecture-refactoring-analysis/contracts/structured-output-contract.json
+./specs/027-architecture-refactoring-analysis/quickstart.md
+./specs/057-fix-uv-no-cache-source-compilation/
+./specs/057-fix-uv-no-cache-source-compilation/checklists/
+./specs/057-fix-uv-no-cache-source-compilation/checklists/requirements.md
+./specs/057-fix-uv-no-cache-source-compilation/spec.md
+./specs/057-fix-uv-no-cache-source-compilation/research.md
+./specs/057-fix-uv-no-cache-source-compilation/tasks.md
+./specs/057-fix-uv-no-cache-source-compilation/data-model.md
+./specs/057-fix-uv-no-cache-source-compilation/plan.md
+./specs/057-fix-uv-no-cache-source-compilation/contracts/
+./specs/057-fix-uv-no-cache-source-compilation/contracts/fallback-pipeline-api.json
+./specs/057-fix-uv-no-cache-source-compilation/quickstart.md
+./specs/068-fix-playground-response-streaming/
+./specs/068-fix-playground-response-streaming/checklists/
+./specs/068-fix-playground-response-streaming/checklists/requirements.md
+./specs/068-fix-playground-response-streaming/spec.md
+./specs/068-fix-playground-response-streaming/research.md
+./specs/068-fix-playground-response-streaming/tasks.md
+./specs/068-fix-playground-response-streaming/data-model.md
+./specs/068-fix-playground-response-streaming/plan.md
+./specs/068-fix-playground-response-streaming/contracts/
+./specs/068-fix-playground-response-streaming/contracts/playground-stream-contract.json
+./specs/068-fix-playground-response-streaming/quickstart.md
+./specs/035-seed-pack-wheel-diagnostics/
+./specs/035-seed-pack-wheel-diagnostics/checklists/
+./specs/035-seed-pack-wheel-diagnostics/checklists/requirements.md
+./specs/035-seed-pack-wheel-diagnostics/spec.md
+./specs/035-seed-pack-wheel-diagnostics/research.md
+./specs/035-seed-pack-wheel-diagnostics/tasks.md
+./specs/035-seed-pack-wheel-diagnostics/data-model.md
+./specs/035-seed-pack-wheel-diagnostics/plan.md
+./specs/035-seed-pack-wheel-diagnostics/contracts/
+./specs/035-seed-pack-wheel-diagnostics/contracts/wheel_scanner.md
+./specs/035-seed-pack-wheel-diagnostics/quickstart.md
+./specs/014-real-gpu-benchmark-testing/
+./specs/014-real-gpu-benchmark-testing/checklists/
+./specs/014-real-gpu-benchmark-testing/checklists/requirements.md
+./specs/014-real-gpu-benchmark-testing/spec.md
+./specs/014-real-gpu-benchmark-testing/research.md
+./specs/014-real-gpu-benchmark-testing/tasks.md
+./specs/014-real-gpu-benchmark-testing/data-model.md
+./specs/014-real-gpu-benchmark-testing/plan.md
+./specs/014-real-gpu-benchmark-testing/contracts/
+./specs/014-real-gpu-benchmark-testing/contracts/dual-mode-test-schema.json
+./specs/014-real-gpu-benchmark-testing/quickstart.md
+./specs/067-fix-server-startup-pythonpath/
+./specs/067-fix-server-startup-pythonpath/checklists/
+./specs/067-fix-server-startup-pythonpath/checklists/requirements.md
+./specs/067-fix-server-startup-pythonpath/spec.md
+./specs/067-fix-server-startup-pythonpath/research.md
+./specs/067-fix-server-startup-pythonpath/tasks.md
+./specs/067-fix-server-startup-pythonpath/data-model.md
+./specs/067-fix-server-startup-pythonpath/plan.md
+./specs/067-fix-server-startup-pythonpath/contracts/
+./specs/067-fix-server-startup-pythonpath/contracts/server-control-contract.json
+./specs/067-fix-server-startup-pythonpath/quickstart.md
+./specs/009-auto-model-download-serving/
+./specs/009-auto-model-download-serving/checklists/
+./specs/009-auto-model-download-serving/checklists/requirements.md
+./specs/009-auto-model-download-serving/spec.md
+./specs/009-auto-model-download-serving/research.md
+./specs/009-auto-model-download-serving/tasks.md
+./specs/009-auto-model-download-serving/data-model.md
+./specs/009-auto-model-download-serving/plan.md
+./specs/009-auto-model-download-serving/quickstart.md
+./specs/058-fix-make-seed-pack-build-backend/
+./specs/058-fix-make-seed-pack-build-backend/checklists/
+./specs/058-fix-make-seed-pack-build-backend/checklists/requirements.md
+./specs/058-fix-make-seed-pack-build-backend/spec.md
+./specs/058-fix-make-seed-pack-build-backend/research.md
+./specs/058-fix-make-seed-pack-build-backend/tasks.md
+./specs/058-fix-make-seed-pack-build-backend/data-model.md
+./specs/058-fix-make-seed-pack-build-backend/plan.md
+./specs/058-fix-make-seed-pack-build-backend/contracts/
+./specs/058-fix-make-seed-pack-build-backend/contracts/build-backend-contract.json
+./specs/058-fix-make-seed-pack-build-backend/quickstart.md
+./specs/025-server-ip-management/
+./specs/025-server-ip-management/checklists/
+./specs/025-server-ip-management/checklists/requirements.md
+./specs/025-server-ip-management/spec.md
+./specs/025-server-ip-management/research.md
+./specs/025-server-ip-management/tasks.md
+./specs/025-server-ip-management/data-model.md
+./specs/025-server-ip-management/plan.md
+./specs/025-server-ip-management/contracts/
+./specs/025-server-ip-management/contracts/network-config-contract.json
+./specs/025-server-ip-management/quickstart.md
+./specs/059-fix-legacy-wheel-avx-build/
+./specs/059-fix-legacy-wheel-avx-build/checklists/
+./specs/059-fix-legacy-wheel-avx-build/checklists/requirements.md
+./specs/059-fix-legacy-wheel-avx-build/spec.md
+./specs/059-fix-legacy-wheel-avx-build/research.md
+./specs/059-fix-legacy-wheel-avx-build/tasks.md
+./specs/059-fix-legacy-wheel-avx-build/analysis_report_quality.md
+./specs/059-fix-legacy-wheel-avx-build/data-model.md
+./specs/059-fix-legacy-wheel-avx-build/plan.md
+./specs/059-fix-legacy-wheel-avx-build/contracts/
+./specs/059-fix-legacy-wheel-avx-build/contracts/wheel-verification-contract.json
+./specs/059-fix-legacy-wheel-avx-build/quickstart.md
+./specs/063-sample-server-api-examples/
+./specs/063-sample-server-api-examples/checklists/
+./specs/063-sample-server-api-examples/checklists/requirements.md
+./specs/063-sample-server-api-examples/spec.md
+./specs/063-sample-server-api-examples/research.md
+./specs/063-sample-server-api-examples/tasks.md
+./specs/063-sample-server-api-examples/data-model.md
+./specs/063-sample-server-api-examples/plan.md
+./specs/063-sample-server-api-examples/contracts/
+./specs/063-sample-server-api-examples/contracts/sample-api-contract.json
+./specs/063-sample-server-api-examples/quickstart.md
+./specs/040-ufw-sudo-detection-fix/
+./specs/040-ufw-sudo-detection-fix/checklists/
+./specs/040-ufw-sudo-detection-fix/checklists/requirements.md
+./specs/040-ufw-sudo-detection-fix/spec.md
+./specs/040-ufw-sudo-detection-fix/research.md
+./specs/040-ufw-sudo-detection-fix/tasks.md
+./specs/040-ufw-sudo-detection-fix/data-model.md
+./specs/040-ufw-sudo-detection-fix/plan.md
+./specs/040-ufw-sudo-detection-fix/contracts/
+./specs/040-ufw-sudo-detection-fix/contracts/benchmark-api.json
+./specs/040-ufw-sudo-detection-fix/quickstart.md
+./specs/046-real-llm-playground-payload/
+./specs/046-real-llm-playground-payload/checklists/
+./specs/046-real-llm-playground-payload/checklists/requirements.md
+./specs/046-real-llm-playground-payload/spec.md
+./specs/046-real-llm-playground-payload/research.md
+./specs/046-real-llm-playground-payload/tasks.md
+./specs/046-real-llm-playground-payload/data-model.md
+./specs/046-real-llm-playground-payload/plan.md
+./specs/046-real-llm-playground-payload/quickstart.md
+./specs/062-fix-aux-models-benchmark/
+./specs/062-fix-aux-models-benchmark/checklists/
+./specs/062-fix-aux-models-benchmark/checklists/requirements.md
+./specs/062-fix-aux-models-benchmark/spec.md
+./specs/062-fix-aux-models-benchmark/research.md
+./specs/062-fix-aux-models-benchmark/tasks.md
+./specs/062-fix-aux-models-benchmark/analysis_report_quality.md
+./specs/062-fix-aux-models-benchmark/data-model.md
+./specs/062-fix-aux-models-benchmark/plan.md
+./specs/062-fix-aux-models-benchmark/contracts/
+./specs/062-fix-aux-models-benchmark/contracts/auxiliary-api-contract.json
 ./specs/062-fix-aux-models-benchmark/quickstart.md
 ./log.txt
 ./.env.example
 [UNPACK INFO] ✓ Seed Pack 안전 압축 해제 완결!
 [UNPACK INFO] 다음 단계: ./setup.sh 실행하여 환경 및 서버 설정을 완료하세요.
-(vllm-serv) dev@dev:~/vllm_serv$ scripts/setup.sh
+(vllm-serv) dev@server:~/storage/vllm_serv$ scripts/setup.sh
 
 ====================================================
 ▶ 0. Sudo 관리자 권한 확보 및 유지
 ====================================================
 [SETUP INFO] 대화형 TTY 환경 감지. sudo 비밀번호 1회 입력으로 관리자 권한을 확보합니다.
-[sudo] password for dev: 
 [SETUP INFO] ✓ sudo 관리자 권한 승격 성공
-[SETUP INFO] ✓ sudo 타임스탬프 갱신 데몬 가동 (PID: 5458)
+[SETUP INFO] ✓ sudo 타임스탬프 갱신 데몬 가동 (PID: 2579109)
 
 ====================================================
 ▶ 1. 필수 프로젝트 기본 파일 존재 여부 검증
@@ -29,30 +579,30 @@
 ====================================================
 ▶ 2. uv 패키지 매니저 및 파이썬 가상환경 구성
 ====================================================
-[SETUP INFO] uv 버전: uv 0.12.0 (x86_64-unknown-linux-gnu)
+[SETUP INFO] uv 버전: uv 0.11.28 (x86_64-unknown-linux-gnu)
 [SETUP INFO] 가상환경 고속 동기화 중 (uv sync --frozen)...
 [SETUP INFO] NVIDIA CUDA Toolkit (nvcc) 빌드 환경 검증 중...
 [SETUP INFO] ✓ nvcc 감지 완료: Cuda compilation tools, release 12.0, V12.0.140
 [SETUP INFO] NVIDIA GPU 가속 드라이버 및 nvidia-smi 검증 중...
-[SETUP INFO] ✓ NVIDIA GPU 감지 완료: NVIDIA GeForce GTX 1070 (총 VRAM: 8192 MiB)
+[SETUP INFO] ✓ NVIDIA GPU 감지 완료: NVIDIA GeForce GTX 1080 Ti (총 VRAM: 11264 MiB)
 [SETUP INFO] CPU 명령어 세트, GPU Compute Capability 및 플랫폼 프로필 감지 수행 중...
 ====================================================
  ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
 ====================================================
- 매칭 플랫폼 프로필 : legacy-i7-930-gtx1070
- CPU 모델명       : Intel(R) Core(TM) i7 CPU         930  @ 2.80GHz
+ 매칭 플랫폼 프로필 : pascal-avx2-gtx1080ti
+ CPU 모델명       : Intel(R) Xeon(R) CPU E3-1231 v3 @ 3.40GHz
  CPU 아키텍처     : x86_64
  CPU 폴백 모드   : 아니오 (정상 감지)
- SIMD 지원 현황   : SSE4.2=✓, AVX=✗, AVX2=✗, F16C=✗, FMA=✗
+ SIMD 지원 현황   : SSE4.2=✓, AVX=✓, AVX2=✓, F16C=✓, FMA=✓
 ----------------------------------------------------
- GPU 모델명       : NVIDIA GeForce GTX 1070
+ GPU 모델명       : NVIDIA GeForce GTX 1080 Ti
  Compute Cap      : 6.1 (arch_code: sm_61)
- VRAM 용량       : 8192 MB
+ VRAM 용량       : 11264 MB
 ----------------------------------------------------
- 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
+ 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON -DCMAKE_CUDA_ARCHITECTURES=61
 ====================================================
-[SETUP INFO] ✓ 감지 및 매칭된 타겟 플랫폼 프로필: legacy-i7-930-gtx1070
-[SETUP INFO] 적용할 동적 CMAKE_ARGS: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
+[SETUP INFO] ✓ 감지 및 매칭된 타겟 플랫폼 프로필: pascal-avx2-gtx1080ti
+[SETUP INFO] 적용할 동적 CMAKE_ARGS: -DGGML_CUDA=ON -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON -DCMAKE_CUDA_ARCHITECTURES=61
 [SETUP INFO] 기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중...
 [SETUP INFO] ✓ 기존 가상환경 내 llama-cpp-python CUDA GPU 가속 활성화 확인 완료 (0.05s 소스 컴파일 스킵됨).
 
@@ -78,26 +628,23 @@ Skipping adding existing rule (v6)
 [SETUP INFO] ✓ sudo ufw allow 8091/tcp
 Status: active
 Logging: on (low)
-Default: deny (incoming), allow (outgoing), deny (routed)
+Default: deny (incoming), allow (outgoing), disabled (routed)
 New profiles: skip
 
 To                         Action      From
 --                         ------      ----
-Anywhere                   ALLOW IN    127.0.0.1                 
 22/tcp                     ALLOW IN    Anywhere                  
-8081                       ALLOW IN    Anywhere                  
 8081/tcp                   ALLOW IN    Anywhere                  
 8089/tcp                   ALLOW IN    Anywhere                  
+8082/tcp                   ALLOW IN    Anywhere                  
 8090/tcp                   ALLOW IN    Anywhere                  
 8091/tcp                   ALLOW IN    Anywhere                  
-8082/tcp                   ALLOW IN    Anywhere                  
 22/tcp (v6)                ALLOW IN    Anywhere (v6)             
-8081 (v6)                  ALLOW IN    Anywhere (v6)             
 8081/tcp (v6)              ALLOW IN    Anywhere (v6)             
 8089/tcp (v6)              ALLOW IN    Anywhere (v6)             
+8082/tcp (v6)              ALLOW IN    Anywhere (v6)             
 8090/tcp (v6)              ALLOW IN    Anywhere (v6)             
 8091/tcp (v6)              ALLOW IN    Anywhere (v6)             
-8082/tcp (v6)              ALLOW IN    Anywhere (v6)             
 
 
 ====================================================
@@ -110,7 +657,7 @@ Anywhere                   ALLOW IN    127.0.0.1
 ====================================================
 ▶ 4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)
 ====================================================
-[SETUP INFO] ✓ 유효한 현지 컨텍스트 윈도우 캐시 감지 (/home/dev/vllm_serv/config/model_context_profiles.json).
+[SETUP INFO] ✓ 유효한 현지 컨텍스트 윈도우 캐시 감지 (/home/dev/storage/vllm_serv/config/model_context_profiles.json).
 [SETUP INFO] 스케일링 벤치마킹을 스킵하고 기존 현지 캐시 프로필을 재사용합니다.
 
 ====================================================
@@ -129,57 +676,239 @@ Anywhere                   ALLOW IN    127.0.0.1
   - 서버 종료: ./stop_server.sh (또는 ./scripts/stop_server.sh)
   - 상태 확인: ./status_server.sh (또는 ./scripts/status_server.sh)
 
-(vllm-serv) dev@dev:~/vllm_serv$ ./status_server.sh 
+(vllm-serv) dev@server:~/storage/vllm_serv$ ./stop_server.sh 
+[STOP] vllm_serv 프로세스(PID: 2575818) 종료 시도 중 (SIGTERM)...
+✓ 프로세스 2575818 정상 종료 완료.
+[STOP] vllm_serv 프로세스(PID: 2575819) 종료 시도 중 (SIGTERM)...
+✓ 프로세스 2575819 정상 종료 완료.
+✓ VRAM 해제 상태 확인:
+13 MiB, 11264 MiB
+✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.
+(vllm-serv) dev@server:~/storage/vllm_serv$ scripts/setup.sh
+
+====================================================
+▶ 0. Sudo 관리자 권한 확보 및 유지
+====================================================
+[SETUP INFO] 대화형 TTY 환경 감지. sudo 비밀번호 1회 입력으로 관리자 권한을 확보합니다.
+[SETUP INFO] ✓ sudo 관리자 권한 승격 성공
+[SETUP INFO] ✓ sudo 타임스탬프 갱신 데몬 가동 (PID: 2579629)
+
+====================================================
+▶ 1. 필수 프로젝트 기본 파일 존재 여부 검증
+====================================================
+[SETUP INFO] ✓ 필수 파일 존재: pyproject.toml
+[SETUP INFO] ✓ 필수 파일 존재: config/model_catalog.json
+[SETUP INFO] ✓ 필수 파일 존재: config/server_config.json
+[SETUP INFO] ✓ 필수 파일 존재: src/api/server.py
+[SETUP INFO] ✓ 필수 파일 존재: src/core/process_manager.py
+[SETUP INFO] ✓ 필수 파일 존재: src/core/llama_manager.py
+[SETUP INFO] ✓ 필수 파일 존재: src/core/auxiliary_manager.py
+[SETUP INFO] ✓ 필수 파일 존재: scripts/benchmark_quality.py
+[SETUP INFO] ✓ 필수 파일 존재: scripts/make_seed_pack.sh
+
+====================================================
+▶ 2. uv 패키지 매니저 및 파이썬 가상환경 구성
+====================================================
+[SETUP INFO] uv 버전: uv 0.11.28 (x86_64-unknown-linux-gnu)
+[SETUP INFO] 가상환경 고속 동기화 중 (uv sync --frozen)...
+[SETUP INFO] NVIDIA CUDA Toolkit (nvcc) 빌드 환경 검증 중...
+[SETUP INFO] ✓ nvcc 감지 완료: Cuda compilation tools, release 12.0, V12.0.140
+[SETUP INFO] NVIDIA GPU 가속 드라이버 및 nvidia-smi 검증 중...
+[SETUP INFO] ✓ NVIDIA GPU 감지 완료: NVIDIA GeForce GTX 1080 Ti (총 VRAM: 11264 MiB)
+[SETUP INFO] CPU 명령어 세트, GPU Compute Capability 및 플랫폼 프로필 감지 수행 중...
+====================================================
+ ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
+====================================================
+ 매칭 플랫폼 프로필 : pascal-avx2-gtx1080ti
+ CPU 모델명       : Intel(R) Xeon(R) CPU E3-1231 v3 @ 3.40GHz
+ CPU 아키텍처     : x86_64
+ CPU 폴백 모드   : 아니오 (정상 감지)
+ SIMD 지원 현황   : SSE4.2=✓, AVX=✓, AVX2=✓, F16C=✓, FMA=✓
+----------------------------------------------------
+ GPU 모델명       : NVIDIA GeForce GTX 1080 Ti
+ Compute Cap      : 6.1 (arch_code: sm_61)
+ VRAM 용량       : 11264 MB
+----------------------------------------------------
+ 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON -DCMAKE_CUDA_ARCHITECTURES=61
+====================================================
+[SETUP INFO] ✓ 감지 및 매칭된 타겟 플랫폼 프로필: pascal-avx2-gtx1080ti
+[SETUP INFO] 적용할 동적 CMAKE_ARGS: -DGGML_CUDA=ON -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON -DCMAKE_CUDA_ARCHITECTURES=61
+[SETUP INFO] 기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중...
+[SETUP INFO] ✓ 기존 가상환경 내 llama-cpp-python CUDA GPU 가속 활성화 확인 완료 (0.05s 소스 컴파일 스킵됨).
+
+====================================================
+▶ 3. 서버 포트 조회 및 네트워크 방화벽 등록
+====================================================
+[SETUP INFO] 서빙 포트 설정: 8081/tcp
+[SETUP INFO] ufw 방화벽 감지. 서비스 포트 개방 중...
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8081/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8082/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8089/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8090/tcp
+Skipping adding existing rule
+Skipping adding existing rule (v6)
+[SETUP INFO] ✓ sudo ufw allow 8091/tcp
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere                  
+8081/tcp                   ALLOW IN    Anywhere                  
+8089/tcp                   ALLOW IN    Anywhere                  
+8082/tcp                   ALLOW IN    Anywhere                  
+8090/tcp                   ALLOW IN    Anywhere                  
+8091/tcp                   ALLOW IN    Anywhere                  
+22/tcp (v6)                ALLOW IN    Anywhere (v6)             
+8081/tcp (v6)              ALLOW IN    Anywhere (v6)             
+8089/tcp (v6)              ALLOW IN    Anywhere (v6)             
+8082/tcp (v6)              ALLOW IN    Anywhere (v6)             
+8090/tcp (v6)              ALLOW IN    Anywhere (v6)             
+8091/tcp (v6)              ALLOW IN    Anywhere (v6)             
+
+
+====================================================
+▶ 4. 서버 구동/종료/상태 제어 쉘 스크립트 생성
+====================================================
+[SETUP INFO] ✓ 생성 완료: scripts/start_server.sh (루트 심볼릭 링크 ./start_server.sh)
+[SETUP INFO] ✓ 생성 완료: scripts/stop_server.sh (루트 심볼릭 링크 ./stop_server.sh)
+[SETUP INFO] ✓ 생성 완료: scripts/status_server.sh (루트 심볼릭 링크 ./status_server.sh)
+
+====================================================
+▶ 4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)
+====================================================
+[SETUP INFO] ✓ 유효한 현지 컨텍스트 윈도우 캐시 감지 (/home/dev/storage/vllm_serv/config/model_context_profiles.json).
+[SETUP INFO] 스케일링 벤치마킹을 스킵하고 기존 현지 캐시 프로필을 재사용합니다.
+
+====================================================
+▶ 4.6 SQLite Metrics DB & Seed Pack 초기화 (045-db-seed-and-setup-integration)
+====================================================
+[SETUP INFO] ✓ 기존 data/metrics.db 유지 완료.
+
+====================================================
+▶ 5. setup.sh 설정 완결
+====================================================
+[SETUP INFO] ✓ 전역 제어 스크립트 실행 권한 (chmod +x) 갱신 완료.
+[SETUP INFO] vllm_serv 환경 설정 및 제어 스크립트 생성이 완료되었습니다!
+
+사용 가능한 제어 명령어:
+  - 서버 구동: ./start_server.sh (또는 ./scripts/start_server.sh)
+  - 서버 종료: ./stop_server.sh (또는 ./scripts/stop_server.sh)
+  - 상태 확인: ./status_server.sh (또는 ./scripts/status_server.sh)
+
+(vllm-serv) dev@server:~/storage/vllm_serv$ ./status_server.sh 
 ====================================================
  ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트
 ====================================================
 ====================================================
  ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
 ====================================================
- 매칭 플랫폼 프로필 : legacy-i7-930-gtx1070
- CPU 모델명       : Intel(R) Core(TM) i7 CPU         930  @ 2.80GHz
+ 매칭 플랫폼 프로필 : pascal-avx2-gtx1080ti
+ CPU 모델명       : Intel(R) Xeon(R) CPU E3-1231 v3 @ 3.40GHz
  CPU 아키텍처     : x86_64
  CPU 폴백 모드   : 아니오 (정상 감지)
- SIMD 지원 현황   : SSE4.2=✓, AVX=✗, AVX2=✗, F16C=✗, FMA=✗
+ SIMD 지원 현황   : SSE4.2=✓, AVX=✓, AVX2=✓, F16C=✓, FMA=✓
 ----------------------------------------------------
- GPU 모델명       : NVIDIA GeForce GTX 1070
+ GPU 모델명       : NVIDIA GeForce GTX 1080 Ti
  Compute Cap      : 6.1 (arch_code: sm_61)
- VRAM 용량       : 8192 MB
+ VRAM 용량       : 11264 MB
 ----------------------------------------------------
- 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
+ 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON -DCMAKE_CUDA_ARCHITECTURES=61
 ====================================================
 
 [서버 프로세스 및 서비스 상태]
-8081 메인 서버 프로세스: 🟢 구동 중 (RUNNING, PID: 2623)
-8082 대시보드 프로세스  : 🟢 구동 중 (RUNNING, PID: 2624)
+8081 메인 서버 프로세스: ⚪ 중지됨 (UNLOADED)
+8082 대시보드 프로세스  : ⚪ 중지됨 (UNLOADED)
+
+[REST API 헬스체크 (http://127.0.0.1:8081/health)]
+응답 없음 (서버 미구현 또는 비활성)
+
+[웹 대시보드 헬스체크 (http://127.0.0.1:8082/)]
+⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)
+
+[NVIDIA GPU VRAM 실시간 현황]
+NVIDIA GeForce GTX 1080 Ti, 13 MiB, 11264 MiB, 36
+
+[GPU 컴퓨트 프로세스 목록]
+GPU 컴퓨트 프로세스 없음
+
+[CUDA 빌드 상태]
+nvcc: ✓ Cuda compilation tools, release 12.0, V12.0.140
+llama-cpp-python GPU: ✓ CUDA 가속 활성
+(vllm-serv) dev@server:~/storage/vllm_serv$ ./start_server.sh 
+[SERVER] vllm_serv 인퍼런스 서빙 서버 및 웹 대시보드 구동 파이프라인을 시작합니다...
+[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11140 MiB):
+  Device 0: NVIDIA GeForce GTX 1080 Ti, compute capability 6.1, VMM: yes, VRAM: 11140 MiB
+[INFO] Hardware pre-flight check passed.
+[SERVER] ✓ 하드웨어 가속 사전 점검 완료 (GPU CUDA 가속 활성)
+[SERVER] 1. llama-server 바이너리 빌드 상태 및 모델 가중치 자동 다운로드 파이프라인 가동
+[SERVER] 2. 기본 VRAM 상주 서빙 모델(qwen3.5-4b) VRAM 100% 오프로드 검증 수행
+[SERVER] 3. 8081 메인 로그: /home/dev/storage/vllm_serv/logs/server.log | 8082 대시보드 로그: /home/dev/storage/vllm_serv/logs/dashboard.log
+✓ 서버 데몬 백그라운드 구동 시작! (8081 PID: 2580210, 8082 PID: 2580211)
+[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 30초)...
+✓ 8081 메인 인퍼런스 서버 및 8082 웹 대시보드 동시 가동 완료!
+OpenAI API 엔드포인트: http://0.0.0.0:8081/v1/chat/completions
+웹 대시보드 URL: http://0.0.0.0:8082/
+(vllm-serv) dev@server:~/storage/vllm_serv$ ./status_server.sh 
+====================================================
+ ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트
+====================================================
+====================================================
+ ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
+====================================================
+ 매칭 플랫폼 프로필 : pascal-avx2-gtx1080ti
+ CPU 모델명       : Intel(R) Xeon(R) CPU E3-1231 v3 @ 3.40GHz
+ CPU 아키텍처     : x86_64
+ CPU 폴백 모드   : 아니오 (정상 감지)
+ SIMD 지원 현황   : SSE4.2=✓, AVX=✓, AVX2=✓, F16C=✓, FMA=✓
+----------------------------------------------------
+ GPU 모델명       : NVIDIA GeForce GTX 1080 Ti
+ Compute Cap      : 6.1 (arch_code: sm_61)
+ VRAM 용량       : 11264 MB
+----------------------------------------------------
+ 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON -DCMAKE_CUDA_ARCHITECTURES=61
+====================================================
+
+[서버 프로세스 및 서비스 상태]
+8081 메인 서버 프로세스: 🟢 구동 중 (RUNNING, PID: 2580210)
+8082 대시보드 프로세스  : 🟢 구동 중 (RUNNING, PID: 2580211)
 
 [REST API 헬스체크 (http://127.0.0.1:8081/health)]
 {
     "status": "alive",
-    "pid": null
+    "pid": 2580432
 }
 
 [웹 대시보드 헬스체크 (http://127.0.0.1:8082/)]
 ⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)
 
 [NVIDIA GPU VRAM 실시간 현황]
-NVIDIA GeForce GTX 1070, 3817 MiB, 8192 MiB, 34
+NVIDIA GeForce GTX 1080 Ti, 13 MiB, 11264 MiB, 36
 
 [GPU 컴퓨트 프로세스 목록]
-PID, VRAM(MiB), Process
-2701, 3364 MiB, /home/dev/vllm_serv/.venv/bin/python
-2713, 440 MiB, /home/dev/vllm_serv/.venv/bin/python
+GPU 컴퓨트 프로세스 없음
 
 [CUDA 빌드 상태]
 nvcc: ✓ Cuda compilation tools, release 12.0, V12.0.140
 llama-cpp-python GPU: ✓ CUDA 가속 활성
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/scripts/diagnose_server_health.py
+(vllm-serv) dev@server:~/storage/vllm_serv$ uv run scripts/diagnose_server_health.py
 
 ====================================================
 🔍 vllm_serv LLM 서버 통합 진단 및 헬스체크 보고서
 ====================================================
-📡 감지된 유효 LAN IP : 192.168.0.80
-🌐 다중 탐색 루프백 IP : 127.0.0.1, localhost, 127.0.1.1, 192.168.0.80
+📡 감지된 유효 LAN IP : 10.0.0.41
+🌐 다중 탐색 루프백 IP : 127.0.0.1, localhost, 127.0.1.1, 10.0.0.41
 🤖 서빙 중인 LLM 모델  : gemma4-e2b, gemma4-e4b, gemma4-12b, qwen3.5-2b, qwen3.5-4b, qwen3.5-9b, bge-m3, bge-reranker-v2-m3
 
 [방화벽 및 포트 개방 상태]
@@ -196,202 +925,12 @@ llama-cpp-python GPU: ✓ CUDA 가속 활성
 STATUS: 💡 SERVER STANDBY / READY
 ====================================================
 
-(vllm-serv) dev@dev:~/vllm_serv$ ./stop_server.sh 
-[STOP] vllm_serv 프로세스(PID: 2623) 종료 시도 중 (SIGTERM)...
-✓ 프로세스 2623 정상 종료 완료.
-[STOP] vllm_serv 프로세스(PID: 2624) 종료 시도 중 (SIGTERM)...
-✓ 프로세스 2624 정상 종료 완료.
-✓ VRAM 해제 상태 확인:
-11 MiB, 8192 MiB
-✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.
-(vllm-serv) dev@dev:~/vllm_serv$ ./start_server.sh 
-[SERVER] vllm_serv 인퍼런스 서빙 서버 및 웹 대시보드 구동 파이프라인을 시작합니다...
-[SERVER] 하드웨어 가속 사전 점검(Pre-flight check) 수행 중...
-ggml_cuda_init: found 1 CUDA devices (Total VRAM: 8105 MiB):
-  Device 0: NVIDIA GeForce GTX 1070, compute capability 6.1, VMM: yes, VRAM: 8105 MiB
-[INFO] Hardware pre-flight check passed.
-[SERVER] ✓ 하드웨어 가속 사전 점검 완료 (GPU CUDA 가속 활성)
-[SERVER] 1. llama-server 바이너리 빌드 상태 및 모델 가중치 자동 다운로드 파이프라인 가동
-[SERVER] 2. 기본 VRAM 상주 서빙 모델(qwen3.5-4b) VRAM 100% 오프로드 검증 수행
-[SERVER] 3. 8081 메인 로그: /home/dev/vllm_serv/logs/server.log | 8082 대시보드 로그: /home/dev/vllm_serv/logs/dashboard.log
-✓ 서버 데몬 백그라운드 구동 시작! (8081 PID: 5954, 8082 PID: 5953)
-[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 30초)....
-✓ 8081 메인 인퍼런스 서버 및 8082 웹 대시보드 동시 가동 완료!
-OpenAI API 엔드포인트: http://0.0.0.0:8081/v1/chat/completions
-웹 대시보드 URL: http://0.0.0.0:8082/
-(vllm-serv) dev@dev:~/vllm_serv$ ./status_server.sh 
-====================================================
- ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트
-====================================================
-====================================================
- ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트
-====================================================
- 매칭 플랫폼 프로필 : legacy-i7-930-gtx1070
- CPU 모델명       : Intel(R) Core(TM) i7 CPU         930  @ 2.80GHz
- CPU 아키텍처     : x86_64
- CPU 폴백 모드   : 아니오 (정상 감지)
- SIMD 지원 현황   : SSE4.2=✓, AVX=✗, AVX2=✗, F16C=✗, FMA=✗
-----------------------------------------------------
- GPU 모델명       : NVIDIA GeForce GTX 1070
- Compute Cap      : 6.1 (arch_code: sm_61)
- VRAM 용량       : 8192 MB
-----------------------------------------------------
- 생성된 CMake 인자: -DGGML_CUDA=ON -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_F16C=OFF -DGGML_FMA=OFF -DCMAKE_CUDA_ARCHITECTURES=61
-====================================================
-
-[서버 프로세스 및 서비스 상태]
-8081 메인 서버 프로세스: 🟢 구동 중 (RUNNING, PID: 5954)
-8082 대시보드 프로세스  : 🟢 구동 중 (RUNNING, PID: 5953)
-
-[REST API 헬스체크 (http://127.0.0.1:8081/health)]
-{
-    "status": "alive",
-    "pid": 6023
-}
-
-[웹 대시보드 헬스체크 (http://127.0.0.1:8082/)]
-⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)
-
-[NVIDIA GPU VRAM 실시간 현황]
-NVIDIA GeForce GTX 1070, 3967 MiB, 8192 MiB, 43
-
-[GPU 컴퓨트 프로세스 목록]
-PID, VRAM(MiB), Process
-6059, 84 MiB, /home/dev/vllm_serv/.venv/bin/python3
-6041, 420 MiB, /home/dev/vllm_serv/.venv/bin/python3
-6023, 3364 MiB, /home/dev/vllm_serv/.venv/bin/python3
-6063, 84 MiB, /home/dev/vllm_serv/.venv/bin/python3
-
-[CUDA 빌드 상태]
-nvcc: ✓ Cuda compilation tools, release 12.0, V12.0.140
-llama-cpp-python GPU: ✓ CUDA 가속 활성
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/scripts/diagnose_server_health.py
-
-====================================================
-🔍 vllm_serv LLM 서버 통합 진단 및 헬스체크 보고서
-====================================================
-📡 감지된 유효 LAN IP : 192.168.0.80
-🌐 다중 탐색 루프백 IP : 127.0.0.1, localhost, 127.0.1.1, 192.168.0.80
-🤖 서빙 중인 LLM 모델  : gemma4-e2b, gemma4-e4b, gemma4-12b, qwen3.5-2b, qwen3.5-4b, qwen3.5-9b, bge-m3, bge-reranker-v2-m3
-
-[방화벽 및 포트 개방 상태]
-  - Port 8081_llm_main: ✅ OPEN
-  - Port 8082_dashboard: ✅ OPEN
-
-[API 엔드포인트 동작 상태]
-  - /v1/models: ✅ 200 OK
-  - /health: ✅ 200 OK
-  - /v1/chat/completions: ✅ 200 OK
-
-🖥️ 웹 대시보드 E2E 렌더링 : ✅ ON
-
-STATUS: 🎉 SYSTEM HEALTHY
-====================================================
-
-(vllm-serv) dev@dev:~/vllm_serv$ ip addr
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-    inet6 ::1/128 scope host noprefixroute 
-       valid_lft forever preferred_lft forever
-2: enp6s0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
-    link/ether 00:30:48:fb:80:b4 brd ff:ff:ff:ff:ff:ff
-3: enp7s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
-    link/ether 00:30:48:fb:80:b5 brd ff:ff:ff:ff:ff:ff
-    inet 192.168.0.80/24 metric 100 brd 192.168.0.255 scope global dynamic enp7s0
-       valid_lft 6080sec preferred_lft 6080sec
-    inet6 fe80::230:48ff:fefb:80b5/64 scope link 
-       valid_lft forever preferred_lft forever
-4: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default 
-    link/ether 06:c9:ee:63:0b:10 brd ff:ff:ff:ff:ff:ff
-    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
-       valid_lft forever preferred_lft forever
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_01_chat.py
+(vllm-serv) dev@server:~/storage/vllm_serv$ uv run samples/sample_01_chat.py
 
 =================================================================
 📌 01. 비전공자용 OpenAI 규격 일반 대화 API 호출 예제
 =================================================================
-📡 [요청 전송] http://192.168.0.80:8081/v1/chat/completions (모델: qwen3.5-4b)
-
-✅ [응답 성공]
------------------------------------------------------------------
-💬 AI 답변: <think>
-Thinking Process:
-
-1.  **Analyze the Request:**
-    *   User: Asks for a summary of the main advantages of `vllm_server` (likely referring to vLLM, a high-throughput inference engine for LLMs) in one sentence.
-    *   Role: IT & AI Technology Expert Assistant.
-    *   Tone: Polite and helpful.
-    *   Constraint: Summarize in exactly **one sentence** (1 문장).
-
-2.  **Identify the Subject:** `vllm_server` usually refers to the vLLM service/inference engine used for Large Language Models (LLMs). Its core selling points are high throughput, low latency, efficient memory management (PagedAttention), and support for continuous batching.
-
-3.  **Drafting Initial Ideas:**
-    *   vLLM 서버는 LLM 추론 속도와 메모리 효율성을 극대화하여 고부하 환경에서 안정적인 서비스를 제공합니다. (vLLM server maximizes LLM inference speed and memory efficiency to provide stable service in high-load environments.)
-    *   vllm_server 는 PagedAttention 기술을 통해 대용량 모델의 지연 시간
------------------------------------------------------------------
-📊 정지 사유: length
-📊 토큰 사용량: 프롬프트 54토큰 | 생성 250토큰 | 총 304토큰
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_02_model_params.py
-
-=================================================================
-📌 02. 비전공자용 모델 제어 파라미터(Temperature & Stop) 실습 예제
-=================================================================
-
-🔹 [실습 1] Low Temperature (0.0) - 정확도와 일관성이 필요한 지식 답변
-👉 [Low Temp 답변]: <think>
-Thinking Process:
-
-1.  **Analyze the Request:**
-    *   Question: "대한민국의 수도는 어디인가요?" (Where is the capital of South Korea?)
-    *   Language: Korean.
-    *   Intent: Factual information retrieval.
-
-2.  **Retrieve Knowledge:**
-    *   Country: Republic of Korea (South Korea) - 대한민국.
-    *   Capital City: Seoul (서울).
-
-3.  **Formulate
-
-🔹 [실습 2] Stop Sequence 지정 - 줄바꿈('\n')이 나오면 생성 자동 중단
-👉 [Stop 지정 답변]: <think>
-📊 정지 원인(finish_reason): stop (정상적으로 'stop' 사유 수신)
-
-✅ 모든 파라미터 제어 실습 완료!
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_03_embedding.py
-
-=================================================================
-📌 03. 비전공자용 BGE M3 임베딩(Embedding) 벡터 추출 예제
-=================================================================
-📡 [요청 전송] http://192.168.0.80:8090/v1/embeddings (모델: bge-m3)
-📝 입력 텍스트: "vllm_serv는 고성능 LLM 및 임베딩/리랭킹 다중 모델 동시 서빙 플랫폼입니다."
-
-✅ [임베딩 추출 성공]
------------------------------------------------------------------
-📐 임베딩 벡터 차원 (Dimension): 1024차원
-🔢 벡터 수치 샘플 (상위 5개): [-2.0606131553649902, 0.17042015492916107, -0.21816347539424896, -0.13200658559799194, -0.8529728055000305]
------------------------------------------------------------------
-📊 프롬프트 토큰: 31토큰
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_04_reranking.py
-
-=================================================================
-📌 04. 비전공자용 BGE Reranker v2 M3 문서 관련도 재순위화 예제
-=================================================================
-📡 [요청 전송] http://192.168.0.80:8081/v1/rerank (모델: bge-reranker-v2-m3)
-❓ 질문 (Query): "vllm_serv 서버의 주요 장점과 사용법은 무엇인가요?"
-📚 후보 문서 수: 3개
-❌ [Reranking 실패]: Client error '404 Not Found' for url 'http://192.168.0.80:8081/v1/rerank'
-For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
-(vllm-serv) dev@dev:~/vllm_serv$ /home/dev/vllm_serv/.venv/bin/python /home/dev/vllm_serv/samples/sample_05_structured_output.py
-
-=================================================================
-📌 vllm_serv 05. Pydantic 스키마 기반 구조화된 출력(Structured Output) 예제
-=================================================================
-
-🔹 Pydantic `StockAnalysisResponse` 모델 기반 JSON 스키마 주석 및 파싱
-📡 [POST] http://192.168.0.80:8081/v1/chat/completions 요청 전송 중... (모델: qwen3.5-4b)
-
-✅ Pydantic 검증 객체 파싱 성공:
-  [1] 화자: 개미왕 | 대상: 삼성전자, SK하이닉스 | 감성: 매수 | 정제문: 삼성전자와 SK하이닉스가 시외 거래에서 급등하자마자 즉시 매수했습니다.
-(vllm-serv) dev@dev:~/vllm_serv$ 
+📡 [요청 전송] http://10.0.0.41:8081/v1/chat/completions (모델: qwen3.5-4b)
+❌ [요청 실패]: Server error '503 Service Unavailable' for url 'http://10.0.0.41:8081/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+(vllm-serv) dev@server:~/storage/vllm_serv$ 
