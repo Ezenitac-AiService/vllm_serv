@@ -1,9 +1,14 @@
 import asyncio
+import collections
+import datetime
 import os
 import re
 import shutil
+import signal
 import socket
+import subprocess
 import sys
+import time
 from enum import Enum
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
@@ -302,9 +307,32 @@ class ProcessManager:
         except Exception as e:
             print(f"[ProcessManager] T021: VRAM 런타임 모니터링 경고: {e}")
 
+    def _cleanup_zombie_on_port(self, port: int) -> None:
+        """FR-002: Forcefully kill any zombie or leftover process holding the specified port."""
+        if os.environ.get("MOCK_LLAMA_SERVER") == "1" or "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("MOCK_CPU_ONLY") == "1":
+            return
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            res = sock.connect_ex(('127.0.0.1', port))
+            if res == 0:
+                print(f"[ProcessManager] Q1: 포트 {port} 점유 잔여 PID 정리 시도 (Signal: SIGKILL)")
+                try:
+                    subprocess.run(["fuser", "-k", "-9", f"{port}/tcp"], capture_output=True, timeout=3)
+                except Exception:
+                    pass
+                try:
+                    out = subprocess.check_output(["lsof", "-t", f"-i:{port}"], text=True, timeout=3)
+                    for pid_str in out.strip().split():
+                        if pid_str.isdigit():
+                            pid = int(pid_str)
+                            if pid != os.getpid():
+                                os.kill(pid, signal.SIGKILL)
+                except Exception:
+                    pass
+                time.sleep(0.5)
+
     def detect_zombie_collision(self) -> None:
-        """T004: Detect zombie or external processes occupying port 8081."""
-        import socket
+        """T004: Detect zombie or external processes occupying port."""
         if os.environ.get("MOCK_LLAMA_SERVER") == "1" or "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("MOCK_CPU_ONLY") == "1":
             return
         if self.process is None or self.process.returncode is not None:
@@ -327,19 +355,47 @@ class ProcessManager:
     def is_ready(self) -> bool:
         return self.state.status == ProcessStatusEnum.READY
 
+    def _log_to_error_log(self, message: str) -> None:
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            log_file = os.path.join(base_dir, "logs", "error.log")
+            os.makedirs(os.path.dirname(log_file), exist_ok=True)
+            timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"[{timestamp}] [Port {self.port}] [ProcessManager] {message}\n")
+        except Exception:
+            pass
+
     async def _drain_stdout(self, stream: asyncio.StreamReader) -> None:
-        """Drains stdout stream asynchronously and parses VRAM offload log lines."""
+        """Drains stdout stream asynchronously, parses VRAM offload, and logs errors on exit."""
+        recent_lines = collections.deque(maxlen=20)
         try:
             while not stream.at_eof():
                 line_bytes = await stream.readline()
                 if not line_bytes:
                     break
                 line = line_bytes.decode("utf-8", errors="replace")
+                recent_lines.append(line.strip())
                 status = self.parse_vram_offload_log(line, self.state.model_id or "")
                 if status:
                     self.verify_vram_offload(self.state.model_id or "", status)
         except Exception:
             pass
+
+        if self.process:
+            await self.process.wait()
+            if self.process.returncode is not None and self.process.returncode != 0 and self.state.status != ProcessStatusEnum.UNLOADED:
+                last_logs = "\n".join(list(recent_lines)[-5:]) if recent_lines else "No log output"
+                err_msg = f"서브프로세스 (PID {self.process.pid}, Port {self.port}) 비정상 종료 (Exit Code: {self.process.returncode}). 최근 출력:\n{last_logs}"
+                print(f"[ProcessManager] ❌ {err_msg}")
+                self._log_to_error_log(err_msg)
+                self.state = ProcessState(
+                    status=ProcessStatusEnum.ERROR,
+                    model_id=self.state.model_id,
+                    port=self.port,
+                    error_message=f"Process exited with code {self.process.returncode}: {recent_lines[-1] if recent_lines else 'Unknown error'}"
+                )
+
 
     @staticmethod
     def _is_binary_executable_sanity(binary_path: str) -> bool:
@@ -454,8 +510,10 @@ class ProcessManager:
         if not port_free:
             raise PortCollisionError(f"PortCollisionError: Port {self.port} could not be cleared after process termination.")
 
-        # FR-001: Detect zombie collision after stop_process and _wait_for_port_free if port is still occupied
+        # FR-001 / FR-002: Cleanup any zombie process holding the port before collision check
+        self._cleanup_zombie_on_port(self.port)
         self.detect_zombie_collision()
+
 
         model_id = self._config_manager.resolve_model_id(model_id)
         target_preset = self.model_presets.get(model_id)

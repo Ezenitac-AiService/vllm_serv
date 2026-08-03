@@ -200,12 +200,14 @@ class AuxiliaryModelManager:
                         self.embedding_consecutive_crashes += 1
                         print(f"[AuxiliaryManager] FR-007: Embedding process crash detected! ({self.embedding_consecutive_crashes}/{self.max_consecutive_crashes})")
                         if self.embedding_consecutive_crashes >= self.max_consecutive_crashes:
-                            print(f"[AuxiliaryManager] FR-001: Embedding max crashes reached. Transitioning to DISABLED.")
+                            err_msg = f"Embedding disabled due to {self.embedding_consecutive_crashes} consecutive crashes."
+                            print(f"[AuxiliaryManager] ❌ FR-001: {err_msg}")
+                            self.embedding_pm._log_to_error_log(err_msg)
                             self.embedding_pm.state = ProcessState(
                                 status=ProcessStatusEnum.DISABLED,
                                 port=self.embedding_port,
                                 model_id="bge-m3",
-                                error_message=f"Embedding disabled due to {self.embedding_consecutive_crashes} consecutive crashes."
+                                error_message=err_msg
                             )
                         else:
                             self.embedding_pm.state = ProcessState(status=ProcessStatusEnum.UNLOADED, port=self.embedding_port)
@@ -221,18 +223,21 @@ class AuxiliaryModelManager:
                         self.rerank_consecutive_crashes += 1
                         print(f"[AuxiliaryManager] FR-007: Reranker process crash detected! ({self.rerank_consecutive_crashes}/{self.max_consecutive_crashes})")
                         if self.rerank_consecutive_crashes >= self.max_consecutive_crashes:
-                            print(f"[AuxiliaryManager] FR-001: Reranker max crashes reached. Transitioning to DISABLED.")
+                            err_msg = f"Reranker disabled due to {self.rerank_consecutive_crashes} consecutive crashes."
+                            print(f"[AuxiliaryManager] ❌ FR-001: {err_msg}")
+                            self.rerank_pm._log_to_error_log(err_msg)
                             self.rerank_pm.state = ProcessState(
                                 status=ProcessStatusEnum.DISABLED,
                                 port=self.rerank_port,
                                 model_id="bge-reranker-v2-m3",
-                                error_message=f"Reranker disabled due to {self.rerank_consecutive_crashes} consecutive crashes."
+                                error_message=err_msg
                             )
                         else:
                             self.rerank_pm.state = ProcessState(status=ProcessStatusEnum.UNLOADED, port=self.rerank_port)
                             await self.ensure_rerank_resident("bge-reranker-v2-m3")
                 elif self.rerank_pm.state.status == ProcessStatusEnum.READY:
                     self._reset_crash_counter_if_ready("rerank")
+
 
     async def _crash_recovery_loop(self):
         """FR-007: Background crash recovery loop auto-restarting failed instances."""

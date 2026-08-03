@@ -93,8 +93,12 @@ def check_api_endpoints(server_url: str, timeout: float = 15.0) -> Dict[str, boo
             }
             r3 = client.post(f"{server_url}/v1/chat/completions", json=payload, headers={"Connection": "close"})
             results["/v1/chat/completions"] = (r3.status_code == 200)
-        except Exception:
+            if r3.status_code != 200:
+                print(f"  ⚠️ /v1/chat/completions 반환 응답 [HTTP {r3.status_code}]: {r3.text[:300]}")
+        except Exception as e:
+            print(f"  ⚠️ /v1/chat/completions 연결 실패: {e}")
             results["/v1/chat/completions"] = False
+
 
     return results
 

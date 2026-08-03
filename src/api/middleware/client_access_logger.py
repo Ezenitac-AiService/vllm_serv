@@ -3,10 +3,12 @@ Client Access & Audit Logging FastAPI Middleware.
 Intercepts requests, assigns X-Request-ID, checks API keys, records access & error logs.
 """
 
+import sys
 import time
 import uuid
 import datetime
-from typing import Callable
+import traceback
+from typing import Callable, Optional
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
@@ -17,6 +19,36 @@ from src.core.api_key_manager import get_api_key_manager
 
 class ClientAccessLogMiddleware(BaseHTTPMiddleware):
     """FastAPI Middleware for auditing client requests and assignment of X-Request-ID."""
+
+    def log_error(
+        self,
+        client_ip: str,
+        request_id: str,
+        endpoint: str,
+        status_code: int,
+        detail: str,
+        exc: Optional[Exception] = None,
+        masked_api_key: Optional[str] = None
+    ) -> None:
+        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        tb_str = None
+        if exc is not None:
+            tb_str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        elif sys.exc_info()[0] is not None:
+            tb_str = traceback.format_exc()
+
+        logger = get_client_logger()
+        logger.log_error(ErrorLogEntry(
+            timestamp=timestamp,
+            request_id=request_id,
+            client_ip=client_ip,
+            path=endpoint,
+            status_code=status_code,
+            exception_type=type(exc).__name__ if exc else f"HTTP_{status_code}",
+            error_detail=detail,
+            masked_api_key=masked_api_key,
+            traceback_summary=tb_str
+        ))
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         start_time = time.perf_counter()
@@ -91,19 +123,17 @@ class ClientAccessLogMiddleware(BaseHTTPMiddleware):
         except Exception as exc:
             status_code = 500
             latency_ms = (time.perf_counter() - start_time) * 1000.0
-            timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-            logger = get_client_logger()
-            logger.log_error(ErrorLogEntry(
-                timestamp=timestamp,
-                request_id=request_id,
+            tb_str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+            self.log_error(
                 client_ip=client_ip,
-                path=path,
+                request_id=request_id,
+                endpoint=path,
                 status_code=500,
-                exception_type=type(exc).__name__,
-                error_detail=str(exc),
+                detail=str(exc),
+                exc=exc,
                 masked_api_key=masked_key
-            ))
+            )
 
             resp = JSONResponse(
                 status_code=500,
@@ -136,15 +166,14 @@ class ClientAccessLogMiddleware(BaseHTTPMiddleware):
 
         # Log Error if 4xx or 5xx
         if status_code >= 400:
-            logger.log_error(ErrorLogEntry(
-                timestamp=timestamp,
-                request_id=request_id,
+            self.log_error(
                 client_ip=client_ip,
-                path=path,
+                request_id=request_id,
+                endpoint=path,
                 status_code=status_code,
-                exception_type=f"HTTP_{status_code}",
-                error_detail=f"Response status {status_code}",
+                detail=f"Response status {status_code}",
                 masked_api_key=masked_key
-            ))
+            )
 
         return response
+

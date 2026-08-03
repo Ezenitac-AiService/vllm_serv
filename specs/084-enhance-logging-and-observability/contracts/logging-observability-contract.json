@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LoggingObservabilityContract",
+  "type": "object",
+  "properties": {
+    "error_log_format": {
+      "type": "object",
+      "required": ["timestamp", "endpoint", "status_code", "detail"],
+      "properties": {
+        "timestamp": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "status_code": { "type": "integer" },
+        "detail": { "type": "string" },
+        "traceback": { "type": "string" }
+      }
+    },
+    "port_cleanup": {
+      "type": "object",
+      "required": ["port", "action", "success"],
+      "properties": {
+        "port": { "type": "integer" },
+        "action": { "type": "string" },
+        "success": { "type": "boolean" }
+      }
+    }
+  }
+}

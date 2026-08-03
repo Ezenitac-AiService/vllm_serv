@@ -112,10 +112,11 @@ class ClientLoggerManager:
 
         parts.append(f"{entry.path} {entry.status_code} [{entry.exception_type}]: {entry.error_detail}")
         if entry.traceback_summary:
-            parts.append(f"| {entry.traceback_summary}")
+            parts.append(f"\n  Traceback:\n{entry.traceback_summary}")
 
         log_msg = " ".join(parts)
         self.error_logger.error(log_msg)
+
 
     def get_recent_access_logs(self, limit: int = 50) -> list:
         """Reads recent access log entries from access.log."""
