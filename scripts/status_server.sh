@@ -62,6 +62,7 @@ fi
 
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
 SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
+
 LAN_IP=$(uv run python -c "from src.core.network_detector import NetworkDetector; print(NetworkDetector.get_active_lan_ips()[-1] if NetworkDetector.get_active_lan_ips() else '127.0.0.1')" 2>/dev/null || echo "127.0.0.1")
 
 PROBE_HOSTS=("127.0.0.1" "localhost" "$LAN_IP")
@@ -90,7 +91,10 @@ DASH_OK=0
 if command -v curl &> /dev/null; then
     for host in "${PROBE_HOSTS[@]}"; do
         DASH_HTML=$(curl -sL --max-time 3 "http://$host:8082/" 2>/dev/null || echo "")
-        if echo "$DASH_HTML" | grep -qE "vLLM|vllm_serv|Dashboard|대시보드|LLM|Antigravity|Serving"; then
+        if [ -z "$DASH_HTML" ]; then
+            DASH_HTML=$(curl -sL --max-time 3 "http://$host:8082/dashboard/" 2>/dev/null || echo "")
+        fi
+        if echo "$DASH_HTML" | grep -qE "vLLM|Dashboard|vllm_serv|대시보드|LLM|Antigravity|Serving"; then
             echo -e "${COLOR_GREEN}🟢 대시보드 서비스 및 HTML DOM 정상 작동 중 (Port 8082 OPEN, DOM Verified)${COLOR_NC}"
             DASH_OK=1
             break
@@ -116,7 +120,6 @@ if [ "$DASH_OK" -eq 0 ]; then
         echo -e "${COLOR_YELLOW}⚪ 대시보드 미구동 또는 포트 차단됨 (Port 8082 CLOSED)${COLOR_NC}"
     fi
 fi
-
 
 
 if command -v nvidia-smi &> /dev/null; then

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DashboardStatusHealthcheckContract",
+  "type": "object",
+  "properties": {
+    "probe_options": {
+      "type": "string",
+      "enum": ["-sL --max-time 3"]
+    },
+    "expected_http_redirect": {
+      "type": "integer",
+      "enum": [307, 200]
+    },
+    "expected_dom_keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["vLLM", "Dashboard", "vllm_serv", "대시보드", "Serving", "Antigravity"]
+    },
+    "status_output_patterns": {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "string",
+          "default": "Port 8082 OPEN, DOM Verified"
+        },
+        "keyword_missing": {
+          "type": "string",
+          "default": "Port 8082 OPEN, Keyword Missing"
+        },
+        "closed": {
+          "type": "string",
+          "default": "Port 8082 CLOSED"
+        }
+      }
+    }
+  },
+  "required": ["probe_options", "expected_http_redirect", "expected_dom_keywords", "status_output_patterns"]
+}
