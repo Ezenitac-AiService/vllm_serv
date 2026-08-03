@@ -1,5 +1,6 @@
 {
-  "server_host": "http://192.168.0.100",
+  "_comment": "vllm_serv 교육용 샘플 설정 예시. 개발 플랫폼(http://10.0.0.41:8081), 서비스 플랫폼(http://192.168.0.100:8081) 등 접속할 vllm_serv 서버 주소를 지정하세요.",
+  "server_host": "http://10.0.0.41:8081",
   "main_port": 8081,
   "embedding_port": 8090,
   "rerank_port": 8091

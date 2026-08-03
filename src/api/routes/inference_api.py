@@ -10,6 +10,7 @@ import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from src.core.llama_manager import llama_manager
+from src.core.auxiliary_manager import auxiliary_manager
 from src.core.config_manager import ConfigManager
 from src.core.model_downloader import ModelDownloader
 
@@ -192,6 +193,10 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
             detail="Model is currently loading or unloaded. Please try again later.",
             headers={"Retry-After": "10"}
         )
+    elif clean_path in ("rerank", "reranking"):
+        await auxiliary_manager.ensure_rerank_resident("bge-reranker-v2-m3")
+    elif clean_path in ("embeddings", "embedding"):
+        await auxiliary_manager.ensure_embedding_resident("bge-m3")
 
     body_content = None
     prompt_text = None

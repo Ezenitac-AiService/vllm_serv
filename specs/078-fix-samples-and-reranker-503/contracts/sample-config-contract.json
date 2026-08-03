@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SampleConfigContract",
+  "description": "078-fix-samples-and-reranker-503 samples/config.json 및 온디맨드 리랭킹 규격 Contract",
+  "type": "object",
+  "properties": {
+    "server_host": {
+      "type": "string",
+      "description": "Target server URL (e.g. http://10.0.0.41:8081 or http://192.168.0.100:8081)",
+      "default": "http://127.0.0.1:8081"
+    },
+    "api_key": {
+      "type": "string",
+      "default": ""
+    },
+    "endpoints": {
+      "type": "object",
+      "properties": {
+        "chat": { "type": "string", "default": "/v1/chat/completions" },
+        "rerank": { "type": "string", "default": "/v1/rerank" },
+        "embeddings": { "type": "string", "default": "/v1/embeddings" }
+      }
+    }
+  },
+  "required": ["server_host"]
+}

@@ -15,10 +15,10 @@ def get_server_host() -> str:
     """vllm_serv 서버 호스트 주소를 반환합니다.
     
     우선순위:
-    1. 시스템 환경변수 (SERVER_HOST, OPENAI_BASE_URL)
+    1. 시스템 환경변수 (SERVER_HOST, OPENAI_BASE_URL, VLLM_API_BASE)
     2. samples/.env 파일
     3. samples/config.json 파일
-    4. 기본 주소 (http://192.168.0.100 또는 로컬 대역대)
+    4. 기본 안전 주소 (http://127.0.0.1)
     """
     # 1. 시스템 환경변수 확인
     env_host = os.getenv("SERVER_HOST") or os.getenv("OPENAI_BASE_URL") or os.getenv("VLLM_API_BASE")
@@ -53,44 +53,49 @@ def get_server_host() -> str:
         except Exception:
             pass
 
-    # 4. 기본 서빙 주소
-    return "http://192.168.0.100"
+    # 4. 기본 안전 서빙 주소 (하드코딩 배제, 127.0.0.1 기본 폴백)
+    return "http://127.0.0.1"
 
 
 def _format_host_url(host: str) -> str:
-    """주소 문자열에 http:// 스킴 및 URL 정제를 적용합니다."""
-    host = host.strip()
+    """주소 문자열에 http:// 스킴 적용 및 샘플 스크립트 {SERVER_HOST}:{PORT} 구성을 위한 순수 호스트 주소(http://IP)를 반환합니다."""
+    host = host.strip().rstrip("/")
     if not host.startswith("http://") and not host.startswith("https://"):
         host = f"http://{host}"
-    if ":" in host.replace("http://", "").replace("https://", ""):
-        parts = host.split(":")
-        if len(parts) >= 2:
-            scheme = parts[0]
-            ip_part = parts[1].lstrip("/").split("/")[0]
-            return f"{scheme}://{ip_part}"
-    return host.rstrip("/")
+    
+    parts = host.split("://", 1)
+    scheme = parts[0]
+    rest = parts[1]
+    if ":" in rest:
+        rest = rest.split(":", 1)[0]
+    return f"{scheme}://{rest}"
 
 
 def check_server_health(host: str = None, port: int = 8081, service_name: str = "vllm_serv 메인 API") -> bool:
     """지정된 포트의 헬스체크(/health, /v1/models)를 수행하여 연결 준비 상태를 확인합니다."""
     if host is None:
         host = get_server_host()
+    else:
+        host = _format_host_url(host)
+
+    target_base = f"{host}:{port}"
 
     for endpoint in ["/health", "/v1/models"]:
-        url = f"{host}:{port}{endpoint}"
+        url = f"{target_base}{endpoint}"
         try:
             resp = httpx.get(url, timeout=3.0, headers={"Connection": "close"})
             if resp.status_code == 200:
                 return True
             if resp.status_code == 503:
-                print(f"⚠️ [{service_name}] 서버 포트({port}) 백엔드 모델 로딩 중... (잠시 후 다시 시도)")
+                print(f"⚠️ [{service_name}] 서버 백엔드 모델 로딩 중... (잠시 후 다시 시도)")
                 return False
         except (httpx.ConnectError, httpx.TimeoutException):
             continue
 
-    print(f"❌ [{service_name}] 서버 포트({port}) 연결 실패 (대상: {host}:{port})")
+    print(f"❌ [{service_name}] 서버 포트({port}) 연결 실패 (대상: {target_base})")
     print("👉 서버 구동 상태 확인: ./status_server.sh")
     print("👉 서버 데몬 가동 명령어: ./start_server.sh")
+    print("👉 samples/config.json 설정 주소 확인 필요 (예: \"server_host\": \"http://10.0.0.41:8081\")")
     return False
 
 
