@@ -5,34 +5,66 @@
 
 import os
 import sys
+import json
+from pathlib import Path
 import httpx
-from src.core.network_detector import NetworkDetector
 
 
 def get_server_host() -> str:
-    """서버 호스트 URL 반환 (환경변수 최우선 -> NetworkDetector 듀얼 포트/다중 서브넷 동적 LAN IP -> 오프라인 127.0.0.1 순)."""
-    # 1. 환경변수 최우선 확인
+    """서버 호스트 URL 반환 (환경변수 최우선 -> .env -> config.json -> 192.168.0.100 기본값 순)."""
+    # 1. 시스템 환경변수 최우선 확인 (SERVER_HOST, OPENAI_BASE_URL, VLLM_API_BASE)
     env_host = os.getenv("SERVER_HOST") or os.getenv("OPENAI_BASE_URL") or os.getenv("VLLM_API_BASE")
     if env_host:
-        host = env_host.strip()
-        if not host.startswith("http://") and not host.startswith("https://"):
-            host = f"http://{host}"
-        # 포트/패스가 포함된 전체 URL인 경우 scheme + host_ip만 추출
-        if ":" in host.replace("http://", "").replace("https://", ""):
-            parts = host.split(":")
-            if len(parts) >= 2:
-                scheme = parts[0]
-                ip_part = parts[1].lstrip("/").split("/")[0]
-                return f"{scheme}://{ip_part}"
-        return host.rstrip("/")
+        return _format_host_url(env_host)
 
-    # 2. NetworkDetector 기반 듀얼 랜포트/다중 서브넷(192.168.0.x / 10.0.0.x) 동적 IP 감지
-    active_ips = NetworkDetector.get_active_lan_ips()
-    if active_ips:
-        return f"http://{active_ips[0]}"
+    samples_dir_env = os.getenv("SAMPLES_DIR")
+    if samples_dir_env:
+        samples_dir = Path(samples_dir_env)
+    else:
+        samples_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
-    # 3. 오프라인 루프백 폴백
-    return "http://127.0.0.1"
+    # 2. samples/.env 파일 파싱
+    env_file = samples_dir / ".env"
+    if env_file.exists():
+        try:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("SERVER_HOST=") or line.startswith("OPENAI_BASE_URL="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val:
+                            return _format_host_url(val)
+        except Exception:
+            pass
+
+    # 3. samples/config.json 파일 파싱
+    config_file = samples_dir / "config.json"
+    if config_file.exists():
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                val = data.get("server_host") or data.get("api_url")
+                if val:
+                    return _format_host_url(val)
+        except Exception:
+            pass
+
+    # 4. 서비스 플랫폼 IP 대역대 기본값 (192.168.0.x)
+    return "http://192.168.0.100"
+
+
+def _format_host_url(host: str) -> str:
+    """호스트 URL에 http:// 프로토콜 스킴 및 포트 정제 적용."""
+    host = host.strip()
+    if not host.startswith("http://") and not host.startswith("https://"):
+        host = f"http://{host}"
+    if ":" in host.replace("http://", "").replace("https://", ""):
+        parts = host.split(":")
+        if len(parts) >= 2:
+            scheme = parts[0]
+            ip_part = parts[1].lstrip("/").split("/")[0]
+            return f"{scheme}://{ip_part}"
+    return host.rstrip("/")
 
 
 def check_server_health(host: str = None, port: int = 8081, service_name: str = "vllm_serv") -> bool:

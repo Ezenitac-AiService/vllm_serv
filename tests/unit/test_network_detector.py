@@ -68,12 +68,11 @@ def test_get_server_host_env_override():
         assert host == "http://192.168.0.250"
 
 
-def test_get_server_host_dynamic_lan_detection():
-    """Verify get_server_host falls back to active LAN IP detected by NetworkDetector."""
+def test_get_server_host_platform_default():
+    """Verify get_server_host falls back to platform IP default when env is unset."""
     with patch.dict(os.environ, {}, clear=True):
-        with patch.object(NetworkDetector, "get_active_lan_ips", return_value=["10.0.0.41"]):
-            host = get_server_host()
-            assert host == "http://10.0.0.41"
+        host = get_server_host()
+        assert host == "http://192.168.0.100"
 
 
 def test_ip_subnet_guard_filtering():

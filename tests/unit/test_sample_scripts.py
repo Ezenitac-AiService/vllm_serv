@@ -20,13 +20,51 @@ from sample_04_reranking import run_reranking_sample
 from sample_05_structured_output import run_structured_output_sample
 
 
+from unittest.mock import patch, MagicMock
+
+@pytest.fixture(autouse=True)
+def mock_httpx_response():
+    """모든 샘플 스크립트 테스트가 200 OK 응답을 시뮬레이션하도록 httpx 모킹."""
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.raise_for_status.return_value = None
+    json_str = '{"results": [{"speaker": "개미왕", "category": "매수/매도 의도", "sentiment": "매수/긍정", "target": "삼성전자", "sentence": "삼전 급등 줍줍", "refined_sentence": "삼성전자 주식 매수"}]}'
+    mock_resp.json.return_value = {
+        "choices": [{"message": {"content": json_str}, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        "data": [{"embedding": [0.1, 0.2, 0.3]}],
+        "results": [{"index": 0, "relevance_score": 0.95}],
+    }
+    with patch("httpx.get", return_value=mock_resp), \
+         patch("httpx.Client") as mock_client_cls:
+        instance = MagicMock()
+        instance.__enter__.return_value = instance
+        instance.post.return_value = mock_resp
+        instance.get.return_value = mock_resp
+        mock_client_cls.return_value = instance
+        yield mock_resp
+
+
 def test_common_healthcheck():
-    """samples/common.py 동적 IP 헬스체크 및 get_server_host() 테스트."""
+    """samples/common.py get_server_host 및 check_server_health 테스트."""
     host = get_server_host()
     assert host.startswith("http://") or host.startswith("https://")
-    # 8081 포트 동적 IP 수신 확인
     is_healthy = check_server_health(host, 8081, "Test LLM Server")
     assert is_healthy is True
+
+
+def test_get_server_host_config_json(tmp_path, monkeypatch):
+    """config.json 파일 파싱 테스트."""
+    monkeypatch.delenv("SERVER_HOST", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("VLLM_API_BASE", raising=False)
+    monkeypatch.setenv("SAMPLES_DIR", str(tmp_path))
+
+    config_json = tmp_path / "config.json"
+    config_json.write_text('{"server_host": "http://192.168.0.150"}', encoding="utf-8")
+
+    host = get_server_host()
+    assert host == "http://192.168.0.150"
 
 
 def test_sample_01_chat():
@@ -57,3 +95,4 @@ def test_sample_05_structured_output():
     """sample_05_structured_output.py Pydantic 구조화 출력 파싱 테스트."""
     success = run_structured_output_sample()
     assert success is True
+

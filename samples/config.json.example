@@ -1,0 +1,6 @@
+{
+  "server_host": "http://192.168.0.100",
+  "main_port": 8081,
+  "embedding_port": 8090,
+  "rerank_port": 8091
+}
