@@ -1,23 +1,23 @@
-"""sample_02_model_params.py - [비전공자 초급] LLM 제어 파라미터(Temperature, Top_P, Stop) 활용 예제
+"""sample_02_model_params.py - [비전공자 초급] LLM 제어 파라미터(Temperature & Stop) httpx 활용 예제
 
 본 스크립트는 AI 서비스 개발자 양성과정 훈련생을 위한 파라미터 제어 표준 실습 스크립트입니다.
-파이덴틱(Pydantic) 없이 표준 파이썬 딕셔너리(dict) 구조를 사용하여
-Temperature(답변 창의성), Top_P(샘플링 범위), Stop(조기 중단) 단어 지정 방법을 실습합니다.
+httpx 라이브러리를 사용하여 Temperature(답변 창의성) 및 Stop(조기 중단) 단어 지정 방법을 실습합니다.
 
 실행 명령어:
     uv run python samples/sample_02_model_params.py
 """
 
 import httpx
-from common import check_server_health, get_server_host, print_section_header
+from common import check_server_health, load_sample_config, print_section_header
 
-SERVER_HOST = get_server_host()
-MAIN_PORT = 8081
-MODEL_NAME = "qwen3.5-4b"
+config = load_sample_config()
+SERVER_HOST = config["server_host"]
+MAIN_PORT = config["main_port"]
+MODEL_NAME = config["default_model"]
 
 
 def run_model_params_sample():
-    print_section_header("02. 비전공자용 모델 제어 파라미터(Temperature & Stop) 실습 예제")
+    print_section_header("02. 비전공자용 httpx 규격 모델 제어 파라미터(Temperature & Stop) 실습 예제")
 
     if not check_server_health(SERVER_HOST, MAIN_PORT, "vllm_serv 메인 API"):
         return False
@@ -33,7 +33,7 @@ def run_model_params_sample():
         "messages": [
             {"role": "user", "content": "대한민국의 수도는 어디인가요?"}
         ],
-        "temperature": 0.0,  # 0.0에 가까울수록 항상 같은 정답을 생성 (창의성 0%)
+        "temperature": 0.0,  # 0.0에 가까울수록 항상 같은 정답을 생성
         "max_tokens": 100
     }
 
@@ -51,7 +51,7 @@ def run_model_params_sample():
         return False
 
     # =========================================================================
-    # [실습 2] Stop Sequence 지정: 특정 문자(예: 줄바꿈 '\n' 또는 특정 단어) 등장 시 조기 생성 정지
+    # [실습 2] Stop Sequence 지정: 특정 문자(예: 줄바꿈 '\n') 등장 시 조기 생성 정지
     # =========================================================================
     print("\n🔹 [실습 2] Stop Sequence 지정 - 줄바꿈('\\n')이 나오면 생성 자동 중단")
     payload_stop = {

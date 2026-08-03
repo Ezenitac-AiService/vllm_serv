@@ -1,38 +1,110 @@
 # 🎓 vllm_serv AI 서비스 개발자 양성과정 교육용 예제 실습 가이드
 
-본 폴더(`samples/`)는 **AI 서비스 개발자 양성과정 비전공자 훈련생**을 위해 준비된 **OpenAI API 표준 규격 실습 코드 수트**입니다.
+본 폴더(`samples/`)는 **AI 서비스 개발자 양성과정 비전공자 훈련생**을 위해 준비된 **httpx REST API & OpenAI 파이썬 공식 SDK 1:1 대칭 실습 코드 수트 (총 12종)**입니다.
 
-복잡한 파이덴틱(Pydantic) 모델이나 난해한 라이브러리 추상화 없이, 글로벌 AI 산업 표준인 **OpenAI 공식 API 규격**과 파이썬 기본 딕셔너리(`dict`) 구조만으로 5분 만에 실습을 완성할 수 있습니다.
+복잡한 객체지향 추상화 클래스 없이, 글로벌 AI 산업 표준인 **OpenAI 공식 파이썬 라이브러리(`from openai import OpenAI`)** 및 **httpx** 요청을 1:1 비교하며 직관적으로 학습할 수 있습니다.
 
 ---
 
-## 🚀 5분 완성 실습 순서
+## 📦 가상환경 원클릭 복원 (`uv sync`)
 
-모든 명령어는 가상환경 격리 표준인 `uv run` 환경에서 수행합니다.
+본 실습 팩에는 용량 오염을 방지하기 위해 `.venv` 디렉토리가 포함되어 있지 않습니다.  
+실습을 시작하기 전, 다음 명령어 **단 한 번으로** 의존성 패키지를 100% 즉시 원복하세요:
 
-### 1단계: 일반 대화(Chat Completions) 호출 실습
 ```bash
+# 1. 가상환경 의존성 자동 동기화 및 원복
+uv sync
+
+# 2. 패키지 원복 정상 작동 확인
+uv run python -c "import openai, httpx, pydantic; print('✅ uv 가상환경 복원 성공!')"
+```
+
+---
+
+## ⚙️ 동적 설정 관리 (`samples/config.json`)
+
+서버 IP 주소(서비스 플랫폼 `192.168.0.80` 등), 포트번호, 모델명은 하드코딩되지 않고 `samples/config.json`에서 동적으로 로드됩니다.
+
+```json
+{
+  "server_host": "http://192.168.0.80",
+  "main_port": 8081,
+  "embedding_port": 8090,
+  "rerank_port": 8091,
+  "default_model": "qwen3.5-4b"
+}
+```
+
+- **원격/플랫폼 IP 일시 오버라이드 실행 예시**:
+  ```bash
+  SERVER_HOST=http://192.168.0.80 uv run python samples/openai_01_chat.py
+  ```
+
+---
+
+## 🚀 1:1 대칭 실습 예제 수트 (총 12종)
+
+모든 실습 스크립트는 가상환경 격리 표준인 `uv run python ...`으로 실행합니다.
+
+### 1단계: 일반 대화 (Chat Completions) 1:1 비교
+```bash
+# httpx REST API 버전
 uv run python samples/sample_01_chat.py
-```
-- **배우는 내용**: OpenAI 호환 대화 API 규격(`messages`, `temperature`, `max_tokens`)을 파이썬 딕셔너리로 다루고 AI 모델 답변 수신하기
 
-### 2단계: 모델 제어 파라미터(Temperature & Stop) 실습
+# OpenAI 공식 SDK 버전
+uv run python samples/openai_01_chat.py
+```
+- **배우는 내용**: `messages`, `temperature`, `max_tokens` 규격 및 `<think>` 태그 정제 1:1 비교
+
+### 2단계: 모델 제어 파라미터 (Temperature & Stop) 1:1 비교
 ```bash
+# httpx REST API 버전
 uv run python samples/sample_02_model_params.py
-```
-- **배우는 내용**: `temperature` 조절을 통한 답변 정확성 보장 및 `stop` 옵션을 통한 특정 문자 조기 생성을 중단 제어하기
 
-### 3단계: BGE M3 1024차원 임베딩(Embedding) 벡터 추출 실습
+# OpenAI 공식 SDK 버전
+uv run python samples/openai_02_model_params.py
+```
+- **배우는 내용**: `temperature=0.0` 지식 답변 유도 및 `stop=["\n"]` 생성 중단 제어 1:1 비교
+
+### 3단계: 단일 및 배치(Batch) 텍스트 임베딩 수치 벡터 추출 1:1 비교
 ```bash
+# httpx REST API 버전
 uv run python samples/sample_03_embedding.py
-```
-- **배우는 내용**: 텍스트를 AI 컴퓨터가 이해하는 1024차원 수치 벡터(Vector)로 변환하는 RAG 필수 개념 익히기
 
-### 4단계: BGE Reranker v2 M3 문서 관련도 재순위화 실습
-```bash
-uv run python samples/sample_04_reranking.py
+# OpenAI 공식 SDK 버전
+uv run python samples/openai_03_embedding.py
 ```
-- **배우는 내용**: 사용자 질문과 후보 문서 간의 의미적 유사도 점수(Relevance Score)를 측정하고 재정렬하기
+- **배우는 내용**: 단일 텍스트 및 다중 문장 리스트(`input=[...]`) 묶음을 1024차원 수치 벡터로 변환하는 배치 처리 1:1 비교
+
+### 4단계: BGE Reranker v2 M3 문서 관련도 재순위화 1:1 비교
+```bash
+# httpx REST API 버전
+uv run python samples/sample_04_reranking.py
+
+# OpenAI 공식 SDK 버전
+uv run python samples/openai_04_reranking.py
+```
+- **배우는 내용**: 질문(Query)과 후보 문서(Documents) 간 의미적 유사도 점수(Relevance Score) 측정 1:1 비교
+
+### 5단계: 단일 Pydantic 구조화된 출력 (Structured Output) 1:1 비교
+```bash
+# httpx REST API 버전
+uv run python samples/sample_05_structured_output.py
+
+# OpenAI 공식 SDK 버전
+uv run python samples/openai_05_structured_output.py
+```
+- **배우는 내용**: `response_format={"type": "json_object"}` 및 Pydantic 단일 모델 타입 검증 1:1 비교
+
+### 6단계: [신설] 배치(Batch) Pydantic 구조화된 출력 1:1 비교
+```bash
+# httpx REST API 버전
+uv run python samples/sample_06_structured_output_batch.py
+
+# OpenAI 공식 SDK 버전
+uv run python samples/openai_06_structured_output_batch.py
+```
+- **배우는 내용**: 다수의 비정형 댓글 묶음을 1회 요청으로 전달받아 Pydantic `results` 배열 객체 목록으로 일괄 검증 1:1 비교
 
 ---
 
@@ -43,7 +115,5 @@ uv run python samples/sample_04_reranking.py
   ./status_server.sh  # 서버 구동 상태 확인
   ./start_server.sh   # 백그라운드 서버 가동
   ```
-- **원격 IP 서버 연결 시**:
-  ```bash
-  SERVER_HOST=http://192.168.0.xxx uv run python samples/sample_01_chat.py
-  ```
+- **접속 IP 변경이 필요할 때**:
+  - `samples/config.json` 파일 내 `"server_host": "http://192.168.0.80"` 수정

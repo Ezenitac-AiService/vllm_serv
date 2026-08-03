@@ -1,14 +1,15 @@
-"""sample_05_structured_output.py - [비전공자 초급] Pydantic 단일 구조화된 출력(Structured Output) httpx 예제
+"""openai_05_structured_output.py - [비전공자 초급] OpenAI 공식 파라미터 기반 Pydantic 단일 구조화된 출력(Structured Output) 예제
 
-Pydantic 데이터 모델과 OpenAI JSON Schema 규격을 활용하여 LLM 응답을
-엄격한 JSON 데이터 객체로 파싱하고 검증하는 예제 스크립트입니다.
+Pydantic 데이터 모델과 OpenAI SDK(from openai import OpenAI)의 response_format={"type": "json_object"} 규격을 활용하여
+LLM 응답을 엄격한 JSON 데이터 객체로 파싱하고 검증하는 예제 스크립트입니다.
 
 실행 명령어:
-    uv run python samples/sample_05_structured_output.py
+    uv run python samples/openai_05_structured_output.py
 """
 
+import os
 import json
-import httpx
+from openai import OpenAI
 from pydantic import BaseModel, Field
 from typing import List
 
@@ -35,12 +36,17 @@ class StockAnalysisResponse(BaseModel):
 
 
 def run_structured_output_sample():
-    print_section_header("05. 비전공자용 Pydantic 단일 구조화된 출력(Structured Output) httpx 예제")
+    print_section_header("05. 비전공자용 OpenAI 공식 SDK Pydantic 단일 구조화된 출력 예제")
 
     # 2. 서버 구동 상태 점검
     if not check_server_health(SERVER_HOST, MAIN_PORT, "LLM 메인 서버"):
         print("💡 서버 구동 후 스크립트를 재실행해 주세요.")
         return False
+
+    # 3. OpenAI SDK 클라이언트 초기화
+    base_url = f"{SERVER_HOST}:{MAIN_PORT}/v1"
+    api_key = os.environ.get("OPENAI_API_KEY", "EMPTY")
+    client = OpenAI(base_url=base_url, api_key=api_key)
 
     print("\n🔹 Pydantic `StockAnalysisResponse` 모델 기반 JSON 스키마 주석 및 파싱")
     json_schema_prompt = json.dumps(StockAnalysisResponse.model_json_schema(), ensure_ascii=False, indent=2)
@@ -55,37 +61,31 @@ def run_structured_output_sample():
         }
     ]
 
-    payload = {
-        "model": MODEL_NAME,
-        "messages": messages,
-        "temperature": 0.1,
-        "max_tokens": 300,
-        "stream": False,
-        "response_format": {"type": "json_object"}
-    }
-
-    target_url = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
-    print(f"📡 [POST] {target_url} 요청 전송 중... (모델: {MODEL_NAME})")
+    print(f"📡 [SDK 클라이언트 요청] {base_url} (모델: {MODEL_NAME})")
 
     try:
-        with httpx.Client(timeout=120.0) as client:
-            response = client.post(target_url, json=payload, headers={"Connection": "close"})
-            response.raise_for_status()
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=0.1,
+            max_tokens=300,
+            response_format={"type": "json_object"}
+        )
 
-            raw_json = response.json()["choices"][0]["message"]["content"]
-            if "</think>" in raw_json:
-                raw_json = raw_json.split("</think>")[-1].strip()
+        raw_json = completion.choices[0].message.content or ""
+        if "</think>" in raw_json:
+            raw_json = raw_json.split("</think>")[-1].strip()
 
-            # Pydantic model_validate_json 으로 엄격 검증 파싱
-            parsed_obj = StockAnalysisResponse.model_validate_json(raw_json)
-            print("\n✅ Pydantic 검증 객체 파싱 성공:")
-            for idx, item in enumerate(parsed_obj.results):
-                print(f"  [{idx+1}] 화자: {item.speaker} | 대상: {item.target} | 감성: {item.sentiment} | 정제문: {item.refined_sentence}")
+        # Pydantic model_validate_json 으로 엄격 검증 파싱
+        parsed_obj = StockAnalysisResponse.model_validate_json(raw_json)
+        print("\n✅ [SDK Pydantic 검증 객체 파싱 성공]:")
+        for idx, item in enumerate(parsed_obj.results):
+            print(f"  [{idx+1}] 화자: {item.speaker} | 대상: {item.target} | 감성: {item.sentiment} | 정제문: {item.refined_sentence}")
 
-            return True
+        return True
 
     except Exception as err:
-        print(f"❌ [Pydantic 파싱 실패]: {err}")
+        print(f"❌ [SDK Pydantic 파싱 실패]: {err}")
         return False
 
 

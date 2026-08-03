@@ -11,6 +11,45 @@ from pathlib import Path
 import httpx
 
 
+def load_sample_config() -> dict:
+    """samples/config.json 및 환경 변수(.env)로부터 동적 설정을 로드합니다.
+    
+    기본 반환 딕셔너리:
+    - server_host: 서버 주소 (기본: http://127.0.0.1)
+    - main_port: 8081
+    - embedding_port: 8090
+    - rerank_port: 8091
+    - default_model: qwen3.5-4b
+    - embedding_model: bge-m3
+    - rerank_model: bge-reranker-v2-m3
+    """
+    config = {
+        "server_host": get_server_host(),
+        "main_port": 8081,
+        "embedding_port": 8090,
+        "rerank_port": 8091,
+        "default_model": "qwen3.5-4b",
+        "embedding_model": "bge-m3",
+        "rerank_model": "bge-reranker-v2-m3",
+        "default_temperature": 0.3,
+        "default_max_tokens": 250
+    }
+
+    samples_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+    config_file = samples_dir / "config.json"
+    if config_file.exists():
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for k, v in data.items():
+                    if not k.startswith("_") and v is not None:
+                        config[k] = v
+        except Exception:
+            pass
+
+    return config
+
+
 def get_server_host() -> str:
     """vllm_serv 서버 호스트 주소를 반환합니다.
     
@@ -53,7 +92,7 @@ def get_server_host() -> str:
         except Exception:
             pass
 
-    # 4. 기본 안전 서빙 주소 (하드코딩 배제, 127.0.0.1 기본 폴백)
+    # 4. 기본 안전 서빙 주소 (127.0.0.1 기본 폴백)
     return "http://127.0.0.1"
 
 
@@ -95,7 +134,7 @@ def check_server_health(host: str = None, port: int = 8081, service_name: str = 
     print(f"❌ [{service_name}] 서버 포트({port}) 연결 실패 (대상: {target_base})")
     print("👉 서버 구동 상태 확인: ./status_server.sh")
     print("👉 서버 데몬 가동 명령어: ./start_server.sh")
-    print("👉 samples/config.json 설정 주소 확인 필요 (예: \"server_host\": \"http://10.0.0.41:8081\")")
+    print("👉 samples/config.json 설정 주소 확인 필요 (예: \"server_host\": \"http://192.168.0.80\")")
     return False
 
 

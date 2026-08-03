@@ -1,9 +1,8 @@
-"""sample_01_chat.py - [비전공자 초급] OpenAI 공식 규격 일반 대화(Chat Completions) 호출 예제
+"""sample_01_chat.py - [비전공자 초급] OpenAI 호환 일반 대화(Chat Completions) HTTP 요청 예제
 
 본 스크립트는 AI 서비스 개발자 양성과정 훈련생을 위해 작성된 표준 예제입니다.
-복잡한 파이덴틱(Pydantic) 모델이나 추상화 클래스 없이,
-OpenAI 공식 파이썬 라이브러리(from openai import OpenAI) 및 기본 HTTP 요청을 사용해
-vllm_serv 대화형 AI 모델과 주고받는 가장 직관적인 코드를 보여줍니다.
+복잡한 클래스나 추상화 없이 파이썬 기본 HTTP 라이브러리(httpx) 및 딕셔너리(dict)를 사용해
+vllm_serv 대화형 AI 모델과 주고받는 직관적인 코드를 보여줍니다.
 
 실행 명령어:
     uv run python samples/sample_01_chat.py
@@ -12,16 +11,17 @@ vllm_serv 대화형 AI 모델과 주고받는 가장 직관적인 코드를 보�
 import os
 import json
 import httpx
-from common import check_server_health, get_server_host, print_section_header
+from common import check_server_health, load_sample_config, print_section_header
 
-# 1. 서빙 호스트 주소 및 기본 포트(8081) 정의
-SERVER_HOST = get_server_host()
-MAIN_PORT = 8081
-MODEL_NAME = "qwen3.5-4b"
+# 1. 동적 서빙 포트, IP 및 모델명 구성 (config.json / .env / 환경변수 자동 파싱)
+config = load_sample_config()
+SERVER_HOST = config["server_host"]
+MAIN_PORT = config["main_port"]
+MODEL_NAME = config["default_model"]
 
 
 def run_chat_sample():
-    print_section_header("01. 비전공자용 OpenAI 규격 일반 대화 API 호출 예제")
+    print_section_header("01. 비전공자용 httpx REST API 규격 일반 대화 호출 예제")
 
     # 2. 서버 구동 상태 점검 (연결 실패 시 친절 안내 메시지 출력)
     if not check_server_health(SERVER_HOST, MAIN_PORT, "vllm_serv 메인 API"):
@@ -29,19 +29,18 @@ def run_chat_sample():
         return False
 
     # 3. OpenAI API 표준 메시지 배열 작성 (파이썬 기본 list & dict 사용)
-    #    role 종류: "system" (역할 부여), "user" (사용자 질문), "assistant" (AI 답변)
     messages = [
         {"role": "system", "content": "당신은 IT 및 AI 기술 전문 어시스턴트입니다. 친절하게 답변해 주세요."},
         {"role": "user", "content": "안녕하세요! vllm_serv 서버의 주요 장점을 1문장으로 요약해 주세요."}
     ]
 
-    # 4. HTTP POST 요청 페이로드 구성 (표준 파이썬 dict 사용 - Pydantic 배제)
+    # 4. HTTP POST 요청 페이로드 구성 (표준 파이썬 dict 사용)
     payload = {
         "model": MODEL_NAME,
         "messages": messages,
-        "temperature": 0.3,  # 답변 무작위성 조절 (0.0~2.0)
-        "max_tokens": 250,   # 생성할 최대 토큰 수
-        "stream": False      # 스트리밍 여부 (기본값: False)
+        "temperature": config.get("default_temperature", 0.3),
+        "max_tokens": config.get("default_max_tokens", 250),
+        "stream": False
     }
 
     target_url = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"

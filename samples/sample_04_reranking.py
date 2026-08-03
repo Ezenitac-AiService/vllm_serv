@@ -1,24 +1,23 @@
-"""sample_04_reranking.py - [비전공자 초급] BGE Reranker v2 M3 검색 문서 재순위화 예제
+"""sample_04_reranking.py - [비전공자 초급] BGE Reranker v2 M3 검색 문서 재순위화 httpx 예제
 
 본 스크립트는 AI 서비스 개발자 양성과정 훈련생을 위한 RAG(검색 증강 생성) 문서 재순위화(Reranking) 실습 스크립트입니다.
-파이덴틱(Pydantic) 모델 대신 표준 파이썬 딕셔너리(dict)를 사용하여
-사용자 질문(Query)과 여러 문서(Documents) 간의 의미적 관련도 점수(Relevance Score)를 측정하고 재정렬합니다.
+httpx 라이브러리를 사용하여 질문(Query)과 후보 문서(Documents) 간의 의미적 관련도 점수(Relevance Score)를 측정하고 재정렬합니다.
 
 실행 명령어:
     uv run python samples/sample_04_reranking.py
 """
 
 import httpx
-from common import check_server_health, get_server_host, print_section_header
+from common import check_server_health, load_sample_config, print_section_header
 
-SERVER_HOST = get_server_host()
-MAIN_PORT = 8081
-RERANK_PORT = 8091
-MODEL_NAME = "bge-reranker-v2-m3"
+config = load_sample_config()
+SERVER_HOST = config["server_host"]
+MAIN_PORT = config["main_port"]
+MODEL_NAME = config.get("rerank_model", "bge-reranker-v2-m3")
 
 
 def run_reranking_sample():
-    print_section_header("04. 비전공자용 BGE Reranker v2 M3 문서 관련도 재순위화 예제")
+    print_section_header("04. 비전공자용 BGE Reranker v2 M3 문서 관련도 재순위화 httpx 예제")
 
     # 1. 메인 서빙 데몬(8081 포트) 구동 점검
     if not check_server_health(SERVER_HOST, MAIN_PORT, "vllm_serv 메인 API"):
