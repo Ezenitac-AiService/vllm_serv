@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ChatCompletionContract",
+  "description": "vllm_serv Chat Completions API HTTP Response Contract",
+  "type": "object",
+  "required": [
+    "id",
+    "object",
+    "created",
+    "model",
+    "choices",
+    "usage"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^chatcmpl-[a-zA-Z0-9]+$"
+    },
+    "object": {
+      "type": "string",
+      "enum": ["chat.completion", "chat.completion.chunk"]
+    },
+    "created": {
+      "type": "integer"
+    },
+    "model": {
+      "type": "string"
+    },
+    "choices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "finish_reason"],
+        "properties": {
+          "index": { "type": "integer" },
+          "message": {
+            "type": "object",
+            "required": ["role", "content"],
+            "properties": {
+              "role": { "type": "string" },
+              "content": { "type": "string" }
+            }
+          },
+          "finish_reason": {
+            "type": ["string", "null"],
+            "enum": ["stop", "length", null]
+          }
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "required": ["prompt_tokens", "completion_tokens", "total_tokens"],
+      "properties": {
+        "prompt_tokens": { "type": "integer" },
+        "completion_tokens": { "type": "integer" },
+        "total_tokens": { "type": "integer" }
+      }
+    }
+  }
+}

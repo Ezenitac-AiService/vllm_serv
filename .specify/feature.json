@@ -1,3 +1,1 @@
-{
-  "feature_directory": "specs/072-server-e2e-health-check"
-}
+{"feature_directory":"specs/073-fix-chat-peer-closed"}

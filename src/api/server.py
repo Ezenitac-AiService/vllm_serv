@@ -51,6 +51,9 @@ async def lifespan(app: FastAPI):
     await auxiliary_manager.shutdown()
 
 
+from src.core.middleware.protocol_guard import ProtocolGuardMiddleware
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application instance with subnets middleware and routers."""
     app = FastAPI(
@@ -59,6 +62,9 @@ def create_app() -> FastAPI:
         version="1.0.0",
         lifespan=lifespan
     )
+
+    # Attach ASGI protocol safeguard middleware to eliminate h11 LocalProtocolError
+    app.add_middleware(ProtocolGuardMiddleware)
 
     # Allow CORS requests from external LAN web clients
     app.add_middleware(

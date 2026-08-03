@@ -147,13 +147,6 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
         path = request.url.path.strip("/")
 
     clean_path = path.strip("/").split("/")[-1]
-    if clean_path in ("chat/completions", "completions") and not await check_llama_status():
-        raise HTTPException(
-            status_code=503,
-            detail="Model is currently loading or unloaded. Please try again later.",
-            headers={"Retry-After": "10"}
-        )
-
     # Mock response support for pytest/offline execution
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
         import json
@@ -174,6 +167,29 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 ]
             }
             return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
+        elif clean_path in ("chat/completions", "completions"):
+            mock_data = {
+                "id": "chatcmpl-mock123",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": "qwen3.5-4b",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": "안녕하세요! 무엇을 도와드릴까요?"},
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20}
+            }
+            return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
+
+    if clean_path in ("chat/completions", "completions") and not await check_llama_status():
+        raise HTTPException(
+            status_code=503,
+            detail="Model is currently loading or unloaded. Please try again later.",
+            headers={"Retry-After": "10"}
+        )
 
     body_content = None
     prompt_text = None
