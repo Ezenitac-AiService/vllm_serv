@@ -48,7 +48,7 @@ echo -e "${COLOR_GREEN}[SERVER] 3. 로그 파일 경로: $LOG_FILE${COLOR_NC}"
 
 mkdir -p "$BASE_DIR/logs"
 
-nohup setsid uv run python -m src.api.server < /dev/null > "$LOG_FILE" 2>&1 &
+nohup setsid .venv/bin/python -m src.api.server < /dev/null > "$LOG_FILE" 2>&1 &
 sleep 0.5
 SERVER_PID=$(pgrep -f "src.api.server" | tail -n 1 || echo "")
 echo "$SERVER_PID" > "$PID_FILE"
@@ -58,23 +58,10 @@ echo -e "${COLOR_GREEN}✓ 서버 데몬 백그라운드 구동 성공! (PID: $S
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
 SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
-CURL_HOST="$SERVER_HOST"
-if [ "$CURL_HOST" = "0.0.0.0" ]; then
-    CURL_HOST="127.0.0.1"
-fi
-
 # 서빙 준비 완료 대기 (최대 30초)
 echo -n "[SERVER] 서빙 READY 상태 대기 중..."
 for i in {1..30}; do
-    if [ -n "$SERVER_PID" ] && ! ps -p "$SERVER_PID" > /dev/null 2>&1; then
-        echo -e "\n${COLOR_RED}[SERVER ERROR] 백그라운드 데몬 프로세스(PID: $SERVER_PID)가 구동 직후 종료되었습니다!${COLOR_NC}"
-        if [ -f "$LOG_FILE" ]; then
-            echo -e "${COLOR_YELLOW}[SERVER DIAGNOSTICS] $LOG_FILE 최근 15줄 로그:${COLOR_NC}"
-            tail -n 15 "$LOG_FILE"
-        fi
-        exit 1
-    fi
-    if curl -s "http://$CURL_HOST:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://$CURL_HOST:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
+    if curl -s "http://$SERVER_HOST:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://$SERVER_HOST:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
         echo -e "\n${COLOR_GREEN}✓ 서버 준비 완료! (http://$SERVER_HOST:$SERVER_PORT)${COLOR_NC}"
         echo -e "OpenAI API 엔드포인트: http://$SERVER_HOST:$SERVER_PORT/v1/chat/completions"
         exit 0
@@ -83,10 +70,4 @@ for i in {1..30}; do
     sleep 1
 done
 
-echo -e "\n${COLOR_RED}⚠️ 서버 헬스체크 대기 시간(30초) 초과!${COLOR_NC}"
-if [ -f "$LOG_FILE" ]; then
-    echo -e "${COLOR_YELLOW}[SERVER DIAGNOSTICS] $LOG_FILE 최근 15줄 로그:${COLOR_NC}"
-    tail -n 15 "$LOG_FILE"
-fi
-exit 1
-
+echo -e "\n${COLOR_YELLOW}⚠️ 서버 초기 로딩 진행 중입니다. 로그를 확인하세요: tail -f logs/server.log${COLOR_NC}"

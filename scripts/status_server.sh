@@ -49,14 +49,9 @@ fi
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
 SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
-CURL_HOST="$SERVER_HOST"
-if [ "$CURL_HOST" = "0.0.0.0" ]; then
-    CURL_HOST="127.0.0.1"
-fi
-
 echo -e "\n[REST API 헬스체크 (http://$SERVER_HOST:$SERVER_PORT/health)]"
 if command -v curl &> /dev/null; then
-    curl -s "http://$CURL_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
+    curl -s "http://$SERVER_HOST:$SERVER_PORT/health" | python3 -m json.tool 2>/dev/null || echo -e "${COLOR_YELLOW}응답 없음 (서버 미구현 또는 비활성)${COLOR_NC}"
 fi
 
 if command -v nvidia-smi &> /dev/null; then
