@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import src.core.network_detector as nd_mod
 from src.core.network_detector import NetworkInterfaceInfo, ServerNetworkConfig, NetworkDetector
-from samples.common import get_server_host
+from sample.common import get_server_host
 
 
 def test_network_interface_info_dataclass():

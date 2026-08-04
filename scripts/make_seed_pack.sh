@@ -226,11 +226,11 @@ if ! echo "$ARCHIVE_FILES" | grep "platform_profiles.json" > /dev/null; then
 fi
 log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이브 수록 검증 완료"
 
-if ! echo "$ARCHIVE_FILES" | grep "samples/common.py" > /dev/null; then
-    log_err "아카이브 검증 실패: samples/common.py 파일이 수록되지 않았습니다."
+if ! echo "$ARCHIVE_FILES" | grep "sample/common.py" > /dev/null; then
+    log_err "아카이브 검증 실패: sample/common.py 파일이 수록되지 않았습니다."
     exit 1
 fi
-log_info "✓ API 예제 코드(samples/common.py) 아카이브 수록 검증 완료"
+log_info "✓ API 예제 코드(sample/common.py) 아카이브 수록 검증 완료"
 
 if ! echo "$ARCHIVE_FILES" | grep "specs/" > /dev/null; then
     log_err "아카이브 검증 실패: specs/ 기능 명세 디렉터리가 수록되지 않았습니다."
@@ -242,6 +242,13 @@ if echo "$ARCHIVE_FILES" | grep "start_server.sh" > /dev/null; then
     log_info "✓ 데몬 제어 스크립트(scripts/start_server.sh, status_server.sh) 아카이브 수록 검증 완료"
 else
     log_err "아카이브 검증 실패: scripts/start_server.sh 파일이 수록되지 않았습니다."
+    exit 1
+fi
+
+if echo "$ARCHIVE_FILES" | grep "ensure_models.py" > /dev/null; then
+    log_info "✓ 모델 자동 다운로드 헬퍼(scripts/ensure_models.py) 아카이브 수록 검증 완료"
+else
+    log_err "아카이브 검증 실패: scripts/ensure_models.py 파일이 수록되지 않았습니다."
     exit 1
 fi
 

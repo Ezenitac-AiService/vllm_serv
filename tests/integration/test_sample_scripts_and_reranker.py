@@ -13,7 +13,7 @@ import pytest
 from pathlib import Path
 from fastapi.testclient import TestClient
 
-from samples.common import get_server_host, _format_host_url
+from sample.common import get_server_host, _format_host_url
 from src.api.server import create_app
 
 

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnsureModelsContract",
+  "description": "Validation contract for scripts/ensure_models.py automated GGUF model provisioning",
+  "type": "object",
+  "properties": {
+    "target_models": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 3,
+      "contains": {
+        "const": "qwen3.5-4b"
+      }
+    },
+    "all_models_present": {
+      "type": "boolean",
+      "const": true
+    },
+    "download_summary": {
+      "type": "object",
+      "properties": {
+        "total_models": {
+          "type": "integer"
+        },
+        "present_count": {
+          "type": "integer"
+        },
+        "downloaded_count": {
+          "type": "integer"
+        },
+        "failed_count": {
+          "type": "integer",
+          "const": 0
+        }
+      },
+      "required": [
+        "total_models",
+        "present_count",
+        "failed_count"
+      ]
+    }
+  },
+  "required": [
+    "target_models",
+    "all_models_present",
+    "download_summary"
+  ]
+}

@@ -177,6 +177,25 @@ if ! uv sync --frozen 2>/dev/null; then
     uv sync
 fi
 
+# FR-007 / T010: lspci 기반 PCI 버스 물리 GPU 탐지 및 드라이버/CUDA 자동 가이드
+log_info "PCI 버스 레벨 NVIDIA GPU 물리 장비 탐지 중 (lspci)..."
+HAS_PCI_GPU=0
+if command -v lspci &> /dev/null; then
+    if lspci 2>/dev/null | grep -qi 'nvidia'; then
+        HAS_PCI_GPU=1
+        GPU_PCI_INFO=$(lspci 2>/dev/null | grep -i 'nvidia' | head -n 1)
+        log_info "✓ PCI 버스에서 NVIDIA GPU 장비 감지 완료: $GPU_PCI_INFO"
+    fi
+fi
+
+if [ "$HAS_PCI_GPU" -eq 1 ] && { ! command -v nvcc &> /dev/null || ! command -v nvidia-smi &> /dev/null; }; then
+    log_warn "⚠️ 물리 NVIDIA GPU 장비가 존재하지만 nvcc 또는 nvidia-smi 드라이버가 감지되지 않았습니다."
+    log_info "자동 드라이버 및 CUDA Toolkit 설치 헬퍼 실행 시도 중 (scripts/update_cuda_drivers.sh)..."
+    if [ -f "$BASE_DIR/scripts/update_cuda_drivers.sh" ]; then
+        bash "$BASE_DIR/scripts/update_cuda_drivers.sh" || log_warn "update_cuda_drivers.sh 실행 중 경고 발생"
+    fi
+fi
+
 # FR-005 / T006: CUDA Toolkit (nvcc) 존재 여부 fail-fast 검증
 log_info "NVIDIA CUDA Toolkit (nvcc) 빌드 환경 검증 중..."
 if ! command -v nvcc &> /dev/null; then
@@ -354,6 +373,37 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
         exit 1
     fi
     log_info "✓ CUDA GPU 가속 활성화 최종 확인 완료"
+fi
+
+# ==============================================================================
+# Step 2.5: SQLite DB Auto-Initialization (T011)
+# ==============================================================================
+log_step "2.5. SQLite 메트릭 DB 자동 초기화"
+if [ -f "$BASE_DIR/scripts/seed_db.py" ]; then
+    log_info "메트릭/대시보드 DB 스키마 및 시드 데이터 검증/초기화 중 (scripts/seed_db.py)..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/seed_db.py" || log_warn "seed_db.py 실행 중 경고 발생"
+fi
+
+# ==============================================================================
+# Step 2.6: Essential GGUF Model Auto-Provisioning (092-setup-auto-model-download: FR-001..FR-008, T007)
+# ==============================================================================
+log_step "2.6. 필수 GGUF 모델 가중치 유무 점검 및 자동 프로비저닝"
+if [ -f "$BASE_DIR/scripts/ensure_models.py" ]; then
+    log_info "3종 필수 모델(qwen3.5-4b, bge-m3, bge-reranker-v2-m3) 점검 및 자동 다운로드 가동 중..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/ensure_models.py" || {
+        log_err "필수 GGUF 모델 다운로드/검증 실패!"
+        log_err "수동 다운로드 가이드: uv run python scripts/benchmark_quality.py --auto-download --real"
+        exit 1
+    }
+fi
+
+# ==============================================================================
+# Step 2.7: Asset Audit & Cleanup (T011)
+# ==============================================================================
+log_step "2.7. 프로젝트 자산 정밀 스캔 및 레거시 격리 정돈"
+if [ -f "$BASE_DIR/scripts/audit_assets.py" ]; then
+    log_info "프로젝트 디렉토리 자산 감사 수행 중 (scripts/audit_assets.py)..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/audit_assets.py" || log_warn "audit_assets.py 검사 완료"
 fi
 
 
