@@ -37,6 +37,7 @@ class ServerConfig(BaseModel):
     admin_secret: str = "aiservice"
     speculative_decoding: Dict[str, Any] = Field(default_factory=lambda: {"enabled": False, "draft_model": "qwen3.5-2b"})
     structured_output: Dict[str, Any] = Field(default_factory=lambda: {"enabled": True, "strict_json_schema": True})
+    model_config = {"extra": "allow"}
 
     @field_validator("port", "backend_port", "embedding_backend_port", "rerank_backend_port")
     @classmethod

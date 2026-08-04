@@ -32,6 +32,7 @@ cd "$BASE_DIR"
 
 WHEEL_PATH=""
 SKIP_BUILD=0
+SKIP_BENCHMARK=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -43,8 +44,12 @@ while [[ $# -gt 0 ]]; do
             SKIP_BUILD=1
             shift
             ;;
+        --skip-benchmark)
+            SKIP_BENCHMARK=1
+            shift
+            ;;
         --help|-h)
-            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build]"
+            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build] [--skip-benchmark]"
             exit 0
             ;;
         *)
@@ -404,6 +409,23 @@ log_step "2.7. 프로젝트 자산 정밀 스캔 및 레거시 격리 정돈"
 if [ -f "$BASE_DIR/scripts/audit_assets.py" ]; then
     log_info "프로젝트 디렉토리 자산 감사 수행 중 (scripts/audit_assets.py)..."
     "$VENV_PYTHON" "$BASE_DIR/scripts/audit_assets.py" || log_warn "audit_assets.py 검사 완료"
+fi
+
+# ==============================================================================
+# Step 2.8: 4단계 모듈화 벤치마크 파이프라인 (095-setup-benchmark-model-selection: FR-001..FR-005)
+# Stage 1: 모델 다운로드 (Step 2.6 완수)
+# Stage 2: 무결성 검증
+# Stage 3: 임시 서빙 가동 및 컨텍스트 윈도우(2K~16K) 실측 VRAM/TPS 벤치마크
+# Stage 4: 서비스 모델 선정 및 컨텍스트 윈도우 크기 결정 -> config/server_config.json 원자적 반영
+# ==============================================================================
+log_step "2.8. 4단계 모듈화 벤치마크 & 최적 서비스 모델/컨텍스트 선정"
+if [ "$SKIP_BENCHMARK" -eq 1 ]; then
+    log_info "⏩ --skip-benchmark 옵션 감지: 3단계 실측 벤치마크를 스킵합니다."
+else
+    if [ -f "$BASE_DIR/scripts/benchmark_context_window.py" ]; then
+        log_info "4단계 모듈화 벤치마크 및 설정 자동 반영 수행 중 (scripts/benchmark_context_window.py)..."
+        "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" || log_warn "benchmark_context_window.py 실행 중 경고 발생"
+    fi
 fi
 
 

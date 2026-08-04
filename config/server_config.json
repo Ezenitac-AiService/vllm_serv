@@ -43,5 +43,14 @@
     "structured_output": {
         "enabled": true,
         "strict_json_schema": true
+    },
+    "model": "qwen3.5-4b",
+    "context_window": 8192,
+    "auto_benchmark_profile": {
+        "recommended_model": "qwen3.5-4b",
+        "recommended_context_window": 8192,
+        "benchmark_tps": 45.0,
+        "vram_used_mb": 4200,
+        "benchmark_timestamp": "2026-08-04T08:17:52Z"
     }
 }
