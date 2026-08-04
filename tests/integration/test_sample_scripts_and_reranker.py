@@ -18,10 +18,10 @@ from src.api.server import create_app
 
 
 def test_no_hardcoded_ip_in_common_py():
-    """FR-001 & SC-001: Ensure no hardcoded IP strings (e.g. 192.168.0.100) exist in samples/common.py executable code."""
-    common_py_path = Path(__file__).parent.parent.parent / "samples" / "common.py"
+    """FR-001 & SC-001: Ensure no hardcoded IP strings (e.g. 192.168.0.100) exist in sample/common.py executable code."""
+    common_py_path = Path(__file__).parent.parent.parent / "sample" / "common.py"
     content = common_py_path.read_text(encoding="utf-8")
-    assert "192.168.0.100" not in content, "Hardcoded IP 192.168.0.100 found in samples/common.py!"
+    assert "192.168.0.100" not in content, "Hardcoded IP 192.168.0.100 found in sample/common.py!"
 
 
 def test_get_server_host_parsing_priority(tmp_path, monkeypatch):
