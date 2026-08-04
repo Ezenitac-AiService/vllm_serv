@@ -53,9 +53,8 @@ def test_make_seed_pack_default_tarball(tmp_path):
         assert any("setup.sh" in n for n in normalized_names), "setup.sh missing from archive"
         assert any("process_manager.py" in n for n in normalized_names), "process_manager.py missing from archive"
         assert any("model_catalog.json" in n for n in normalized_names), "model_catalog.json missing from archive"
-        assert any("samples/common.py" in n for n in normalized_names), "samples/common.py missing from archive"
+        assert any("sample/common.py" in n for n in normalized_names), "sample/common.py missing from archive"
         assert any(n.startswith("specs/") for n in normalized_names), "specs/ missing from archive"
-        assert any(n.startswith(".legacy/") for n in normalized_names), ".legacy/ missing from archive"
 
         # Excluded directories check
         for n in normalized_names:
@@ -307,8 +306,8 @@ def test_make_seed_pack_exclusions_rules():
     assert '--exclude="specs"' not in content, (
         "make_seed_pack.sh must NOT exclude specs directory from seed archive"
     )
-    assert '--exclude=".legacy"' not in content, (
-        "make_seed_pack.sh must NOT exclude .legacy directory from seed archive"
+    assert '--exclude=".legacy"' in content, (
+        "make_seed_pack.sh must exclude .legacy directory from seed archive"
     )
 
 
