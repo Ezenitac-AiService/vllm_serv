@@ -60,8 +60,11 @@ else
     echo -e "8082 대시보드 프로세스  : ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
 fi
 
+source "$SCRIPT_DIR/common.sh"
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
-SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
+SERVER_PORT=$(get_configured_port main)
+DASHBOARD_PORT=$(get_configured_port dashboard)
+
 
 LAN_IP=$(uv run python -c "from src.core.network_detector import NetworkDetector; print(NetworkDetector.get_active_lan_ips()[-1] if NetworkDetector.get_active_lan_ips() else '127.0.0.1')" 2>/dev/null || echo "127.0.0.1")
 

@@ -409,68 +409,62 @@ fi
 
 log_step "3. 서버 포트 조회 및 네트워크 방화벽 등록"
 
-SERVER_CONFIG_FILE="$BASE_DIR/config/server_config.json"
-DEFAULT_PORT=8081
+SERVER_PORT=$(get_configured_port main)
+DASHBOARD_PORT=$(get_configured_port dashboard)
+EMBEDDING_PORT=$(get_configured_port embedding)
+RERANK_PORT=$(get_configured_port rerank)
 
-if [ -f "$SERVER_CONFIG_FILE" ]; then
-    PARSED_PORT=$(python3 -c "import json; print(json.load(open('$SERVER_CONFIG_FILE')).get('port', $DEFAULT_PORT))" 2>/dev/null || echo "$DEFAULT_PORT")
-    SERVER_PORT=${LLAMA_PORT:-$PARSED_PORT}
-else
-    SERVER_PORT=${LLAMA_PORT:-$DEFAULT_PORT}
-fi
+log_info "서빙 포트 설정: $SERVER_PORT/tcp (대시보드: $DASHBOARD_PORT, 임베딩: $EMBEDDING_PORT, 리랭커: $RERANK_PORT)"
 
-log_info "서빙 포트 설정: $SERVER_PORT/tcp"
+FIREWALL_PORTS=("$SERVER_PORT" "$DASHBOARD_PORT" 8089 "$EMBEDDING_PORT" "$RERANK_PORT")
 
-# ==============================================================================
-# Step 3.5: Multi-OS Firewall Port Opening (039-seed-pack-sudo-firewall-migration & 040)
-# (FR-001, FR-003, DoD-001, DoD-002: ufw/firewalld/nftables/iptables auto-detect & port open)
-# ==============================================================================
-FIREWALL_PORTS=("$SERVER_PORT" 8082 8089 8090 8091)
-
-if command -v ufw &> /dev/null; then
-    log_info "ufw 방화벽 감지. 서비스 포트 개방 중..."
-    if [ "$SUDO_AVAILABLE" = true ]; then
-        for port in "${FIREWALL_PORTS[@]}"; do
-            sudo ufw allow "${port}/tcp" || true
-            log_info "✓ sudo ufw allow ${port}/tcp"
-        done
-        sudo ufw status verbose 2>/dev/null || true
+configure_os_firewall() {
+    if command -v ufw &> /dev/null; then
+        log_info "ufw 방화벽 감지. 서비스 포트 개방 중..."
+        if [ "$SUDO_AVAILABLE" = true ]; then
+            for port in "${FIREWALL_PORTS[@]}"; do
+                sudo ufw allow "${port}/tcp" 2>/dev/null
+                log_info "✓ sudo ufw allow ${port}/tcp"
+            done
+            sudo ufw status verbose 2>/dev/null
+        else
+            log_warn "sudo 권한 미확인: ufw 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
+        fi
+    elif command -v firewall-cmd &> /dev/null; then
+        log_info "firewalld 방화벽 감지. 서비스 포트 영구 등록 중..."
+        if [ "$SUDO_AVAILABLE" = true ]; then
+            for port in "${FIREWALL_PORTS[@]}"; do
+                sudo firewall-cmd --permanent --add-port="${port}/tcp" 2>/dev/null
+                log_info "✓ firewall-cmd --permanent --add-port=${port}/tcp"
+            done
+            sudo firewall-cmd --reload 2>/dev/null
+            log_info "firewalld 리로드 완료."
+        else
+            log_warn "sudo 권한 미확인: firewalld 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
+        fi
+    elif command -v nft &> /dev/null; then
+        log_info "nftables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
+        if [ "$SUDO_AVAILABLE" = true ]; then
+            for port in "${FIREWALL_PORTS[@]}"; do
+                sudo nft add rule inet filter input tcp dport "${port}" accept 2>/dev/null || \
+                    sudo nft add rule ip filter INPUT tcp dport "${port}" accept 2>/dev/null || true
+            done
+        fi
+    elif command -v iptables &> /dev/null; then
+        log_info "iptables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
+        if [ "$SUDO_AVAILABLE" = true ]; then
+            for port in "${FIREWALL_PORTS[@]}"; do
+                sudo iptables -C INPUT -p tcp --dport "${port}" -j ACCEPT 2>/dev/null || \
+                    sudo iptables -A INPUT -p tcp --dport "${port}" -j ACCEPT 2>/dev/null
+                log_info "✓ iptables 포트 ${port}/tcp 규칙 등록 완료"
+            done
+        fi
     else
-        log_warn "sudo 권한 미확인: ufw 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
+        log_info "활성화된 OS 방화벽 패키지를 감지하지 못했습니다. (포트: ${FIREWALL_PORTS[*]})"
     fi
-elif command -v firewall-cmd &> /dev/null; then
-    log_info "firewalld 방화벽 감지. 서비스 포트 영구 등록 중..."
-    if [ "$SUDO_AVAILABLE" = true ]; then
-        for port in "${FIREWALL_PORTS[@]}"; do
-            sudo firewall-cmd --permanent --add-port="${port}/tcp" || true
-            log_info "✓ firewall-cmd --permanent --add-port=${port}/tcp"
-        done
-        sudo firewall-cmd --reload || true
-        log_info "firewalld 리로드 완료."
-    else
-        log_warn "sudo 권한 미확인: firewalld 서비스 포트 개방 복구 가이드 생성 완료 (scripts/configure_firewall.sh)"
-    fi
-elif command -v nft &> /dev/null; then
-    log_info "nftables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
-    if [ "$SUDO_AVAILABLE" = true ]; then
-        for port in "${FIREWALL_PORTS[@]}"; do
-            sudo nft add rule inet filter input tcp dport "${port}" accept 2>/dev/null || \
-                sudo nft add rule ip filter INPUT tcp dport "${port}" accept 2>/dev/null || \
-                log_warn "nftables 포트 ${port} 규칙 추가 실패. 수동 확인 필요."
-        done
-    fi
-elif command -v iptables &> /dev/null; then
-    log_info "iptables 방화벽 감지. 서비스 포트 허용 규칙 등록 중..."
-    if [ "$SUDO_AVAILABLE" = true ]; then
-        for port in "${FIREWALL_PORTS[@]}"; do
-            sudo iptables -C INPUT -p tcp --dport "${port}" -j ACCEPT 2>/dev/null || \
-                sudo iptables -A INPUT -p tcp --dport "${port}" -j ACCEPT || true
-            log_info "✓ iptables 포트 ${port}/tcp 규칙 등록 완료"
-        done
-    fi
-else
-    log_info "활성화된 OS 방화벽 패키지를 감지하지 못했습니다. (포트: ${FIREWALL_PORTS[*]})"
-fi
+}
+
+try_optional_step "OS 방화벽 설정" configure_os_firewall
 
 
 

@@ -74,3 +74,68 @@ assert_cuda_gpu() {
     fi
     log_info "✓ NVIDIA CUDA GPU 환경 탐지 성공 (Driver: $(get_nvidia_driver_version), CUDA: $(get_cuda_version))"
 }
+
+# -----------------------------------------------------------------------------
+# FR-007 / T003: SRE 안전 래퍼 함수 (옵셔널 예외 폭사 방지)
+# -----------------------------------------------------------------------------
+try_optional_step() {
+    local step_name="$1"
+    shift
+    log_info "옵셔널 파이프라인 단계 시도: $step_name ($*)"
+    if "$@"; then
+        log_info "✓ [$step_name] 옵셔널 단계 정상 완수"
+        return 0
+    else
+        local status=$?
+        log_warn "⚠️ [$step_name] 옵셔널 단계 경고 수신 (Exit Code: $status). non-fatal 안전 처리하고 계속 진행합니다."
+        return 0
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# FR-008 / T004: DevSecOps Cascade 포트 결정 믹스인
+# Priority: CLI argument > Environment variable > config/server_config.json > Default
+# -----------------------------------------------------------------------------
+get_configured_port() {
+    local port_type="${1:-main}"
+    local default_port=8081
+    local env_val=""
+
+    case "$port_type" in
+        main)
+            default_port=8081
+            env_val="${LLAMA_PORT:-}"
+            ;;
+        dashboard)
+            default_port=8082
+            env_val="${DASHBOARD_PORT:-}"
+            ;;
+        embedding)
+            default_port=8090
+            env_val="${EMBEDDING_PORT:-}"
+            ;;
+        rerank)
+            default_port=8091
+            env_val="${RERANK_PORT:-}"
+            ;;
+        *)
+            default_port=8081
+            ;;
+    esac
+
+    if [ -n "$env_val" ]; then
+        echo "$env_val"
+        return 0
+    fi
+
+    local base_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    local cfg_file="$base_dir/config/server_config.json"
+    if [ -f "$cfg_file" ] && command -v python3 &>/dev/null; then
+        local cfg_port=$(python3 -c "import json; c=json.load(open('$cfg_file')); print(c.get('$port_type', c.get('port', $default_port)))" 2>/dev/null || echo "$default_port")
+        echo "$cfg_port"
+        return 0
+    fi
+
+    echo "$default_port"
+}
+

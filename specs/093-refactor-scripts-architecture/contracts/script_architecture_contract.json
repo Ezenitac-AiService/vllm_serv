@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ScriptArchitectureContract",
+  "description": "Validation contract for scripts/ directory modularity and decoupled architecture",
+  "type": "object",
+  "properties": {
+    "total_scripts_scanned": {
+      "type": "integer",
+      "minimum": 14
+    },
+    "direct_hardcoded_refs_count": {
+      "type": "integer",
+      "maximum": 0
+    },
+    "safety_wrapper_coverage_pct": {
+      "type": "number",
+      "minimum": 100.0
+    },
+    "all_tests_passed": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "required": [
+    "total_scripts_scanned",
+    "direct_hardcoded_refs_count",
+    "safety_wrapper_coverage_pct",
+    "all_tests_passed"
+  ]
+}
