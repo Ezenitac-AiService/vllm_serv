@@ -1,0 +1,1825 @@
+{
+  "total_files_scanned": 303,
+  "preserved_files": 303,
+  "archived_files": 0,
+  "inventory": [
+    {
+      "file_path": "scripts/start_server.sh",
+      "name": "start_server.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/common.sh",
+      "name": "common.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/seed_db.py",
+      "name": "seed_db.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/configure_firewall.sh",
+      "name": "configure_firewall.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/update_cuda_drivers.sh",
+      "name": "update_cuda_drivers.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/unpack_seed.sh",
+      "name": "unpack_seed.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/setup.sh",
+      "name": "setup.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/status_server.sh",
+      "name": "status_server.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/audit_assets.py",
+      "name": "audit_assets.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/stop_server.sh",
+      "name": "stop_server.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/benchmark_quality.py",
+      "name": "benchmark_quality.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/verify_wheel_binary.py",
+      "name": "verify_wheel_binary.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/make_seed_pack.sh",
+      "name": "make_seed_pack.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/diagnose_server_health.py",
+      "name": "diagnose_server_health.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/verify_wheel_binary.cpython-312.pyc",
+      "name": "verify_wheel_binary.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/benchmark_quality.cpython-312.pyc",
+      "name": "benchmark_quality.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/seed_db.cpython-312.pyc",
+      "name": "seed_db.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/diagnose_server_health.cpython-312.pyc",
+      "name": "diagnose_server_health.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/audit_assets.cpython-312.pyc",
+      "name": "audit_assets.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/eval/__init__.py",
+      "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/eval/golden_dataset.json",
+      "name": "golden_dataset.json",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/eval/quality_evaluator.py",
+      "name": "quality_evaluator.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/cpu_detector.py",
+      "name": "cpu_detector.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/metrics_db.py",
+      "name": "metrics_db.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/event_broadcaster.py",
+      "name": "event_broadcaster.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/llama_manager.py",
+      "name": "llama_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/think_tag_parser.py",
+      "name": "think_tag_parser.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/config.py",
+      "name": "config.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/api_key_manager.py",
+      "name": "api_key_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/process_manager.py",
+      "name": "process_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/network_detector.py",
+      "name": "network_detector.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/config_manager.py",
+      "name": "config_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/gpu_detector.py",
+      "name": "gpu_detector.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/auxiliary_manager.py",
+      "name": "auxiliary_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/server_connectivity_verifier.py",
+      "name": "server_connectivity_verifier.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/firewall_manager.py",
+      "name": "firewall_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/client_logger.py",
+      "name": "client_logger.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/model_downloader.py",
+      "name": "model_downloader.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/utils/__init__.py",
+      "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/utils/cuda_env.py",
+      "name": "cuda_env.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/server.py",
+      "name": "server.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/main.py",
+      "name": "main.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/scripts/download_models.py",
+      "name": "download_models.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/scripts/benchmark.py",
+      "name": "benchmark.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/scripts/benchmark_context_scaling.py",
+      "name": "benchmark_context_scaling.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/scripts/benchmark_128k.py",
+      "name": "benchmark_128k.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/eval/__pycache__/__init__.cpython-312.pyc",
+      "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/eval/__pycache__/quality_evaluator.cpython-312.pyc",
+      "name": "quality_evaluator.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/middleware/protocol_guard.py",
+      "name": "protocol_guard.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/config_manager.cpython-312.pyc",
+      "name": "config_manager.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/server_connectivity_verifier.cpython-312.pyc",
+      "name": "server_connectivity_verifier.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/event_broadcaster.cpython-312.pyc",
+      "name": "event_broadcaster.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/client_logger.cpython-312.pyc",
+      "name": "client_logger.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/llama_manager.cpython-312.pyc",
+      "name": "llama_manager.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/metrics_db.cpython-312.pyc",
+      "name": "metrics_db.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/firewall_manager.cpython-312.pyc",
+      "name": "firewall_manager.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/model_downloader.cpython-312.pyc",
+      "name": "model_downloader.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/process_manager.cpython-312.pyc",
+      "name": "process_manager.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/network_detector.cpython-312.pyc",
+      "name": "network_detector.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/auxiliary_manager.cpython-312.pyc",
+      "name": "auxiliary_manager.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/think_tag_parser.cpython-312.pyc",
+      "name": "think_tag_parser.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/api_key_manager.cpython-312.pyc",
+      "name": "api_key_manager.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/gpu_detector.cpython-312.pyc",
+      "name": "gpu_detector.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/__pycache__/cpu_detector.cpython-312.pyc",
+      "name": "cpu_detector.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/utils/encoding.py",
+      "name": "encoding.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/middleware/__pycache__/protocol_guard.cpython-312.pyc",
+      "name": "protocol_guard.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/core/utils/__pycache__/encoding.cpython-312.pyc",
+      "name": "encoding.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/utils/__pycache__/cuda_env.cpython-312.pyc",
+      "name": "cuda_env.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/utils/__pycache__/__init__.cpython-312.pyc",
+      "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/middleware/subnet_filter.py",
+      "name": "subnet_filter.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/middleware/api_key_auth.py",
+      "name": "api_key_auth.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/middleware/client_access_logger.py",
+      "name": "client_access_logger.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/__pycache__/server.cpython-312.pyc",
+      "name": "server.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/__pycache__/main.cpython-312.pyc",
+      "name": "main.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/routes/inference_api.py",
+      "name": "inference_api.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/routes/admin_api.py",
+      "name": "admin_api.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/routes/dashboard_api.py",
+      "name": "dashboard_api.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/static/style.css",
+      "name": "style.css",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/static/index.html",
+      "name": "index.html",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/static/app.js",
+      "name": "app.js",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/middleware/__pycache__/api_key_auth.cpython-312.pyc",
+      "name": "api_key_auth.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/middleware/__pycache__/client_access_logger.cpython-312.pyc",
+      "name": "client_access_logger.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/middleware/__pycache__/subnet_filter.cpython-312.pyc",
+      "name": "subnet_filter.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/routes/__pycache__/dashboard_api.cpython-312.pyc",
+      "name": "dashboard_api.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/routes/__pycache__/inference_api.cpython-312.pyc",
+      "name": "inference_api.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/api/routes/__pycache__/admin_api.cpython-312.pyc",
+      "name": "admin_api.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "src/scripts/__pycache__/benchmark_context_scaling.cpython-312.pyc",
+      "name": "benchmark_context_scaling.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/jinja2-3.1.6-py3-none-any.whl",
+      "name": "jinja2-3.1.6-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/idna-3.18-py3-none-any.whl",
+      "name": "idna-3.18-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/h11-0.16.0-py3-none-any.whl",
+      "name": "h11-0.16.0-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/pydantic-2.13.4-py3-none-any.whl",
+      "name": "pydantic-2.13.4-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "name": "markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "name": "pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/anyio-4.14.2-py3-none-any.whl",
+      "name": "anyio-4.14.2-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl",
+      "name": "llama_cpp_python-0.3.34-py3-none-linux_x86_64.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/typing_extensions-4.16.0-py3-none-any.whl",
+      "name": "typing_extensions-4.16.0-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/pydantic_core-2.46.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "name": "pydantic_core-2.46.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/annotated_types-0.8.0-py3-none-any.whl",
+      "name": "annotated_types-0.8.0-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/.gitkeep",
+      "name": ".gitkeep",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/click-8.4.2-py3-none-any.whl",
+      "name": "click-8.4.2-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/pydantic_settings-2.14.2-py3-none-any.whl",
+      "name": "pydantic_settings-2.14.2-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/numpy-2.5.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "name": "numpy-2.5.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/python_dotenv-1.2.2-py3-none-any.whl",
+      "name": "python_dotenv-1.2.2-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/fastapi-0.141.1-py3-none-any.whl",
+      "name": "fastapi-0.141.1-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/annotated_doc-0.0.5-py3-none-any.whl",
+      "name": "annotated_doc-0.0.5-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/uvicorn-0.52.0-py3-none-any.whl",
+      "name": "uvicorn-0.52.0-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/sse_starlette-3.4.6-py3-none-any.whl",
+      "name": "sse_starlette-3.4.6-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/starlette-1.3.1-py3-none-any.whl",
+      "name": "starlette-1.3.1-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/starlette_context-0.3.6-py3-none-any.whl",
+      "name": "starlette_context-0.3.6-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/typing_inspection-0.4.2-py3-none-any.whl",
+      "name": "typing_inspection-0.4.2-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "wheels/legacy_i7_930/diskcache-5.6.3-py3-none-any.whl",
+      "name": "diskcache-5.6.3-py3-none-any.whl",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/conftest.py",
+      "name": "conftest.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__init__.py",
+      "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/test_asset_inventory.py",
+      "name": "test_asset_inventory.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/test_dashboard_ui.py",
+      "name": "test_dashboard_ui.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/__init__.py",
+      "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/test_dashboard_e2e.py",
+      "name": "test_dashboard_e2e.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/test_dashboard_timeout_prevention.py",
+      "name": "test_dashboard_timeout_prevention.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/test_dashboard_playwright_real.py",
+      "name": "test_dashboard_playwright_real.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/contract/test_chat_contract.py",
+      "name": "test_chat_contract.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_educational_samples.py",
+      "name": "test_educational_samples.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_server_assigned_ip.py",
+      "name": "test_server_assigned_ip.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_quality_benchmark.py",
+      "name": "test_quality_benchmark.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_logging_pipeline.py",
+      "name": "test_logging_pipeline.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_sample_scripts_and_reranker.py",
+      "name": "test_sample_scripts_and_reranker.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_dashboard_api.py",
+      "name": "test_dashboard_api.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_subnet_security.py",
+      "name": "test_subnet_security.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_dashboard_port_binding.py",
+      "name": "test_dashboard_port_binding.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_model_params.py",
+      "name": "test_model_params.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_reranker_404_routing.py",
+      "name": "test_reranker_404_routing.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__init__.py",
+      "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_server_health_diagnostics_consistency.py",
+      "name": "test_server_health_diagnostics_consistency.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_chat_completions_connection.py",
+      "name": "test_chat_completions_connection.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_educational_model_params.py",
+      "name": "test_educational_model_params.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_build_pipeline.py",
+      "name": "test_build_pipeline.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_dashboard.py",
+      "name": "test_dashboard.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_multi_loopback_health_probe.py",
+      "name": "test_multi_loopback_health_probe.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_preflight_proxy_guard.py",
+      "name": "test_preflight_proxy_guard.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_serving_switch.py",
+      "name": "test_serving_switch.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_context_scaling.py",
+      "name": "test_context_scaling.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_gemma4_serving.py",
+      "name": "test_gemma4_serving.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_coloading_restoration.py",
+      "name": "test_coloading_restoration.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_educational_auxiliary_samples.py",
+      "name": "test_educational_auxiliary_samples.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_multi_model_ports.py",
+      "name": "test_multi_model_ports.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_migration_pipeline.py",
+      "name": "test_migration_pipeline.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_rag_agent_serving.py",
+      "name": "test_rag_agent_serving.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_gpu_validation.py",
+      "name": "test_gpu_validation.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_server_health_diagnostics.py",
+      "name": "test_server_health_diagnostics.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_dual_port_readiness.py",
+      "name": "test_dual_port_readiness.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_chat_connection.py",
+      "name": "test_chat_connection.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_auxiliary_503_gate.py",
+      "name": "test_auxiliary_503_gate.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_qwen_benchmark.py",
+      "name": "test_qwen_benchmark.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/conftest.cpython-312-pytest-9.1.1.pyc",
+      "name": "conftest.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_asset_inventory.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_asset_inventory.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/__init__.cpython-312.pyc",
+      "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_auxiliary_reranker.py",
+      "name": "test_auxiliary_reranker.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_subnet_filter.py",
+      "name": "test_subnet_filter.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_playground_api_key_auth.py",
+      "name": "test_playground_api_key_auth.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_config_manager_profiles.py",
+      "name": "test_config_manager_profiles.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_embedding_samples.py",
+      "name": "test_embedding_samples.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_firewall_manager.py",
+      "name": "test_firewall_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_process_manager_port_cleanup.py",
+      "name": "test_process_manager_port_cleanup.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_auxiliary_sequential_init.py",
+      "name": "test_auxiliary_sequential_init.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_legacy_extraction_llm.py",
+      "name": "test_legacy_extraction_llm.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_architecture_modularity.py",
+      "name": "test_architecture_modularity.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_dashboard_api.py",
+      "name": "test_dashboard_api.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_auxiliary_circuit_breaker.py",
+      "name": "test_auxiliary_circuit_breaker.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_rerank_structured_samples.py",
+      "name": "test_rerank_structured_samples.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_auxiliary_embedding.py",
+      "name": "test_auxiliary_embedding.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__init__.py",
+      "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_real_llm_playground_payload.py",
+      "name": "test_real_llm_playground_payload.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_playground_model_selection.py",
+      "name": "test_playground_model_selection.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_process_manager_binary_path.py",
+      "name": "test_process_manager_binary_path.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_api_key_auth_toggle.py",
+      "name": "test_api_key_auth_toggle.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_cpu_detector.py",
+      "name": "test_cpu_detector.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_sota_serving_refactoring.py",
+      "name": "test_sota_serving_refactoring.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_openai_models.py",
+      "name": "test_openai_models.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_llm_payload_viewer.py",
+      "name": "test_llm_payload_viewer.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_api_key_manager.py",
+      "name": "test_api_key_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_model_select_display_fix.py",
+      "name": "test_model_select_display_fix.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_process_manager.py",
+      "name": "test_process_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_model_downloader.py",
+      "name": "test_model_downloader.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_quality_evaluator.py",
+      "name": "test_quality_evaluator.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_inference_api_proxy_headers.py",
+      "name": "test_inference_api_proxy_headers.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_embedding_reranker_serving.py",
+      "name": "test_embedding_reranker_serving.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_config_manager.py",
+      "name": "test_config_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_chat_samples.py",
+      "name": "test_chat_samples.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_seed_pack.py",
+      "name": "test_seed_pack.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_network_detector.py",
+      "name": "test_network_detector.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_db_seed_integration.py",
+      "name": "test_db_seed_integration.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_error_traceback_logging.py",
+      "name": "test_error_traceback_logging.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_think_tag_stripping.py",
+      "name": "test_think_tag_stripping.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_server_health_diagnostics.py",
+      "name": "test_server_health_diagnostics.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_gpu_detector.py",
+      "name": "test_gpu_detector.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_chat_completion_contract.py",
+      "name": "test_chat_completion_contract.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_think_tag_ui_markdown.py",
+      "name": "test_think_tag_ui_markdown.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_client_access_logger.py",
+      "name": "test_client_access_logger.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_metrics_db.py",
+      "name": "test_metrics_db.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_firewall_manager_real.py",
+      "name": "test_firewall_manager_real.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_llama_manager.py",
+      "name": "test_llama_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_admin_api.py",
+      "name": "test_admin_api.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_context_scaling_limits.py",
+      "name": "test_context_scaling_limits.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_sample_scripts.py",
+      "name": "test_sample_scripts.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_seed_pack_legacy.py",
+      "name": "test_seed_pack_legacy.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_shell_scripts.py",
+      "name": "test_shell_scripts.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_reranker_contract.py",
+      "name": "test_reranker_contract.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_web_dashboard.py",
+      "name": "test_web_dashboard.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_qwen_manager.py",
+      "name": "test_qwen_manager.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_server_connectivity_verifier.py",
+      "name": "test_server_connectivity_verifier.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_wheel_scanner.py",
+      "name": "test_wheel_scanner.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/__pycache__/test_dashboard_ui.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_ui.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/__pycache__/test_dashboard_playwright_real.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_playwright_real.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/__pycache__/test_dashboard_timeout_prevention.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_timeout_prevention.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/__pycache__/__init__.cpython-312.pyc",
+      "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/e2e/__pycache__/test_dashboard_e2e.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_e2e.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/contract/__pycache__/test_chat_contract.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_chat_contract.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_model_params.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_model_params.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_preflight_proxy_guard.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_preflight_proxy_guard.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_chat_completions_connection.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_chat_completions_connection.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_dashboard_api.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_api.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_logging_pipeline.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_logging_pipeline.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_multi_loopback_health_probe.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_multi_loopback_health_probe.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_multi_model_ports.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_multi_model_ports.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_educational_model_params.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_educational_model_params.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_auxiliary_503_gate.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_auxiliary_503_gate.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_dual_port_readiness.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dual_port_readiness.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_gemma4_serving.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_gemma4_serving.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_educational_auxiliary_samples.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_educational_auxiliary_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_build_pipeline.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_build_pipeline.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_server_health_diagnostics_consistency.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_server_health_diagnostics_consistency.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_migration_pipeline.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_migration_pipeline.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_dashboard_port_binding.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_port_binding.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_qwen_benchmark.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_qwen_benchmark.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_server_health_diagnostics.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_server_health_diagnostics.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_gpu_validation.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_gpu_validation.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_reranker_404_routing.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_reranker_404_routing.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/__init__.cpython-312.pyc",
+      "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_dashboard.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_coloading_restoration.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_coloading_restoration.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_serving_switch.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_serving_switch.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_rag_agent_serving.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_rag_agent_serving.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_server_assigned_ip.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_server_assigned_ip.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_subnet_security.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_subnet_security.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_chat_connection.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_chat_connection.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_sample_scripts_and_reranker.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_sample_scripts_and_reranker.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_quality_benchmark.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_quality_benchmark.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_educational_samples.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_educational_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_context_scaling.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_context_scaling.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_think_tag_stripping.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_think_tag_stripping.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_server_connectivity_verifier.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_server_connectivity_verifier.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_auxiliary_embedding.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_auxiliary_embedding.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_auxiliary_sequential_init.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_auxiliary_sequential_init.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_client_access_logger.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_client_access_logger.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_cpu_detector.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_cpu_detector.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_process_manager_binary_path.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager_binary_path.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_model_select_display_fix.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_model_select_display_fix.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_dashboard_api.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dashboard_api.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_chat_samples.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_chat_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_process_manager.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_legacy_extraction_llm.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_legacy_extraction_llm.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_firewall_manager.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_firewall_manager.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_auxiliary_circuit_breaker.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_auxiliary_circuit_breaker.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_inference_api_proxy_headers.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_inference_api_proxy_headers.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_db_seed_integration.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_db_seed_integration.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_api_key_auth_toggle.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_api_key_auth_toggle.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_reranker_contract.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_reranker_contract.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_rerank_structured_samples.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_rerank_structured_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_quality_evaluator.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_quality_evaluator.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_openai_models.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_openai_models.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_auxiliary_reranker.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_auxiliary_reranker.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_sample_scripts.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_sample_scripts.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_sota_serving_refactoring.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_sota_serving_refactoring.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_playground_api_key_auth.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_playground_api_key_auth.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_shell_scripts.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_shell_scripts.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_process_manager_port_cleanup.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager_port_cleanup.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_architecture_modularity.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_architecture_modularity.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_seed_pack_legacy.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_seed_pack_legacy.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_server_health_diagnostics.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_server_health_diagnostics.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_subnet_filter.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_subnet_filter.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_metrics_db.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_metrics_db.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_gpu_detector.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_gpu_detector.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_api_key_manager.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_api_key_manager.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/__init__.cpython-312.pyc",
+      "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_llm_payload_viewer.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_llm_payload_viewer.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_chat_completion_contract.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_chat_completion_contract.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_error_traceback_logging.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_error_traceback_logging.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_admin_api.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_admin_api.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_config_manager_profiles.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_config_manager_profiles.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_think_tag_ui_markdown.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_think_tag_ui_markdown.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_wheel_scanner.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_wheel_scanner.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_playground_model_selection.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_playground_model_selection.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_real_llm_playground_payload.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_real_llm_playground_payload.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_embedding_samples.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_embedding_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_web_dashboard.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_web_dashboard.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_firewall_manager_real.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_firewall_manager_real.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_network_detector.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_network_detector.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_llama_manager.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_llama_manager.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_qwen_manager.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_qwen_manager.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_model_downloader.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_model_downloader.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_context_scaling_limits.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_context_scaling_limits.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_seed_pack.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_seed_pack.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_config_manager.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_config_manager.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_embedding_reranker_serving.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_embedding_reranker_serving.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    }
+  ]
+}

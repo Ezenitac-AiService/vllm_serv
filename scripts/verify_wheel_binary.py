@@ -140,24 +140,15 @@ def verify_wheel(wheel_path: str, require_avx_clean: bool = True) -> Tuple[bool,
 
 
 def check_live_environment() -> Tuple[bool, str]:
-    """Checks live Python environment for 3-way platform state (CPU SIMD, CUDA offload, Compute Cap)."""
+    """Checks live Python environment for CUDA GPU support using src.utils.cuda_env."""
     try:
-        import llama_cpp
-        fn = getattr(llama_cpp, 'llama_supports_gpu_offload', None) or getattr(llama_cpp, 'llama_supports_gpu', None)
-        if not fn or not fn():
-            return False, "llama_supports_gpu_offload() returned False (CPU-only mode)"
-
-        # Check host CPU SIMD compatibility via cpu_detector if available
-        try:
-            from src.core.cpu_detector import detect_cpu_features
-            cpu_info = detect_cpu_features()
-            if not cpu_info.supports_avx:
-                # Host CPU has no AVX: verify running binary doesn't trigger SIGILL
-                pass
-        except Exception:
-            pass
-
-        return True, "✓ Live environment CUDA acceleration verified"
+        from src.utils.cuda_env import inspect_cuda_environment, assert_cuda_environment
+        # Enforce strict CUDA GPU host requirement (090-audit-test-refactor)
+        assert_cuda_environment(require_gpu_offload=True)
+        profile = inspect_cuda_environment()
+        return True, f"✓ Live environment CUDA acceleration verified (GPU: {profile.gpu_device_name}, Driver: {profile.driver_version}, CUDA: {profile.cuda_version})"
+    except AssertionError as ae:
+        return False, f"❌ Live environment CUDA check failed: {ae}"
     except Exception as e:
         return False, f"Live environment check failed: {e}"
 
