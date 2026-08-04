@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CudaEnvironmentValidationContract",
+  "description": "CUDA GPU environment inspection and verification interface contract for src/utils/cuda_env.py and scripts/common.sh",
+  "type": "object",
+  "properties": {
+    "cuda_available": {
+      "type": "boolean",
+      "description": "True if NVIDIA GPU and CUDA driver runtime are active"
+    },
+    "driver_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+",
+      "description": "NVIDIA Driver version string"
+    },
+    "cuda_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+",
+      "description": "CUDA Toolkit version string"
+    },
+    "cudnn_version": {
+      "type": ["string", "null"],
+      "description": "cuDNN version if installed"
+    },
+    "gpu_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of available NVIDIA GPUs (must be >= 1)"
+    },
+    "gpu_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Names of detected NVIDIA GPUs"
+    },
+    "llama_supports_gpu": {
+      "type": "boolean",
+      "description": "True if llama-cpp-python package binary supports CUDA GPU offloading"
+    }
+  },
+  "required": [
+    "cuda_available",
+    "driver_version",
+    "cuda_version",
+    "gpu_count",
+    "gpu_names",
+    "llama_supports_gpu"
+  ]
+}

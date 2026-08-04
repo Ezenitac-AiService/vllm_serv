@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CudaEnvironmentAndBuildSchema",
+  "description": "NVIDIA GPU 드라이버, CUDA Toolkit, cuDNN 및 llama.cpp 휠 검증 상태 데이터 스키마",
+  "type": "object",
+  "properties": {
+    "cuda_environment": {
+      "type": "object",
+      "properties": {
+        "driver_version": { "type": "string" },
+        "cuda_toolkit_version": { "type": "string" },
+        "cudnn_version": { "type": "string" },
+        "is_driver_compatible": { "type": "boolean" },
+        "is_cuda_compatible": { "type": "boolean" },
+        "is_cudnn_compatible": { "type": "boolean" },
+        "update_required": { "type": "boolean" }
+      },
+      "required": ["driver_version", "cuda_toolkit_version", "is_driver_compatible", "is_cuda_compatible", "update_required"]
+    },
+    "wheel_verification": {
+      "type": "object",
+      "properties": {
+        "is_valid": { "type": "boolean" },
+        "cuda_enabled": { "type": "boolean" },
+        "has_cuda_so": { "type": "boolean" },
+        "cpu_avx_instruction_count": { "type": "integer" },
+        "error_message": { "type": "string" }
+      },
+      "required": ["is_valid", "cuda_enabled", "has_cuda_so"]
+    },
+    "build_profile": {
+      "type": "object",
+      "properties": {
+        "profile_name": { "type": "string" },
+        "cpu_model": { "type": "string" },
+        "gpu_name": { "type": "string" },
+        "compute_capability": { "type": "string" },
+        "cmake_args": { "type": "string" }
+      },
+      "required": ["profile_name", "compute_capability", "cmake_args"]
+    }
+  },
+  "required": ["cuda_environment", "wheel_verification", "build_profile"]
+}

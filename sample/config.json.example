@@ -8,5 +8,5 @@
   "embedding_model": "bge-m3",
   "rerank_model": "bge-reranker-v2-m3",
   "default_temperature": 0.3,
-  "default_max_tokens": 250
+  "default_max_tokens": 1024
 }
