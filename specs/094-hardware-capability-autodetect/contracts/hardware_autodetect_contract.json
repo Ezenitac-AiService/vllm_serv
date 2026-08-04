@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HardwareAutodetectContract",
+  "description": "Validation contract for multi-platform hardware auto-detection and optimal setting allocation",
+  "type": "object",
+  "properties": {
+    "detected_platform": {
+      "type": "string",
+      "enum": ["DEV_GTX1080TI", "SVC_GTX1070_I7_930", "TRAIN_RTX3060", "UNKNOWN_GENERIC"]
+    },
+    "cpu_avx2": {
+      "type": "boolean"
+    },
+    "compute_capability": {
+      "type": "number"
+    },
+    "supports_bf16": {
+      "type": "boolean"
+    },
+    "supports_flash_attn2": {
+      "type": "boolean"
+    },
+    "cmake_args_generated": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "detected_platform",
+    "cpu_avx2",
+    "compute_capability",
+    "supports_bf16",
+    "supports_flash_attn2",
+    "cmake_args_generated"
+  ]
+}

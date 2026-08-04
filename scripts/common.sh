@@ -139,3 +139,34 @@ get_configured_port() {
     echo "$default_port"
 }
 
+# -----------------------------------------------------------------------------
+# FR-001 ~ FR-006 / T003 & T007: 3대 멀티 플랫폼 HW 차등 감지 믹스인
+# -----------------------------------------------------------------------------
+detect_hardware_profile() {
+    local base_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    if command -v python3 &>/dev/null; then
+        PYTHONPATH="$base_dir" python3 -c "from src.core.cpu_detector import get_hardware_profile_capability; print(get_hardware_profile_capability().platform_type)" 2>/dev/null || echo "UNKNOWN_GENERIC"
+    else
+        echo "UNKNOWN_GENERIC"
+    fi
+}
+
+get_hardware_cmake_args() {
+    local base_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    if command -v python3 &>/dev/null; then
+        PYTHONPATH="$base_dir" python3 -m src.core.cpu_detector --format cmake 2>/dev/null || echo "-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86"
+    else
+        echo "-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86"
+    fi
+}
+
+log_hardware_capability_report() {
+    local base_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    if command -v python3 &>/dev/null; then
+        PYTHONPATH="$base_dir" python3 -m src.core.cpu_detector --report
+    else
+        log_warn "python3 미장착으로 상세 하드웨어 감지 리포트를 건너땁니다."
+    fi
+}
+
+

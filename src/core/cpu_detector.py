@@ -45,9 +45,26 @@ class LlamaCppBuildFlags(BaseModel):
     ggml_avx2: bool = Field(default=True, description="GGML_AVX2 CMake option")
     ggml_f16c: bool = Field(default=True, description="GGML_F16C CMake option")
     ggml_fma: bool = Field(default=True, description="GGML_FMA CMake option")
+    ggml_flash_attn: bool = Field(default=False, description="GGML_FLASH_ATTN / FlashAttention-2 CMake option")
     cuda_architectures: str = Field(default="86", description="CMAKE_CUDA_ARCHITECTURES option")
     cmake_args_list: List[str] = Field(default_factory=list, description="List of CMake arguments")
     cmake_args_str: str = Field(default="", description="Space-separated CMake arguments string")
+
+
+class HardwareProfileCapability(BaseModel):
+    """Hardware Platform Capability & Optimization Entity."""
+    platform_type: str = Field(default="UNKNOWN_GENERIC", description="Platform type: DEV_GTX1080TI, SVC_GTX1070_I7_930, TRAIN_RTX3060")
+    cpu_model: str = Field(default="Unknown CPU", description="Host CPU Model")
+    cpu_avx2_supported: bool = Field(default=True, description="CPU AVX2 support")
+    gpu_name: str = Field(default="NVIDIA GPU", description="Host GPU Model")
+    compute_capability: float = Field(default=8.6, description="GPU Compute Capability (e.g. 6.1, 8.6)")
+    cuda_arch_code: str = Field(default="86", description="CUDA Arch Code (e.g. 61, 86)")
+    tensor_cores_gen: int = Field(default=3, description="Tensor Cores Generation (0 for Pascal, 3 for Ampere)")
+    supports_tf32: bool = Field(default=True, description="TF32 (TensorFloat-32) Native Support")
+    supports_bf16: bool = Field(default=True, description="BF16 (bfloat16) Native Support")
+    supports_flash_attn2: bool = Field(default=True, description="FlashAttention-2 Hardware Support")
+    cmake_args: List[str] = Field(default_factory=list, description="Target CMake Arguments")
+    recommended_runtime_flags: Dict[str, Any] = Field(default_factory=dict, description="Recommended runtime flags")
 
 
 class TargetPlatformProfile(BaseModel):
@@ -64,12 +81,29 @@ class TargetPlatformProfile(BaseModel):
     expected_avx2: bool = True
 
 
-
 def detect_cpu_features(cpuinfo_path: str = "/proc/cpuinfo") -> CpuFeatureInfo:
     """
     FR-001 & FR-004: Inspects host CPU features via /proc/cpuinfo or sysctl.
+    Supports mock env overrides for testing (MOCK_CPU_AVX2, MOCK_CPU_FLAGS).
     Falls back to safe conservative mode (all extensions OFF) if /proc/cpuinfo is unreadable.
     """
+    # Environment variable mock overrides for unit test isolation
+    mock_avx2 = os.environ.get("MOCK_CPU_AVX2")
+    if mock_avx2 is not None:
+        is_avx2 = (mock_avx2 == "1" or mock_avx2.lower() == "true")
+        return CpuFeatureInfo(
+            model_name="Mocked Test CPU",
+            architecture="x86_64",
+            vendor_id="MockVendor",
+            flags=["avx2", "avx", "sse4_2", "f16c", "fma"] if is_avx2 else ["sse4_2"],
+            supports_sse4_2=True,
+            supports_avx=is_avx2,
+            supports_avx2=is_avx2,
+            supports_f16c=is_avx2,
+            supports_fma=is_avx2,
+            is_fallback=False
+        )
+
     model_name = "Unknown CPU"
     vendor_id = "Unknown"
     flags: List[str] = []
@@ -133,8 +167,21 @@ def detect_cpu_features(cpuinfo_path: str = "/proc/cpuinfo") -> CpuFeatureInfo:
 def detect_gpu_capability() -> GpuCapabilityInfo:
     """
     FR-007 & FR-009: Inspects host NVIDIA GPU compute capability via nvidia-smi.
+    Supports mock env overrides for unit testing (MOCK_COMPUTE_CAPABILITY, MOCK_GPU_NAME).
     Raises GpuAccelerationError if nvidia-smi or active GPU is missing (fail-fast).
     """
+    # Environment variable mock overrides for unit test isolation
+    mock_cap = os.environ.get("MOCK_COMPUTE_CAPABILITY")
+    if mock_cap is not None:
+        gpu_name = os.environ.get("MOCK_GPU_NAME", "Mocked NVIDIA GPU")
+        arch_code = mock_cap.replace(".", "").strip()
+        return GpuCapabilityInfo(
+            gpu_name=gpu_name,
+            compute_capability=mock_cap,
+            cuda_arch_code=arch_code,
+            total_vram_mb=12288 if arch_code == "86" else 11264
+        )
+
     nvidia_smi = shutil.which("nvidia-smi")
     if not nvidia_smi:
         raise GpuAccelerationError(
@@ -198,8 +245,8 @@ def detect_gpu_capability_safe() -> GpuCapabilityInfo:
 
 def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildFlags:
     """
-    FR-001, FR-002, FR-003, FR-004: Combines CPU & GPU inspection to generate exact CMake arguments.
-    Falls back safely if nvidia-smi or /proc/cpuinfo fails.
+    FR-001, FR-002, FR-003, FR-004, FR-006: Combines CPU & GPU inspection to generate exact CMake arguments.
+    Adds FlashAttention-2 (`-DGGML_FLASH_ATTN=ON -DGGML_CUDA_FA_ALL=ON`) for Compute Capability 8.0+ (Ampere sm_86 / RTX 3060).
     """
     cpu_info = detect_cpu_features(cpuinfo_path=cpuinfo_path)
     gpu_info = detect_gpu_capability_safe()
@@ -210,14 +257,26 @@ def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildF
     fma_flag = "ON" if cpu_info.supports_fma else "OFF"
     arch_code = gpu_info.cuda_arch_code
 
+    try:
+        cap_val = float(gpu_info.compute_capability)
+    except ValueError:
+        cap_val = 8.6
+
+    supports_fa2 = cap_val >= 8.0
+    fa_flag = "ON" if supports_fa2 else "OFF"
+
     args_list = [
         "-DGGML_CUDA=ON",
         f"-DGGML_AVX={avx_flag}",
         f"-DGGML_AVX2={avx2_flag}",
         f"-DGGML_F16C={f16c_flag}",
         f"-DGGML_FMA={fma_flag}",
+        f"-DGGML_FLASH_ATTN={fa_flag}",
         f"-DCMAKE_CUDA_ARCHITECTURES={arch_code}"
     ]
+
+    if supports_fa2:
+        args_list.append("-DGGML_CUDA_FA_ALL=ON")
 
     args_str = " ".join(args_list)
 
@@ -227,9 +286,65 @@ def get_llama_build_flags(cpuinfo_path: str = "/proc/cpuinfo") -> LlamaCppBuildF
         ggml_avx2=cpu_info.supports_avx2,
         ggml_f16c=cpu_info.supports_f16c,
         ggml_fma=cpu_info.supports_fma,
+        ggml_flash_attn=supports_fa2,
         cuda_architectures=arch_code,
         cmake_args_list=args_list,
         cmake_args_str=args_str
+    )
+
+
+def get_hardware_profile_capability(cpuinfo_path: str = "/proc/cpuinfo") -> HardwareProfileCapability:
+    """
+    FR-001 ~ FR-006: 2-axis Hardware Capability Evaluator (CPU AVX2 x GPU Compute Capability).
+    Maps host to one of the 3 target platform profiles:
+    - TRAIN_RTX3060: Ampere sm_86, AVX2=True -> 3rd Gen Tensor Cores, TF32, BF16, FlashAttention-2
+    - SVC_GTX1070_I7_930: Pascal sm_61, AVX2=False -> AVX2 bypass, VRAM 100% offload, FP16/SDPA
+    - DEV_GTX1080TI: Pascal sm_61, AVX2=True -> AVX2 enabled, FP16/SDPA
+    """
+    cpu_info = detect_cpu_features(cpuinfo_path=cpuinfo_path)
+    gpu_info = detect_gpu_capability_safe()
+    build_flags = get_llama_build_flags(cpuinfo_path=cpuinfo_path)
+
+    try:
+        cap_val = float(gpu_info.compute_capability)
+    except ValueError:
+        cap_val = 6.1
+
+    is_ampere = cap_val >= 8.0
+    tensor_gen = 3 if is_ampere else 0
+    supports_tf32 = is_ampere
+    supports_bf16 = is_ampere
+    supports_fa2 = is_ampere
+
+    # Determine platform_type
+    if is_ampere:
+        platform_type = "TRAIN_RTX3060"
+    elif not cpu_info.supports_avx2:
+        platform_type = "SVC_GTX1070_I7_930"
+    elif gpu_info.cuda_arch_code == "61":
+        platform_type = "DEV_GTX1080TI"
+    else:
+        platform_type = "CUSTOM_GENERIC"
+
+    runtime_flags = {
+        "n_gpu_layers": 99,
+        "flash_attn": supports_fa2,
+        "threads": 4 if cpu_info.supports_avx2 else 2
+    }
+
+    return HardwareProfileCapability(
+        platform_type=platform_type,
+        cpu_model=cpu_info.model_name,
+        cpu_avx2_supported=cpu_info.supports_avx2,
+        gpu_name=gpu_info.gpu_name,
+        compute_capability=cap_val,
+        cuda_arch_code=gpu_info.cuda_arch_code,
+        tensor_cores_gen=tensor_gen,
+        supports_tf32=supports_tf32,
+        supports_bf16=supports_bf16,
+        supports_flash_attn2=supports_fa2,
+        cmake_args=build_flags.cmake_args_list,
+        recommended_runtime_flags=runtime_flags
     )
 
 
@@ -359,16 +474,17 @@ def check_hardware_preflight(cpuinfo_path: str = "/proc/cpuinfo") -> Dict[str, A
 
 
 def print_detection_report(cpuinfo_path: str = "/proc/cpuinfo") -> None:
-    """FR-005: Prints human-readable hardware detection and selected CMake build flags report."""
+    """FR-004 ~ FR-006: Prints human-readable hardware detection and selected CMake build flags report."""
     cpu_info = detect_cpu_features(cpuinfo_path=cpuinfo_path)
-    gpu_info = detect_gpu_capability()
+    gpu_info = detect_gpu_capability_safe()
     flags = get_llama_build_flags(cpuinfo_path=cpuinfo_path)
+    hw_cap = get_hardware_profile_capability(cpuinfo_path=cpuinfo_path)
     profile_id = match_platform_profile(cpuinfo_path=cpuinfo_path)
 
     print("====================================================")
     print(" ⚡ vllm_serv 하드웨어 감지 및 llama.cpp 빌드 리포트")
     print("====================================================")
-    print(f" 매칭 플랫폼 프로필 : {profile_id}")
+    print(f" 매칭 플랫폼 프로필 : {profile_id} (타겟: {hw_cap.platform_type})")
     print(f" CPU 모델명       : {cpu_info.model_name}")
     print(f" CPU 아키텍처     : {cpu_info.architecture}")
     print(f" CPU 폴백 모드   : {'예 (보수적 옵션 적용)' if cpu_info.is_fallback else '아니오 (정상 감지)'}")
@@ -377,6 +493,10 @@ def print_detection_report(cpuinfo_path: str = "/proc/cpuinfo") -> None:
     print(f" GPU 모델명       : {gpu_info.gpu_name}")
     print(f" Compute Cap      : {gpu_info.compute_capability} (arch_code: sm_{gpu_info.cuda_arch_code})")
     print(f" VRAM 용량       : {gpu_info.total_vram_mb} MB")
+    print("----------------------------------------------------")
+    print(f" 3세대 Tensor Cores: {'ENABLED (Gen 3)' if hw_cap.tensor_cores_gen == 3 else 'DISABLED (Gen 0)'}")
+    print(f" TF32 / BF16 지원 : TF32={'✓' if hw_cap.supports_tf32 else '✗'}, BF16={'✓' if hw_cap.supports_bf16 else '✗'}")
+    print(f" FlashAttention-2 : {'ACTIVE (LLAMA_FLASH_ATTN=ON)' if hw_cap.supports_flash_attn2 else 'INACTIVE (SDPA Fallback)'}")
     print("----------------------------------------------------")
     print(f" 생성된 CMake 인자: {flags.cmake_args_str}")
     print("====================================================")
@@ -416,14 +536,22 @@ def main():
     elif args.format == "json":
         try:
             cpu_info = detect_cpu_features()
-            gpu_info = detect_gpu_capability()
+            gpu_info = detect_gpu_capability_safe()
             flags = get_llama_build_flags()
+            hw_cap = get_hardware_profile_capability()
             profile_id = match_platform_profile()
             import json
             data = {
                 "profile_id": profile_id,
+                "platform_type": hw_cap.platform_type,
+                "cpu_avx2": hw_cap.cpu_avx2_supported,
+                "compute_capability": hw_cap.compute_capability,
+                "supports_bf16": hw_cap.supports_bf16,
+                "supports_flash_attn2": hw_cap.supports_flash_attn2,
+                "cmake_args_generated": flags.cmake_args_list,
                 "cpu": cpu_info.model_dump(),
                 "gpu": gpu_info.model_dump(),
+                "capability": hw_cap.model_dump(),
                 "build_flags": flags.model_dump()
             }
             print(json.dumps(data, indent=2, ensure_ascii=False))
