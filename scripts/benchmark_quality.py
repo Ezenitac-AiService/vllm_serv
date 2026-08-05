@@ -37,24 +37,16 @@ def get_models_catalog_from_config() -> List[Dict[str, Any]]:
     """FR-001: ConfigManager 단일 진실 소스(SSOT)에서 모델 카탈로그를 동적으로 로드합니다."""
     catalog = ConfigManager().get_model_catalog()
     catalog_list = []
-    baselines = {
-        "gemma4-e2b": {"base_tpot": 44.1, "base_ttft": 128.0, "base_vram": 2680},
-        "gemma4-e4b": {"base_tpot": 33.8, "base_ttft": 156.0, "base_vram": 4210},
-        "gemma4-12b": {"base_tpot": 17.6, "base_ttft": 285.0, "base_vram": 8900},
-        "qwen3.5-2b": {"base_tpot": 48.5, "base_ttft": 115.0, "base_vram": 2450},
-        "qwen3.5-4b": {"base_tpot": 36.2, "base_ttft": 142.0, "base_vram": 3950},
-        "qwen3.5-9b": {"base_tpot": 22.4, "base_ttft": 210.0, "base_vram": 7120},
-    }
     for model_id, entry in catalog.items():
-        base_info = baselines.get(model_id, {"base_tpot": 30.0, "base_ttft": 150.0, "base_vram": entry.get("vram_est_mb", 5000)})
+        vram_est = entry.get("vram_est_mb", 4000)
         catalog_list.append({
             "model_id": model_id,
             "model_name": entry.get("name", model_id),
             "quant_type": entry.get("quant_type", "q4_0"),
             "size_gb": entry.get("size_gb", 2.0),
-            "base_tpot": base_info["base_tpot"],
-            "base_ttft": base_info["base_ttft"],
-            "base_vram": base_info["base_vram"],
+            "base_tpot": 35.0,
+            "base_ttft": 150.0,
+            "base_vram": vram_est,
             "task_type": entry.get("task_type", "llm"),
             "default_port": entry.get("default_port"),
         })
@@ -75,35 +67,72 @@ def check_live_server() -> bool:
 
 
 def request_live_inference(prompt_text: str) -> Optional[Dict[str, Any]]:
-    """Sends real HTTP inference request to http://127.0.0.1:8081/v1/chat/completions."""
+    """Sends real HTTP SSE streaming inference request to measure exact TTFT and TPOT."""
     payload = {
         "messages": [
             {"role": "system", "content": "You are a precise JSON extraction assistant."},
             {"role": "user", "content": prompt_text}
         ],
         "temperature": 0.1,
-        "max_tokens": 512
+        "max_tokens": 512,
+        "stream": True
     }
     t0 = time.time()
+    first_token_time = None
+    tokens_generated = 0
+    full_content = []
+    
     try:
-        response = httpx.post(SERVER_API_URL, json=payload, timeout=60.0)
-        t1 = time.time()
-        elapsed_sec = max(0.001, t1 - t0)
-
-        if response.status_code == 200:
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-            tokens_generated = data.get("usage", {}).get("completion_tokens", 50)
-            tpot = round(tokens_generated / elapsed_sec, 2)
-            ttft = round(elapsed_sec * 0.2 * 1000, 1)  # Est TTFT
-            return {
-                "content": content,
-                "tpot": tpot,
-                "ttft": ttft,
-                "elapsed_sec": elapsed_sec
-            }
-    except Exception as e:
-        print(f"[Live Inference Warning] Could not connect or request failed: {e}")
+        with httpx.stream("POST", SERVER_API_URL, json=payload, timeout=60.0) as response:
+            if response.status_code == 200:
+                for line in response.iter_lines():
+                    if not line:
+                        continue
+                    if line.startswith("data: "):
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                            delta = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if delta:
+                                if first_token_time is None:
+                                    first_token_time = time.time()
+                                full_content.append(delta)
+                                tokens_generated += 1
+                        except Exception:
+                            pass
+                t1 = time.time()
+                elapsed_sec = max(0.001, t1 - t0)
+                gen_duration = max(0.001, t1 - (first_token_time or t0))
+                ttft_ms = round((first_token_time - t0) * 1000, 1) if first_token_time else round(elapsed_sec * 100, 1)
+                tpot = round(tokens_generated / gen_duration, 2)
+                return {
+                    "content": "".join(full_content),
+                    "tpot": tpot,
+                    "ttft": ttft_ms,
+                    "elapsed_sec": elapsed_sec
+                }
+    except Exception:
+        # Fallback to standard POST if stream mode not available
+        try:
+            payload.pop("stream", None)
+            t0 = time.time()
+            response = httpx.post(SERVER_API_URL, json=payload, timeout=60.0)
+            t1 = time.time()
+            elapsed_sec = max(0.001, t1 - t0)
+            if response.status_code == 200:
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+                tokens_generated = data.get("usage", {}).get("completion_tokens", 50)
+                return {
+                    "content": content,
+                    "tpot": round(tokens_generated / elapsed_sec, 2),
+                    "ttft": round(elapsed_sec * 100, 1),
+                    "elapsed_sec": elapsed_sec
+                }
+        except Exception as e:
+            print(f"[Live Inference Warning] Could not connect or request failed: {e}")
     return None
 
 
@@ -632,16 +661,7 @@ async def run_real_benchmark_loop(
                         await pm.stop_process()
                         continue
 
-                    # 실측 VRAM 수집 (nvidia-smi)
-                    ctx_vram_mb = item["base_vram"]
-                    try:
-                        from src.core.gpu_detector import get_nvml_vram_info
-                        gpu_snap = get_nvml_vram_info()
-                        ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
-                    except Exception:
-                        pass
-
-                    # 실측 추론 수행 (TTFT, TPOT 측정)
+                    # 1. 웜업(Warmup) 추론 우선 수행 (KV Cache 메모리 사전 할당 보장)
                     ctx_live = request_live_inference(
                         "A: 삼전 7만전자 뚫어? B: 3분기 실적 저조함"
                     )
@@ -650,6 +670,15 @@ async def run_real_benchmark_loop(
                     if ctx_live:
                         ctx_ttft = ctx_live["ttft"]
                         ctx_tpot = ctx_live["tpot"]
+
+                    # 2. 웜업 완료 후 실측 VRAM 수집 (nvidia-smi / NVML Peak VRAM)
+                    ctx_vram_mb = item["base_vram"]
+                    try:
+                        from src.core.gpu_detector import get_nvml_vram_info
+                        gpu_snap = get_nvml_vram_info()
+                        ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
+                    except Exception:
+                        pass
 
                     print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ✅ VRAM={ctx_vram_mb}MB, TTFT={ctx_ttft}ms, TPOT={ctx_tpot} tok/s")
                     context_scales.append(ContextScalingMetric(

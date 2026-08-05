@@ -420,7 +420,10 @@ fi
 # ==============================================================================
 log_step "2.8. 4단계 모듈화 벤치마크 & 최적 서비스 모델/컨텍스트 선정"
 if [ "$SKIP_BENCHMARK" -eq 1 ]; then
-    log_info "⏩ --skip-benchmark 옵션 감지: 3단계 실측 벤치마크를 스킵합니다."
+    log_info "⏩ --skip-benchmark 옵션 감지: 3단계 실측 벤치마크 스킵 모드로 모듈 구동 중..."
+    if [ -f "$BASE_DIR/scripts/benchmark_context_window.py" ]; then
+        "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --skip-benchmark || log_warn "benchmark_context_window.py --skip-benchmark 실행 중 경고 발생"
+    fi
 else
     if [ -f "$BASE_DIR/scripts/benchmark_context_window.py" ]; then
         log_info "4단계 모듈화 벤치마크 및 설정 자동 반영 수행 중 (scripts/benchmark_context_window.py)..."

@@ -16,7 +16,7 @@
       "type": "object",
       "additionalProperties": {
         "type": "string",
-        "enum": ["SUCCESS", "FAILED", "SKIPPED", "RUNNING"]
+        "enum": ["SUCCESS", "FAILED", "SKIPPED", "RUNNING", "WARNING", "FALLBACK"]
       }
     },
     "download_ok": {
@@ -31,7 +31,9 @@
     },
     "recommended_context_window": {
       "type": "integer",
-      "enum": [2048, 4096, 8192, 16384, 32768]
+      "minimum": 1024,
+      "maximum": 131072,
+      "multipleOf": 512
     },
     "benchmark_tps": {
       "type": "number",

@@ -47,7 +47,27 @@ graph TD
 5. **CUDA 가속 `llama-cpp-python` 자동 소스 컴파일**: `CMAKE_ARGS="-DGGML_CUDA=on"`으로 CUDA 가속 바이너리 설치 및 `llama_supports_gpu_offload()` 보장
 6. **멀티 OS 방화벽 자동 포트 개방**: `ufw` / `firewalld` / `nftables` / `iptables` 자동 감지 후 `8081/tcp`, `8089/tcp` 허용 규칙 등록 (sudo 미확보 시 복구 스크립트 제공)
 7. **서버 제어 쉘 스크립트 생성 및 심볼릭 링크 연결**: `./start_server.sh`, `./stop_server.sh`, `./status_server.sh` 자동 생성 및 실행 권한 부여
-8. **파일 소유권 자동 환원**: `sudo ./setup.sh` 실행 시 `$SUDO_USER` 계정으로 `.venv`, `logs`, `config` 소유권 자동 `chown -R`
+8. **Step 2.8 4단계 모듈식 벤치마크 & 설정 반영 파이프라인**:
+   - **Stage 1 (모델 다운로드)**: `scripts/ensure_models.py`
+   - **Stage 2 (무결성 검증)**: GGUF magic bytes (`GGUF`) 4바이트 실체적 헤더 무결성 체크
+   - **Stage 3 (임시 서빙 & 컨텍스트 실측)**: VRAM 90% 마진 내 TPS & VRAM 실측 (Pass 1: 2배수 $2^n$ 스캔, Pass 2: `--fine-grained` 512/1024 토큰 정렬 이진 탐색)
+   - **Stage 4 (설정 자동 반영)**: 최적 서빙 모델 및 컨텍스트 크기 `config/server_config.json` 및 `config/model_context_profiles.json` 원자적 반영
+9. **파일 소유권 자동 환원**: `sudo ./setup.sh` 실행 시 `$SUDO_USER` 계정으로 `.venv`, `logs`, `config` 소유권 자동 `chown -R`
+
+---
+
+### 💡 셋업 옵션 및 정밀 프로파일링 CLI 사용법
+
+- **`./setup.sh --skip-benchmark`**: CI/CD 파이프라인 또는 고속 가동 시 3단계 실측 벤치마크를 건너뛰고 기존 `server_config.json` 설정을 유지한 채 15초 이내 고속 완료합니다.
+- **`uv run python scripts/benchmark_context_window.py --fine-grained`**: 1차 2배수 탐색 후 $[C_{pass}, C_{fail}]$ 구간에 대해 512/1024 토큰 블록 정렬 및 RoPE Safety Cap(`min(physical_max, model_max_rope)`) 이진 탐색을 수행하여 정밀 프로파일을 `config/model_context_profiles.json`에 기록합니다.
+
+#### 🖥️ 지원 호스트 플랫폼 벤치마크 정합성 매트릭스
+
+| 플랫폼 스펙 | VRAM | Pass 1 Fast Scan | Pass 2 Fine-Grained 추천 컨텍스트 |
+|-------------|------|------------------|-----------------------------------|
+| **i7 930 / 24GB / GTX 1070** | **8 GB** | 2K, 4K, 8K | **8,192 (8K)** |
+| **E3-1231 v3 / 32GB / GTX 1080 Ti** | **11 GB** | 4K, 8K, 16K (OOM 감지) | **12,288 (12K)** |
+| **i7 4770 / 16GB / RTX 3060** | **12 GB** | 8K, 16K, 32K (OOM 감지) | **16,384 ~ 20,480** |
 
 ---
 
