@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T13:33:39Z",
+  "generated_at": "2026-08-05T13:34:25Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -33,7 +33,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:18:57Z"
+      "last_tested_at": "2026-08-05T13:34:13Z"
     },
     "gemma4-e2b": {
       "max_context_length": 2048,
@@ -178,7 +178,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:19:09Z"
+      "last_tested_at": "2026-08-05T13:34:25Z"
     }
   }
 }
