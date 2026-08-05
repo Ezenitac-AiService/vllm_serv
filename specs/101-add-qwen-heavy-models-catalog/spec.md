@@ -32,8 +32,8 @@
   - `name`: Gemma 4 26B A4B Instruct (Q4_K_M MoE)
   - `repo_id`: `unsloth/gemma-4-26B-A4B-it-GGUF`, `filename`: `gemma-4-26B-A4B-it-Q4_K_M.gguf`, `size_gb`: 15.8 GB, `vram_est_mb`: 18800 MB
 - **신규 추가 Gemma 4 텍스트 전용 3종 (`gemma4-2b-text`, `gemma4-4b-text`, `gemma4-12b-text`)**:
-  - `gemma4-2b-text`: `unsloth/gemma-4-2b-it-GGUF`, `gemma-4-2b-it-Q4_K_M.gguf` (1.6GB, vram_est_mb: 2800, requires_mmproj: false)
-  - `gemma4-4b-text`: `unsloth/gemma-4-4b-it-GGUF`, `gemma-4-4b-it-Q4_K_M.gguf` (2.9GB, vram_est_mb: 5200, requires_mmproj: false)
+  - `gemma4-2b-text`: `unsloth/gemma-4-E2B-it-GGUF`, `gemma-4-E2B-it-Q4_K_M.gguf` (1.6GB, vram_est_mb: 2800, requires_mmproj: false)
+  - `gemma4-4b-text`: `unsloth/gemma-4-E4B-it-GGUF`, `gemma-4-E4B-it-Q4_K_M.gguf` (2.9GB, vram_est_mb: 5200, requires_mmproj: false)
   - `gemma4-12b-text`: `unsloth/gemma-4-12b-it-GGUF`, `gemma-4-12b-it-Q4_K_M.gguf` (7.2GB, vram_est_mb: 9200, requires_mmproj: false)
 
 ## User Scenarios & Testing *(mandatory)*
