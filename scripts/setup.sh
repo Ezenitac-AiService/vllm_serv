@@ -36,6 +36,7 @@ fi
 WHEEL_PATH=""
 SKIP_BUILD=0
 SKIP_BENCHMARK=0
+FORCE_BENCHMARK=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -51,8 +52,12 @@ while [[ $# -gt 0 ]]; do
             SKIP_BENCHMARK=1
             shift
             ;;
+        --force-benchmark)
+            FORCE_BENCHMARK=1
+            shift
+            ;;
         --help|-h)
-            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build] [--skip-benchmark]"
+            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build] [--skip-benchmark] [--force-benchmark]"
             exit 0
             ;;
         *)
@@ -882,13 +887,16 @@ log_info "✓ 생성 완료: scripts/status_server.sh (루트 심볼릭 링크 .
 log_step "4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)"
 
 PROFILE_CACHE="$BASE_DIR/config/model_context_profiles.json"
-if [ -f "$PROFILE_CACHE" ]; then
+if [ "$FORCE_BENCHMARK" -eq 1 ]; then
+    log_info "🔥 --force-benchmark 옵션 감지: 기존 캐시를 무시하고 실제 컨텍스트 윈도우 스케일링 벤치마크를 강제 재수행합니다..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --fine-grained || \
+    log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
+elif [ -f "$PROFILE_CACHE" ]; then
     log_info "✓ 유효한 현지 컨텍스트 윈도우 캐시 감지 ($PROFILE_CACHE)."
-    log_info "스케일링 벤치마킹을 스킵하고 기존 현지 캐시 프로필을 재사용합니다."
+    log_info "기존 현지 캐시 프로필을 재사용합니다. (실제 벤치마크 강제 재수행 시: ./setup.sh --force-benchmark)"
 else
-    log_info "컨텍스트 윈도우 스케일링 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
-    uv run python -m src.scripts.benchmark_context_scaling --non-blocking 2>/dev/null || \
-    uv run python scripts/benchmark_quality.py 2>/dev/null || \
+    log_info "컨텍스트 윈도우 실측 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --fine-grained || \
     log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
 fi
 
