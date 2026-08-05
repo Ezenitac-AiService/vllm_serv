@@ -35,9 +35,9 @@ description: "Task list for feature 098-benchmark-all-serviced-models implementa
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 [P] Add `is_supported` field and profile schema validation helpers in `src/core/config_manager.py`
-- [ ] T004 [P] Enhance process cleanup helper with SIGKILL fallback in `src/core/process_manager.py`
-- [ ] T005 [P] Create unit tests for profile schema validation and atomic dictionary merge in `tests/unit/test_config_manager_profiles.py`
+- [X] T003 [P] Add `is_supported` field and profile schema validation helpers in `src/core/config_manager.py`
+- [X] T004 [P] Enhance process cleanup helper with SIGKILL fallback in `src/core/process_manager.py`
+- [X] T005 [P] Create unit tests for profile schema validation and atomic dictionary merge in `tests/unit/test_config_manager_profiles.py`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -53,19 +53,19 @@ description: "Task list for feature 098-benchmark-all-serviced-models implementa
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T006 [P] [US1] Create failing integration test for multi-model real GPU benchmarking in `tests/integration/test_multi_model_benchmark.py`
-- [ ] T007 [P] [US1] Create failing integration test for 120s timeout and OOM `unsupported` fallback in `tests/integration/test_benchmark_timeout_fallback.py`
-- [ ] T008 [P] [US1] Create failing unit test for Partial Cache Miss pinpoint sync in `tests/unit/test_partial_cache_miss.py`
+- [X] T006 [P] [US1] Create failing integration test for multi-model real GPU benchmarking in `tests/integration/test_multi_model_benchmark.py`
+- [X] T007 [P] [US1] Create failing integration test for 120s timeout and OOM `unsupported` fallback in `tests/integration/test_benchmark_timeout_fallback.py`
+- [X] T008 [P] [US1] Create failing unit test for Partial Cache Miss pinpoint sync in `tests/unit/test_partial_cache_miss.py`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement LLM candidate model extraction helper (`get_candidate_llm_models()`) in `scripts/benchmark_context_window.py`
-- [ ] T010 [US1] Implement per-model 120s timeout wrapper (`asyncio.wait_for(..., timeout=120)`) and SIGKILL process cleanup in `scripts/benchmark_context_window.py`
-- [ ] T011 [P] [US1] Implement `unsupported` status assignment (`recommended_context_length=2048`, `is_supported=False`) for OOM/timeout models in `scripts/benchmark_context_window.py`
-- [ ] T012 [US1] Refactor `evaluate_all_catalog_models()` in `scripts/benchmark_context_window.py` to spawn real GPU processes for all candidate LLM models sequentially
-- [ ] T013 [US1] Implement Partial Cache Miss detection (`catalog_llm_models - existing_profiles`) and pinpoint sync logic in `scripts/benchmark_context_window.py`
-- [ ] T014 [US1] Implement atomic profile merge and temporary file replacement (`.tmp` -> `os.replace`) in `save_benchmark_profile()` within `scripts/benchmark_context_window.py`
-- [ ] T015 [US1] Verify all tests pass in `tests/integration/test_multi_model_benchmark.py`, `tests/integration/test_benchmark_timeout_fallback.py`, and `tests/unit/test_partial_cache_miss.py`
+- [X] T009 [P] [US1] Implement LLM candidate model extraction helper (`get_candidate_llm_models()`) in `scripts/benchmark_context_window.py`
+- [X] T010 [US1] Implement per-model 120s timeout wrapper (`asyncio.wait_for(..., timeout=120)`) and SIGKILL process cleanup in `scripts/benchmark_context_window.py`
+- [X] T011 [P] [US1] Implement `unsupported` status assignment (`recommended_context_length=2048`, `is_supported=False`) for OOM/timeout models in `scripts/benchmark_context_window.py`
+- [X] T012 [US1] Refactor `evaluate_all_catalog_models()` in `scripts/benchmark_context_window.py` to spawn real GPU processes for all candidate LLM models sequentially
+- [X] T013 [US1] Implement Partial Cache Miss detection (`catalog_llm_models - existing_profiles`) and pinpoint sync logic in `scripts/benchmark_context_window.py`
+- [X] T014 [US1] Implement atomic profile merge and temporary file replacement (`.tmp` -> `os.replace`) in `save_benchmark_profile()` within `scripts/benchmark_context_window.py`
+- [X] T015 [US1] Verify all tests pass in `tests/integration/test_multi_model_benchmark.py`, `tests/integration/test_benchmark_timeout_fallback.py`, and `tests/unit/test_partial_cache_miss.py`
 
 **Checkpoint**: At this point, User Story 1 (MVP) is fully functional and testable independently
 
@@ -79,14 +79,14 @@ description: "Task list for feature 098-benchmark-all-serviced-models implementa
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
-- [ ] T016 [P] [US2] Create failing shell integration test for `./setup.sh --force-benchmark` and cached bypass in `tests/integration/test_setup_benchmark_integration.py`
+- [X] T016 [P] [US2] Create failing shell integration test for `./setup.sh --force-benchmark` and cached bypass in `tests/integration/test_setup_benchmark_integration.py`
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Update Step 2.8 in `scripts/setup.sh` to delegate to `benchmark_context_window.py --force-benchmark` when `--force-benchmark` is set
-- [ ] T018 [US2] Update Step 4.5 in `scripts/setup.sh` to execute pinpoint cache sync or cached bypass based on `model_context_profiles.json` status
-- [ ] T019 [US2] Ensure `--skip-benchmark` flag in `scripts/setup.sh` cleanly bypasses Step 2.8 and Step 4.5
-- [ ] T020 [US2] Verify shell integration tests pass in `tests/integration/test_setup_benchmark_integration.py`
+- [X] T017 [US2] Update Step 2.8 in `scripts/setup.sh` to delegate to `benchmark_context_window.py --force-benchmark` when `--force-benchmark` is set
+- [X] T018 [US2] Update Step 4.5 in `scripts/setup.sh` to execute pinpoint cache sync or cached bypass based on `model_context_profiles.json` status
+- [X] T019 [US2] Ensure `--skip-benchmark` flag in `scripts/setup.sh` cleanly bypasses Step 2.8 and Step 4.5
+- [X] T020 [US2] Verify shell integration tests pass in `tests/integration/test_setup_benchmark_integration.py`
 
 **Checkpoint**: User Story 1 and 2 are fully integrated and independently testable
 
@@ -96,10 +96,10 @@ description: "Task list for feature 098-benchmark-all-serviced-models implementa
 
 **Purpose**: Final validation, documentation, and regression testing across the entire system
 
-- [ ] T021 [P] Run runnable validation scenarios 1~4 in `specs/098-benchmark-all-serviced-models/quickstart.md`
+- [X] T021 [P] Run runnable validation scenarios 1~4 in `specs/098-benchmark-all-serviced-models/quickstart.md`
 - [ ] T022 Run full regression test suite (`uv run pytest`) per Constitution Principle VII
 - [ ] T023 Run E2E Playwright dashboard test suite (`uv run pytest tests/e2e/`) per Constitution Principle VII
-- [ ] T024 [P] Verify shell script syntax and formatting (`bash -n scripts/setup.sh`)
+- [X] T024 [P] Verify shell script syntax and formatting (`bash -n scripts/setup.sh`)
 
 ---
 
@@ -146,3 +146,11 @@ description: "Task list for feature 098-benchmark-all-serviced-models implementa
 2. Implement User Story 1 (MVP) -> Test independently
 3. Implement User Story 2 -> Test `setup.sh` integration
 4. Run Phase 5 Polish & full regression test suite
+
+---
+
+## Phase 6: Convergence
+
+**Purpose**: Remediation of gaps identified during convergence assessment (2026-08-05)
+
+- [ ] T025 Fix Stage 3 status string assertion mismatch in `tests/unit/test_setup_benchmark_integration.py::test_evaluate_all_catalog_models_force_benchmark`: test expects `"Multi-Model Catalog Forced Benchmark"` but `evaluate_all_catalog_models()` returns `"SUCCESS (Multi-Model Catalog Forced Real GPU Benchmark)"` — update assertion substring to match implementation per DoD-004 (partial)

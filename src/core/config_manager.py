@@ -64,6 +64,17 @@ class ModelCatalogEntry(BaseModel):
     task_type: TaskTypeEnum = TaskTypeEnum.LLM
     default_port: Optional[int] = None
 
+class ModelContextProfileEntry(BaseModel):
+    """098-benchmark-all-serviced-models: Pydantic v2 기반 단일 모델 컨텍스트 윈도우 프로필 엔티티."""
+    max_context_length: int = 4096
+    recommended_context_length: int = 4096
+    binary_search_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    peak_vram_mb: int = 4200
+    tpot_tok_per_sec: float = 0.0
+    scaling_tested: bool = True
+    is_supported: bool = True
+    last_tested_at: Optional[str] = None
+
 class ConfigManager:
     """Manages system configuration with same-directory atomic replace, chmod 0600, Pydantic v2 validation, and memory caching."""
 
@@ -422,4 +433,35 @@ class ConfigManager:
             "detected_active_ips": active_ips,
             "allowed_subnets": self.get_allowed_subnets()
         }
+
+    def load_model_context_profiles(self) -> Dict[str, Any]:
+        """098-benchmark-all-serviced-models: Loads config/model_context_profiles.json cache atomically."""
+        profiles_path = os.path.join(os.path.dirname(self.config_path), "model_context_profiles.json")
+        if not os.path.exists(profiles_path):
+            profiles_path = "config/model_context_profiles.json"
+        try:
+            with open(profiles_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"generated_at": "", "system_hardware": {}, "profiles": {}}
+
+    def save_model_context_profiles(self, profiles_data: Dict[str, Any]) -> None:
+        """098-benchmark-all-serviced-models: Atomically saves config/model_context_profiles.json with chmod 0600."""
+        profiles_path = os.path.join(os.path.dirname(self.config_path), "model_context_profiles.json")
+        if not self.config_path.endswith("server_config.json") and not os.path.isabs(self.config_path):
+            profiles_path = "config/model_context_profiles.json"
+        target_dir = os.path.dirname(profiles_path) or "."
+        os.makedirs(target_dir, exist_ok=True)
+        with tempfile.NamedTemporaryFile("w", dir=target_dir, delete=False, encoding="utf-8") as tf:
+            json.dump(profiles_data, tf, indent=2, ensure_ascii=False)
+            tf.flush()
+            os.fsync(tf.fileno())
+            temp_name = tf.name
+        try:
+            os.chmod(temp_name, 0o600)
+            os.replace(temp_name, profiles_path)
+        except Exception:
+            if os.path.exists(temp_name):
+                os.remove(temp_name)
+            raise
 

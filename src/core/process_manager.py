@@ -785,3 +785,12 @@ class ProcessManager:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             return sock.connect_ex(('127.0.0.1', self.port)) != 0
+
+    @staticmethod
+    def force_kill_zombie_llama_servers() -> None:
+        """098-benchmark-all-serviced-models (T004): Force kills any orphan/zombie llama-server processes with SIGKILL."""
+        import subprocess
+        try:
+            subprocess.run(["pkill", "-9", "-f", "llama-server"], capture_output=True, check=False)
+        except Exception:
+            pass
