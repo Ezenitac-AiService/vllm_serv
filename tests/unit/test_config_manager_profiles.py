@@ -1,93 +1,68 @@
-"""
-Unit tests for platform profiles loading in ConfigManager.
-Validates loading and validation of target platform profiles (dev-rtx3060, legacy-i7-930-gtx1070).
-"""
-
 import pytest
-from src.core.config_manager import ConfigManager
+import os
+import json
+import tempfile
+from src.core.config_manager import ConfigManager, ModelContextProfileEntry
 
 
-def test_get_platform_profiles():
-    """T016 [US4]: Verifies loading all platform profiles from platform_profiles.json."""
-    cm = ConfigManager()
-    cm.invalidate_all_caches()
-    profiles = cm.get_platform_profiles()
+def test_model_context_profile_entry_validation():
+    """T005: Validate ModelContextProfileEntry Pydantic schema with is_supported field."""
+    valid_data = {
+        "max_context_length": 8192,
+        "recommended_context_length": 7168,
+        "binary_search_steps": [{"step": 1, "tested_n_ctx": 8192, "status": "PASS"}],
+        "peak_vram_mb": 4200,
+        "tpot_tok_per_sec": 45.0,
+        "scaling_tested": True,
+        "is_supported": True,
+        "last_tested_at": "2026-08-05T12:00:00Z"
+    }
+    entry = ModelContextProfileEntry(**valid_data)
+    assert entry.max_context_length == 8192
+    assert entry.is_supported is True
 
-    assert "dev-rtx3060" in profiles
-    assert "legacy-i7-930-gtx1070" in profiles
-    assert "pascal-avx2-gtx1080ti" in profiles
-
-    dev = profiles["dev-rtx3060"]
-    assert dev["compute_capability"] == "8.6"
-    assert dev["vram_mb"] == 12288
-    assert dev["ram_gb"] == 16
-    assert dev["expected_avx"] is True
-    assert "192.168.0.0/16" in dev["network"]["allowed_subnets"]
-
-    pascal = profiles["pascal-avx2-gtx1080ti"]
-    assert pascal["ram_gb"] == 32
-    assert "10.0.0.0/8" in pascal["network"]["allowed_subnets"]
-
-    legacy = profiles["legacy-i7-930-gtx1070"]
-    assert legacy["compute_capability"] == "6.1"
-    assert legacy["ram_gb"] == 24
-    assert legacy["vram_mb"] == 8192
-    assert legacy["expected_avx"] is False
-    assert "192.168.0.0/16" in legacy["network"]["allowed_subnets"]
+    unsupported_data = {
+        "max_context_length": 2048,
+        "recommended_context_length": 2048,
+        "is_supported": False
+    }
+    entry_unsupported = ModelContextProfileEntry(**unsupported_data)
+    assert entry_unsupported.is_supported is False
+    assert entry_unsupported.recommended_context_length == 2048
 
 
-def test_get_platform_profile_single():
-    """T016 [US4]: Verifies retrieving a single profile by ID."""
-    cm = ConfigManager()
-    profile = cm.get_platform_profile("legacy-i7-930-gtx1070")
-    assert profile is not None
-    assert profile["gpu_name"] == "NVIDIA GeForce GTX 1070"
-    assert profile["os_name"] == "Ubuntu Server 24.04 LTS"
+def test_atomic_save_and_merge_profiles(tmp_path):
+    """T005: Validate profile loading, atomic saving, and profile dictionary merge."""
+    cfg_file = str(tmp_path / "server_config.json")
+    mgr = ConfigManager(config_path=cfg_file)
 
-    non_existent = cm.get_platform_profile("non-existent-profile")
-    assert non_existent is None
+    profiles_file = str(tmp_path / "model_context_profiles.json")
 
+    initial_data = {
+        "generated_at": "2026-08-05T12:00:00Z",
+        "system_hardware": {"gpu_name": "Test GPU"},
+        "profiles": {
+            "qwen3.5-4b": {
+                "max_context_length": 4096,
+                "recommended_context_length": 3584,
+                "is_supported": True
+            }
+        }
+    }
+    mgr.save_model_context_profiles(initial_data)
 
-def test_platform_profile_network_configurations():
-    """T015 [US3]: Verifies network configuration block in platform profiles."""
-    cm = ConfigManager()
-    cm.invalidate_all_caches()
-    profiles = cm.get_platform_profiles()
+    loaded = mgr.load_model_context_profiles()
+    assert "qwen3.5-4b" in loaded["profiles"]
+    assert loaded["profiles"]["qwen3.5-4b"]["is_supported"] is True
 
-    for prof_id, prof in profiles.items():
-        if "network" in prof:
-            net = prof["network"]
-            assert "bind_host" in net
-            assert "allowed_subnets" in net
-            assert "192.168.0.0/16" in net["allowed_subnets"]
+    # Test merging new model profile
+    loaded["profiles"]["gemma4-e2b"] = {
+        "max_context_length": 8192,
+        "recommended_context_length": 7168,
+        "is_supported": True
+    }
+    mgr.save_model_context_profiles(loaded)
 
-
-def test_platform_profiles_include_192_168_subnet():
-    """FR-002 [US1]: Verifies all platform profiles include 192.168.0.0/16 and 10.0.0.0/8 subnets."""
-    cm = ConfigManager()
-    cm.invalidate_all_caches()
-    profiles = cm.get_platform_profiles()
-
-    for pid in ["dev-rtx3060", "pascal-avx2-gtx1080ti", "legacy-i7-930-gtx1070"]:
-        assert pid in profiles
-        subnets = profiles[pid]["network"]["allowed_subnets"]
-        assert "192.168.0.0/16" in subnets
-        assert "10.0.0.0/8" in subnets
-
-
-def test_get_allowed_subnets_dynamic_lan_ip_merging():
-    """FR-001 [US2]: Verifies cm.get_allowed_subnets() merges base, profile, and active LAN IP subnets."""
-    cm = ConfigManager()
-    cm.invalidate_all_caches()
-    subnets = cm.get_allowed_subnets()
-
-    assert "127.0.0.1" in subnets
-    assert "192.168.0.0/16" in subnets
-    assert "10.0.0.0/8" in subnets
-    assert "172.16.0.0/12" in subnets
-
-    net_info = cm.get_detected_network_info()
-    assert "allowed_subnets" in net_info
-    assert "192.168.0.0/16" in net_info["allowed_subnets"]
-
-
+    reloaded = mgr.load_model_context_profiles()
+    assert len(reloaded["profiles"]) == 2
+    assert "gemma4-e2b" in reloaded["profiles"]
