@@ -170,30 +170,44 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         gpu_name = "NVIDIA GeForce GPU"
 
     pm = ProcessManager()
+    config_mgr = ConfigManager()
+    catalog = config_mgr.get_model_catalog()
+    model_cfg = catalog.get(model_name, {})
+    rel_path = model_cfg.get("model_path", f"models/{model_name}/{model_name}.gguf")
+    abs_model_path = config_mgr.get_absolute_path(rel_path) or str(REPO_ROOT / rel_path)
 
-    pass_len = 4096
-    fail_len = 16384
-    model_max_rope = 16384
-    if "2b" in model_name:
-        model_max_rope = 32768
+    file_size_bytes = 0
+    if os.path.exists(abs_model_path):
+        file_size_bytes = os.path.getsize(abs_model_path)
+    file_size_mb = file_size_bytes / (1024 * 1024) if file_size_bytes else 3000.0
 
-    if total_vram >= 12000:
-        pass_len = 8192
-        fail_len = 32768
-    elif total_vram >= 8000:
-        pass_len = 4096
-        fail_len = 16384
+    # Base VRAM calculation (file size * 1.15)
+    base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path, file_size_bytes=file_size_bytes)
+    
+    # 500MB Safety Cushion: usable VRAM = total_vram - 500
+    usable_vram = max(0, total_vram - 500)
+    remaining_kv_budget = usable_vram - base_vram
 
-    low = pass_len
-    high = min(fail_len, model_max_rope)
+    # Set initial search range based on remaining KV budget
+    if remaining_kv_budget < 3000:
+        low = 2048
+        high = 4096
+    else:
+        low = 4096
+        high = 16384
+
+    model_max_rope = model_cfg.get("default_n_ctx", 16384)
+    high = min(high, model_max_rope)
+
     binary_steps = []
     best_n_ctx = low
     peak_vram_mb = 0
+    last_failure_reason = "UNKNOWN_ERROR"
 
-    print(f"[Binary Search GPU Load] 🚀 실측 GPU 프로세스 스폰 이진 탐색 개시 (모델={model_name}, 구간=[{low}, {high}])...", file=sys.stderr)
+    print(f"[Binary Search GPU Load] 🚀 실측 GPU 프로세스 스폰 이진 탐색 개시 (모델={model_name}, Base VRAM={base_vram}MB, 구간=[{low}, {high}])...", file=sys.stderr)
 
     for step in range(3):
-        if high - low <= 1024:
+        if high - low <= 512:
             break
         mid = ((low + high) // 2 // 512) * 512
         mid = min(mid, model_max_rope)
@@ -207,14 +221,17 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         spawn_state = await pm.spawn_process(model_name, mid)
         if spawn_state.status != ProcessStatusEnum.ERROR:
             from src.core.process_manager import poll_server_health
-            is_ready = await poll_server_health(port=8081, timeout=10.0, interval=0.2)
+            # Dynamic polling timeout (15s ~ 30s)
+            is_ready = await poll_server_health(port=8081, file_size_mb=file_size_mb)
             if is_ready:
                 pm.state = ProcessState(status=ProcessStatusEnum.READY, model_id=model_name, port=8081, pid=spawn_state.pid)
                 is_success = True
             else:
+                last_failure_reason = "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
                 print(f"[Binary Search GPU Load] ⚠️ llama-server /health polling timed out (n_ctx={mid})", file=sys.stderr)
                 is_success = False
         else:
+            last_failure_reason = spawn_state.error_message or "PROCESS_SPAWN_ERROR"
             print(f"[Binary Search GPU Load] ⚠️ spawn_process error: {spawn_state.error_message}", file=sys.stderr)
             is_success = False
 
@@ -222,7 +239,7 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
 
         if is_success:
             if os.environ.get("MOCK_LLAMA_SERVER") == "1":
-                ctx_vram_mb = 2600 + int(mid * 0.4)
+                ctx_vram_mb = base_vram + int(mid * 0.4)
             else:
                 try:
                     import httpx
@@ -233,9 +250,11 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
                         })
                         if resp.status_code != 200:
                             is_success = False
+                            last_failure_reason = f"WARMUP_HTTP_STATUS_{resp.status_code}"
                 except Exception as e:
                     print(f"[Binary Search GPU Load] ⚠️ Warmup POST request failed: {e}", file=sys.stderr)
                     is_success = False
+                    last_failure_reason = f"WARMUP_POST_FAILED: {e}"
 
                 try:
                     from src.core.gpu_detector import get_nvml_vram_info
@@ -243,14 +262,16 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
                     ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
                     if ctx_vram_mb > total_vram * 0.92:
                         is_success = False
+                        last_failure_reason = "CUDA_OOM_EXCEEDED (VRAM usage exceeded 92% threshold)"
                 except Exception:
-                    ctx_vram_mb = 2600 + int(mid * 0.4)
+                    ctx_vram_mb = base_vram + int(mid * 0.4)
 
         binary_steps.append({
             "step": step + 1,
             "tested_n_ctx": mid,
             "real_vram_mb": ctx_vram_mb,
-            "status": "PASS" if is_success else "OOM/FAIL"
+            "status": "PASS" if is_success else "OOM/FAIL",
+            "reason": "SUCCESS" if is_success else last_failure_reason
         })
 
         if is_success:
@@ -262,18 +283,18 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
 
     await pm.stop_process()
 
-    any_pass = any(s.get("status") == "PASS" for s in binary_steps)
-    if any_pass:
-        recommended_ctx = max(2048, (best_n_ctx * 9) // 10 // 512 * 512)
-        is_supported = True
+    is_supported = len([s for s in binary_steps if s["status"] == "PASS"]) > 0 or best_n_ctx > 2048
+    if is_supported:
+        recommended_ctx = best_n_ctx
         tps_val = 45.0
+        reason_str = "SUCCESS"
     else:
         best_n_ctx = 2048
         recommended_ctx = 2048
         is_supported = False
         tps_val = 0.0
+        reason_str = last_failure_reason
 
-    config_mgr = ConfigManager()
     profiles_data = config_mgr.load_model_context_profiles()
     existing_profiles = profiles_data.get("profiles", {})
 
@@ -281,10 +302,11 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         "max_context_length": best_n_ctx,
         "recommended_context_length": recommended_ctx,
         "binary_search_steps": binary_steps,
-        "peak_vram_mb": peak_vram_mb or (4200 if is_supported else 0),
+        "peak_vram_mb": peak_vram_mb or (base_vram if is_supported else 0),
         "tpot_tok_per_sec": tps_val,
         "scaling_tested": True,
         "is_supported": is_supported,
+        "failure_reason": reason_str,
         "last_tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
 
@@ -307,6 +329,7 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         "vram_used_mb": peak_vram_mb,
         "tpot_tok_per_sec": tps_val,
         "is_supported": is_supported,
+        "failure_reason": reason_str,
         "stage_status": {
             "Stage 1": "SUCCESS",
             "Stage 2": "SUCCESS",
@@ -331,6 +354,7 @@ def _record_unsupported_fallback_profile(model_name: str, reason: str = "OOM or 
         "tpot_tok_per_sec": 0.0,
         "scaling_tested": False,
         "is_supported": False,
+        "failure_reason": reason,
         "last_tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }
 

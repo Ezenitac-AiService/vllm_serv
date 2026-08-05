@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 338,
-  "preserved_files": 338,
+  "total_files_scanned": 344,
+  "preserved_files": 344,
   "archived_files": 0,
   "inventory": [
     {
@@ -1294,6 +1294,18 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_model_profiles_persistence.py",
+      "name": "test_model_profiles_persistence.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_process_manager_logging.py",
+      "name": "test_process_manager_logging.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_think_tag_stripping.py",
       "name": "test_think_tag_stripping.py",
       "status": "ACTIVE",
@@ -1368,6 +1380,12 @@
     {
       "file_path": "tests/unit/test_seed_pack_legacy.py",
       "name": "test_seed_pack_legacy.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_dynamic_vram_calculation.py",
+      "name": "test_dynamic_vram_calculation.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1792,6 +1810,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/__pycache__/test_model_profiles_persistence.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_model_profiles_persistence.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/__pycache__/test_api_key_auth_toggle.cpython-312-pytest-9.1.1.pyc",
       "name": "test_api_key_auth_toggle.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1948,6 +1972,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/__pycache__/test_process_manager_logging.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager_logging.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/__pycache__/test_wheel_scanner.cpython-312-pytest-9.1.1.pyc",
       "name": "test_wheel_scanner.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1986,6 +2016,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_network_detector.cpython-312-pytest-9.1.1.pyc",
       "name": "test_network_detector.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_dynamic_vram_calculation.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dynamic_vram_calculation.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

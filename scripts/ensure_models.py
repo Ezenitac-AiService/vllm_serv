@@ -21,12 +21,40 @@ if BASE_DIR not in sys.path:
 from src.core.model_downloader import ModelDownloader, DownloadStatusEnum
 
 
-# 필수 자동 가동 3종 모델 목록
-REQUIRED_MODELS = [
-    "qwen3.5-4b",
-    "bge-m3",
-    "bge-reranker-v2-m3"
-]
+def get_dynamic_required_models(server_config: Dict[str, Any] = None, catalog: Dict[str, Any] = None) -> List[str]:
+    """FR-007: Dynamically resolve required models from server_config.json and model_catalog.json."""
+    if server_config is None or catalog is None:
+        try:
+            from src.core.config_manager import ConfigManager
+            cm = ConfigManager()
+            server_config = server_config or cm.get_server_config()
+            catalog = catalog or cm.get_model_catalog()
+        except Exception:
+            server_config = server_config or {}
+            catalog = catalog or {}
+
+    req_models = []
+    main_model = server_config.get("model")
+    if main_model:
+        req_models.append(main_model)
+
+    emb_model = server_config.get("embedding_model")
+    if emb_model:
+        req_models.append(emb_model)
+
+    rerank_model = server_config.get("rerank_model")
+    if rerank_model:
+        req_models.append(rerank_model)
+
+    for m_id, entry in catalog.items():
+        if entry.get("task_type") in ("embedding", "rerank") or entry.get("requires_mmproj"):
+            if m_id not in req_models:
+                req_models.append(m_id)
+
+    if not req_models:
+        req_models = ["qwen3.5-4b", "bge-m3", "bge-reranker-v2-m3"]
+
+    return list(dict.fromkeys(req_models))
 
 
 def ensure_all_models(
@@ -35,23 +63,17 @@ def ensure_all_models(
     base_dir: str = BASE_DIR
 ) -> Dict[str, Any]:
     """
-    3종 필수 GGUF 모델의 존재 유무를 검사하고, 부재 시 자동 다운로드를 수행합니다.
-
-    Args:
-        check_only: True일 경우 검사만 진행하고 다운로드를 하지 않음
-        auto_download: True일 경우 미존재 모델 자동 다운로드 실행
-        base_dir: 레포지토리 루트 경로
-
-    Returns:
-        Dict: 모델 검사 및 다운로드 결과 요약
+    FR-007 & FR-012: 필수 GGUF 모델의 존재 유무를 검사하고 부재 시 다운로드, 로컬 존재/다운로드 완료 시 카탈로그 메타데이터 동기화.
     """
     downloader = ModelDownloader(base_dir=base_dir)
+    target_models = get_dynamic_required_models()
+
     results = {
-        "target_models": REQUIRED_MODELS,
+        "target_models": target_models,
         "all_models_present": True,
         "details": {},
         "download_summary": {
-            "total_models": len(REQUIRED_MODELS),
+            "total_models": len(target_models),
             "present_count": 0,
             "downloaded_count": 0,
             "failed_count": 0
@@ -59,13 +81,13 @@ def ensure_all_models(
     }
 
     print("=" * 60)
-    print(" 📦 vllm_serv 필수 GGUF 모델 가중치 자동 점검 및 다운로드 파이프라인")
+    print(" 📦 vllm_serv 동적 필수 GGUF 모델 가중치 자동 점검 및 다운로드 파이프라인")
     print("=" * 60)
 
-    for model_id in REQUIRED_MODELS:
+    for model_id in target_models:
         is_available = downloader.is_model_available(model_id)
         if is_available:
-            print(f"  ✓ [{model_id}] 로컬 GGUF 모델 가중치 존재 확인 (Smart Skip)")
+            print(f"  ✓ [{model_id}] 로컬 GGUF 모델 가중치 존재 확인 (Smart Skip & FR-012 Sync)")
             results["details"][model_id] = {
                 "status": "EXISTS",
                 "is_present": True

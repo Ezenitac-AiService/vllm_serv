@@ -92,6 +92,49 @@ class ModelDownloader:
         """전체 다운로드 상태 맵 반환."""
         return dict(self._tasks)
 
+    def reconcile_catalog_metadata(self, model_id: str) -> bool:
+        """FR-012: Measures actual local file size (bytes/GB) and updates model_catalog.json atomically."""
+        model_id = self.config_manager.resolve_model_id(model_id)
+        catalog_entry = self.catalog.get(model_id)
+        if not catalog_entry:
+            return False
+
+        rel_path = catalog_entry.get("model_path")
+        if not rel_path:
+            return False
+
+        abs_path = os.path.join(self.base_dir, rel_path)
+        if not os.path.isfile(abs_path):
+            return False
+
+        actual_bytes = os.path.getsize(abs_path)
+        actual_gb = round(actual_bytes / (1024 ** 3), 2)
+
+        needs_update = False
+        if catalog_entry.get("exact_bytes") != actual_bytes or catalog_entry.get("size_gb") != actual_gb:
+            catalog_entry["exact_bytes"] = actual_bytes
+            catalog_entry["size_gb"] = actual_gb
+            needs_update = True
+
+        if needs_update:
+            try:
+                catalog_file = os.path.join(self.base_dir, "config", "model_catalog.json")
+                if os.path.exists(catalog_file):
+                    with open(catalog_file, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if model_id in data:
+                        data[model_id]["exact_bytes"] = actual_bytes
+                        data[model_id]["size_gb"] = actual_gb
+                        tmp_file = catalog_file + ".tmp"
+                        with open(tmp_file, "w", encoding="utf-8") as f:
+                            json.dump(data, f, indent=4)
+                        os.replace(tmp_file, catalog_file)
+                        print(f"[ModelDownloader] 📝 FR-012: model_catalog.json 메타데이터 자율 동기화 완료: [{model_id}] {actual_bytes} bytes ({actual_gb} GB)")
+                        return True
+            except Exception as e:
+                print(f"[ModelDownloader] ⚠️ FR-012 metadata sync failed: {e}", file=sys.stderr)
+        return False
+
     def is_model_available(self, model_id: str) -> bool:
         """로컬에 해당 모델의 GGUF 가중치 및 MMProj CLIP 프로젝터 파일이 모두 존재하는지 확인."""
         model_id = self.config_manager.resolve_model_id(model_id)
@@ -120,7 +163,6 @@ class ModelDownloader:
             if not has_main:
                 continue
 
-
             clip_name = catalog_entry.get("clip_filename")
             if clip_name:
                 exact_clip = os.path.join(abs_dir, clip_name)
@@ -130,6 +172,8 @@ class ModelDownloader:
                 if not has_clip:
                     continue
 
+            # FR-012: Trigger metadata reconciliation on Smart Skip detection
+            self.reconcile_catalog_metadata(model_id)
             return True
         return False
 

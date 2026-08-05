@@ -46,10 +46,14 @@ def register_process_cleanup_hooks() -> None:
         except (ValueError, OSError):
             pass
 
-async def poll_server_health(port: int = 8081, timeout: float = 10.0, interval: float = 0.2) -> bool:
-    """FR-002: Poll /health endpoint up to timeout (max 10s) with 0.2s interval until HTTP 200 OK."""
+async def poll_server_health(port: int = 8081, timeout: float = 10.0, interval: float = 0.2, file_size_mb: Optional[float] = None) -> bool:
+    """FR-002 & FR-003: Poll /health endpoint up to timeout (max 30s dynamic) with 0.2s interval until HTTP 200 OK."""
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
         return True
+
+    if file_size_mb is not None:
+        calc = 10.0 + (file_size_mb / 500.0)
+        timeout = min(30.0, max(15.0, calc))
 
     url = f"http://127.0.0.1:{port}/health"
     start_time = time.perf_counter()
@@ -385,11 +389,39 @@ class ProcessManager:
                         f"PortCollisionError: Port {self.port} is already occupied by a zombie or external process."
                     )
 
+    @staticmethod
+    def calculate_base_vram_mb(model_path: str, file_size_bytes: Optional[int] = None) -> int:
+        """FR-004 / FR-008: Dynamic Base VRAM calculation (file size * 1.15)."""
+        try:
+            if file_size_bytes is None:
+                if model_path and os.path.exists(model_path):
+                    file_size_bytes = os.path.getsize(model_path)
+                else:
+                    return 6000
+            mb = (file_size_bytes / (1024 * 1024)) * 1.15
+            return int(mb)
+        except Exception:
+            return 6000
+
+    @staticmethod
+    def calculate_polling_timeout(file_size_mb: float) -> float:
+        """FR-003: Dynamic health check polling timeout formula min(30.0, max(15.0, 10.0 + file_size_mb/500))."""
+        calc = 10.0 + (file_size_mb / 500.0)
+        return min(30.0, max(15.0, calc))
+
+    def _get_log_paths(self) -> tuple[str, str]:
+        """Returns absolute paths for (benchmark.log, error.log)."""
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        logs_dir = os.path.join(base_dir, "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        return os.path.join(logs_dir, "benchmark.log"), os.path.join(logs_dir, "error.log")
+
     def estimate_vram_usage(self, model_id: str, n_ctx: int) -> int:
         """FR-010: Dry-run VRAM calculation based on model base VRAM and context scaling."""
         resolved_id = self._config_manager.resolve_model_id(model_id)
         preset = self.model_presets.get(resolved_id)
-        base_vram = preset.get("vram_est_mb", 6000) if preset else 6000
+        model_path = preset.get("model", "") if preset else ""
+        base_vram = self.calculate_base_vram_mb(model_path)
         extra_ctx_vram = max(0, int((n_ctx - 4096) * 0.5))
         return base_vram + extra_ctx_vram
 
@@ -398,9 +430,7 @@ class ProcessManager:
 
     def _log_to_error_log(self, message: str) -> None:
         try:
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            log_file = os.path.join(base_dir, "logs", "error.log")
-            os.makedirs(os.path.dirname(log_file), exist_ok=True)
+            _, log_file = self._get_log_paths()
             timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
             with open(log_file, "a", encoding="utf-8") as f:
                 f.write(f"[{timestamp}] [Port {self.port}] [ProcessManager] {message}\n")
@@ -408,8 +438,26 @@ class ProcessManager:
             pass
 
     async def _drain_stdout(self, stream: asyncio.StreamReader) -> None:
-        """Drains stdout stream asynchronously, parses VRAM offload, and logs errors on exit."""
-        recent_lines = collections.deque(maxlen=20)
+        """FR-001, FR-002, FR-005, FR-009, FR-011: Real-time log drain with 10MB rotation and Exit Code 137 dump."""
+        recent_lines = collections.deque(maxlen=50)
+        bench_log_path, err_log_path = self._get_log_paths()
+
+        # FR-011 / US4: 10MB Log Rotation
+        try:
+            if os.path.exists(bench_log_path) and os.path.getsize(bench_log_path) > 10 * 1024 * 1024:
+                old_log_path = bench_log_path + ".old"
+                if os.path.exists(old_log_path):
+                    os.remove(old_log_path)
+                os.rename(bench_log_path, old_log_path)
+        except Exception:
+            pass
+
+        log_file = None
+        try:
+            log_file = open(bench_log_path, "a", encoding="utf-8")
+        except Exception:
+            pass
+
         try:
             while not stream.at_eof():
                 line_bytes = await stream.readline()
@@ -417,24 +465,53 @@ class ProcessManager:
                     break
                 line = line_bytes.decode("utf-8", errors="replace")
                 recent_lines.append(line.strip())
+
+                if log_file:
+                    log_file.write(line)
+                    log_file.flush()
+
                 status = self.parse_vram_offload_log(line, self.state.model_id or "")
                 if status:
                     self.verify_vram_offload(self.state.model_id or "", status)
         except Exception:
             pass
+        finally:
+            if log_file:
+                try:
+                    log_file.close()
+                except Exception:
+                    pass
 
         if self.process:
-            await self.process.wait()
-            if self.process.returncode is not None and self.process.returncode != 0 and self.state.status != ProcessStatusEnum.UNLOADED:
-                last_logs = "\n".join(list(recent_lines)[-5:]) if recent_lines else "No log output"
-                err_msg = f"서브프로세스 (PID {self.process.pid}, Port {self.port}) 비정상 종료 (Exit Code: {self.process.returncode}). 최근 출력:\n{last_logs}"
+            try:
+                await self.process.wait()
+            except Exception:
+                pass
+            if self.process.returncode is not None and self.process.returncode != 0:
+                lines_dump = list(recent_lines)[-20:] if recent_lines else ["No log output captured"]
+                last_logs = "\n".join(lines_dump)
+
+                oom_header = ""
+                if self.process.returncode in (137, -9):
+                    oom_header = " [KERNEL_OOM_KILLER_EXIT_137: Process killed by Linux Kernel OOM Killer]"
+
+                err_msg = f"서브프로세스 (PID {self.process.pid}, Port {self.port}) 비정상 종료 (Exit Code: {self.process.returncode}){oom_header}. 최근 출력:\n{last_logs}"
                 print(f"[ProcessManager] ❌ {err_msg}")
                 self._log_to_error_log(err_msg)
+
+                try:
+                    with open(bench_log_path, "a", encoding="utf-8") as f:
+                        f.write(f"\n--- CRASH DUMP ({self.state.model_id or 'unknown'}) Exit Code {self.process.returncode}{oom_header} ---\n")
+                        f.write(last_logs + "\n--------------------------------------------------\n")
+                        f.flush()
+                except Exception:
+                    pass
+
                 self.state = ProcessState(
                     status=ProcessStatusEnum.ERROR,
                     model_id=self.state.model_id,
                     port=self.port,
-                    error_message=f"Process exited with code {self.process.returncode}: {recent_lines[-1] if recent_lines else 'Unknown error'}"
+                    error_message=f"Process exited with code {self.process.returncode}{oom_header}: {recent_lines[-1] if recent_lines else 'Unknown error'}"
                 )
 
 
@@ -745,7 +822,18 @@ class ProcessManager:
             await asyncio.sleep(0.2)
 
         if self._log_drain_task and not self._log_drain_task.done():
-            self._log_drain_task.cancel()
+            try:
+                if self.process and hasattr(self.process, "stdout") and self.process.stdout:
+                    if hasattr(self.process.stdout, "_transport") and self.process.stdout._transport:
+                        try:
+                            self.process.stdout._transport.write_eof()
+                        except Exception:
+                            pass
+                await asyncio.wait_for(asyncio.shield(self._log_drain_task), timeout=2.0)
+            except Exception:
+                pass
+            if not self._log_drain_task.done():
+                self._log_drain_task.cancel()
             self._log_drain_task = None
 
         if self.process:
