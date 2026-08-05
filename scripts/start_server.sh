@@ -8,6 +8,7 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+trap 'if [ "$READY" -eq 0 ]; then rm -f "$PID_FILE" "$DASHBOARD_PID_FILE" 2>/dev/null || true; fi' EXIT
 if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
     BASE_DIR="$SCRIPT_DIR"
 elif [ -f "$SCRIPT_DIR/../pyproject.toml" ]; then

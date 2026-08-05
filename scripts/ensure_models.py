@@ -81,19 +81,26 @@ def ensure_all_models(
 
             if not check_only and auto_download:
                 print(f"  ⚡ [{model_id}] 자동 다운로드 시작 (HuggingFace Hub / ModelScope)...")
-                try:
-                    task = downloader.download_model(model_id)
-                    if task.status == DownloadStatusEnum.COMPLETED or task.status == DownloadStatusEnum.SKIPPED:
-                        print(f"  ✓ [{model_id}] 다운로드 및 검증 완료!")
-                        results["details"][model_id]["status"] = "DOWNLOADED"
-                        results["details"][model_id]["is_present"] = True
-                        results["download_summary"]["downloaded_count"] += 1
-                    else:
-                        print(f"  ❌ [{model_id}] 다운로드 실패: {task.error_message}")
-                        results["details"][model_id]["status"] = "FAILED"
-                        results["download_summary"]["failed_count"] += 1
-                except Exception as e:
-                    print(f"  ❌ [{model_id}] 다운로드 중 예외 발생: {e}")
+                max_retries = 3
+                success = False
+                for attempt in range(1, max_retries + 1):
+                    try:
+                        task = downloader.download_model(model_id)
+                        if task.status in (DownloadStatusEnum.COMPLETED, DownloadStatusEnum.SKIPPED):
+                            print(f"  ✓ [{model_id}] 다운로드 및 검증 완료!")
+                            results["details"][model_id]["status"] = "DOWNLOADED"
+                            results["details"][model_id]["is_present"] = True
+                            results["download_summary"]["downloaded_count"] += 1
+                            success = True
+                            break
+                        else:
+                            print(f"  ⚠️ [{model_id}] 다운로드 시도 {attempt}/{max_retries} 실패: {task.error_message}")
+                    except Exception as e:
+                        print(f"  ⚠️ [{model_id}] 시도 {attempt}/{max_retries} 예외 발생: {e}")
+                    import time
+                    time.sleep(2)
+                if not success:
+                    print(f"  ❌ [{model_id}] 최종 {max_retries}회 재시도 후 다운로드 실패")
                     results["details"][model_id]["status"] = "FAILED"
                     results["download_summary"]["failed_count"] += 1
             else:

@@ -10,9 +10,9 @@ COLOR_RED='\033[0;31m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
-log_info() { echo -e "${COLOR_GREEN}[INFO]${COLOR_NC} $1"; }
-log_warn() { echo -e "${COLOR_YELLOW}[WARN]${COLOR_NC} $1"; }
-log_err()  { echo -e "${COLOR_RED}[ERROR]${COLOR_NC} $1"; }
+log_info() { echo -e "${COLOR_GREEN}[$(date +'%H:%M:%S') INFO]${COLOR_NC} $1"; }
+log_warn() { echo -e "${COLOR_YELLOW}[$(date +'%H:%M:%S') WARN]${COLOR_NC} $1"; }
+log_err()  { echo -e "${COLOR_RED}[$(date +'%H:%M:%S') ERROR]${COLOR_NC} $1" >&2; }
 log_step() { echo -e "\n${COLOR_CYAN}====================================================${COLOR_NC}\n${COLOR_CYAN}▶ $1${COLOR_NC}\n${COLOR_CYAN}====================================================${COLOR_NC}"; }
 
 check_cuda_gpu_available() {

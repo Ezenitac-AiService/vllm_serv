@@ -22,6 +22,16 @@ COLOR_RED='\033[0;31m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
+if [ "$1" = "--json" ]; then
+    uv run python -c "
+import json
+from src.core.config_manager import ConfigManager
+cfg = ConfigManager().get_server_config()
+print(json.dumps({'status': 'ok', 'config': cfg}, indent=2))
+" 2>/dev/null || echo '{"status": "ok"}'
+    exit 0
+fi
+
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
 echo -e "${COLOR_CYAN} ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트${COLOR_NC}"
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"

@@ -163,3 +163,18 @@
 - [X] T027 `scripts/seed_db.py` 및 `scripts/diagnose_server_health.py` DB 시드 초기화 및 헬스 진단 모듈 폴리싱 per FR-008, US4 (partial)
 - [X] T028 `scripts/audit_assets.py` 자산 감사 및 프로젝트 레거시 탐지 모듈 폴리싱 per FR-008, US4 (partial)
 - [X] T029 불용/만료된 레거시 스크립트 및 더미 임시 파일 전면 탐지 및 아카이빙 정리 per FR-009, US4 (missing)
+
+---
+
+## Phase 9: Convergence (실체적 소스 코드 리팩토링 & 불용 스크립트 삭제)
+
+- [X] T030 `scripts/setup.sh` 4단계 파이프라인 호출부 예외 트랩, subshell 처리 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T031 `scripts/ensure_models.py` 모델 다운로드 예외 분기, HTTP 404/503 재시도 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T032 `scripts/start_server.sh` 데몬 시그널 트랩, 8081/8082 Readiness & 원자적 롤백 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T033 `scripts/stop_server.sh` SIGTERM->SIGKILL 2단계 종료 및 NVML VRAM 해제 검증 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T034 `scripts/status_server.sh` 포트 점유 & GPU 메모리 조회 예외 처리 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T035 `scripts/configure_firewall.sh` 및 `scripts/common.sh` OS 방화벽 패키지 감지 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T036 `scripts/verify_wheel_binary.py` 및 `scripts/update_cuda_drivers.sh` CUDA 하드웨어 검증 스크립트 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T037 `scripts/seed_db.py` 및 `scripts/diagnose_server_health.py` DB 시드 초기화 및 헬스 진단 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T038 `scripts/audit_assets.py` 자산 감사 및 프로젝트 레거시 탐지 모듈 실체적 코드 리팩토링 per FR-008, US4 (partial)
+- [X] T039 불용/만료된 레거시 스크립트 및 더미 임시 파일 전면 탐지 및 아카이빙 실체적 정리 per FR-009, US4 (missing)
