@@ -51,7 +51,7 @@ def get_dynamic_required_models(server_config: Dict[str, Any] = None, catalog: D
         req_models.append(rerank_model)
 
     if not req_models:
-        req_models = list(REQUIRED_MODELS)
+        req_models = [m_id for m_id in catalog.keys()] if catalog else ["qwen3.5-4b"]
 
     return list(dict.fromkeys(req_models))
 

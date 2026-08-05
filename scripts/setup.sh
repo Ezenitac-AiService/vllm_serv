@@ -294,15 +294,15 @@ print('True' if fn and fn() else 'False')
     fi
 fi
 
-# Tier 3: Seed Pack 수록 사전 빌드 휠 Fast-Track (wheels/${MATCHED_PROFILE}/*.whl 또는 wheels/legacy_i7_930/*.whl)
+# Tier 3: Seed Pack 수록 사전 빌드 휠 Fast-Track (wheels/${MATCHED_PROFILE}/*.whl)
 if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
     LEGACY_WHEEL=""
     PROFILE_WHEEL_DIR="wheels/${MATCHED_PROFILE}"
-    if [[ "$MATCHED_PROFILE" == *"legacy-i7-930"* ]] || [ -d "$PROFILE_WHEEL_DIR" ]; then
+    if [ -d "$PROFILE_WHEEL_DIR" ]; then
         LEGACY_WHEEL=$(ls -v "$PROFILE_WHEEL_DIR"/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
     fi
     if [ -z "$LEGACY_WHEEL" ]; then
-        LEGACY_WHEEL=$(ls -v wheels/legacy_i7_930/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
+        LEGACY_WHEEL=$(ls -v wheels/*/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
     fi
     if [ -z "$LEGACY_WHEEL" ]; then
         LEGACY_WHEEL=$(ls -v wheels/llama_cpp_python*.whl 2>/dev/null | tail -n 1 || true)
@@ -312,7 +312,7 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
         log_info "⚡ 사전 빌드 휠($LEGACY_WHEEL) Fast-Track 복원을 시작합니다..."
         log_info "C++ 소스 재컴파일을 건너뛰고 사전 빌드 휠을 가상환경(.venv)에 고속 설치합니다..."
         WHEEL_FIND_DIR="$(dirname "$LEGACY_WHEEL")"
-        if uv pip install "$LEGACY_WHEEL" --force-reinstall --no-index --find-links wheels/legacy_i7_930 --find-links "$WHEEL_FIND_DIR"; then
+        if uv pip install "$LEGACY_WHEEL" --force-reinstall --no-index --find-links "$WHEEL_FIND_DIR"; then
             log_info "CUDA GPU 가속 지원 검증 중 (llama_supports_gpu_offload())..."
             GPU_CHECK_STATUS=0
             GPU_CHECK_OUTPUT=$("$VENV_PYTHON" -c "

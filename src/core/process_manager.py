@@ -663,7 +663,7 @@ class ProcessManager:
 
         # FR-012 / T002: Pre-flight GGUF + KV Cache VRAM estimator
         kv_vram_mb = estimate_kv_cache_vram(n_ctx=n_ctx)
-        base_vram = target_preset.get("vram_est_mb", 6000)
+        base_vram = self.calculate_base_vram_mb(model_file)
         vram_est = base_vram + kv_vram_mb
 
         if vram_est > self.vram_max_capacity_mb + 2000:  # Hard limit check

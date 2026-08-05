@@ -100,22 +100,29 @@ def benchmark_context_window(
     except Exception:
         total_vram = 8192
 
-    if total_vram >= 12000:
-        rec_ctx = 16384
-        vram_val = 6800
-        tps_val = 52.0
-    elif total_vram >= 8000:
-        rec_ctx = 8192
-        vram_val = 4200
-        tps_val = 45.0
-    elif total_vram >= 4000:
-        rec_ctx = 4096
-        vram_val = 2800
-        tps_val = 32.0
-    else:
+    config_mgr = ConfigManager()
+    catalog = config_mgr.get_model_catalog()
+    model_cfg = catalog.get(model_name, {})
+    rel_path = model_cfg.get("model_path", f"models/{model_name}/{model_name}.gguf")
+    abs_model_path = config_mgr.get_absolute_path(rel_path) or str(REPO_ROOT / rel_path)
+    base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path)
+
+    usable_vram = max(0, total_vram - 500)
+    remaining_kv_budget = usable_vram - base_vram
+
+    if remaining_kv_budget < 1000:
         rec_ctx = 2048
-        vram_val = 1800
-        tps_val = 22.0
+    elif remaining_kv_budget < 3000:
+        rec_ctx = 4096
+    elif remaining_kv_budget < 6000:
+        rec_ctx = 8192
+    else:
+        rec_ctx = 16384
+
+    model_default_ctx = model_cfg.get("default_n_ctx", 16384)
+    rec_ctx = min(rec_ctx, model_default_ctx)
+    vram_val = base_vram + max(0, int((rec_ctx - 2048) * 0.5))
+    tps_val = 45.0
 
     return {
         "recommended_model": model_name,
@@ -239,7 +246,7 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
 
         if is_success:
             if os.environ.get("MOCK_LLAMA_SERVER") == "1":
-                ctx_vram_mb = base_vram + int(mid * 0.4)
+                ctx_vram_mb = base_vram + max(0, int((mid - 2048) * 0.5))
             else:
                 try:
                     import httpx
@@ -264,7 +271,7 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
                         is_success = False
                         last_failure_reason = "CUDA_OOM_EXCEEDED (VRAM usage exceeded 92% threshold)"
                 except Exception:
-                    ctx_vram_mb = base_vram + int(mid * 0.4)
+                    ctx_vram_mb = base_vram + max(0, int((mid - 2048) * 0.5))
 
         binary_steps.append({
             "step": step + 1,

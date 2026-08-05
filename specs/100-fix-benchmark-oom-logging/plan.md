@@ -34,7 +34,7 @@
 - **Base VRAM Calculation Algorithm**:
   $$\text{Base VRAM (MB)} = \frac{\text{os.path.getsize(model\_path)}}{1024 \times 1024} \times 1.15$$
 - **KV Cache Budget & 500MB Safety Cushion**:
-  $$\text{Usable VRAM (MB)} = \text{NVML Available VRAM} - 500\text{MB}$$
+  $$\text{Usable VRAM (MB)} = \text{NVML Total VRAM} - 500\text{MB}$$
   $$\text{Remaining KV Budget (MB)} = \text{Usable VRAM} - \text{Base VRAM}$$
   - 남은 KV 예산이 3000MB 미만일 경우 이진 탐색 초기 `low=2048`, `high=4096`부터 개시하여 대형 모델에 대한 Pre-flight `CUDA OOM Risk` 차단오탐 원천 방지.
   - `2600 + int(mid * 0.4)` 및 `vram_est_mb = 6000` 정적 수식 전면 삭제.

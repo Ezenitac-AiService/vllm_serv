@@ -100,10 +100,10 @@
 - **FR-004**: System MUST 하드웨어 명칭(GTX 1070, 1080 Ti 등)이나 특정 모델 ID/규모(9B, 12B 등)의 하드코딩 예외 조건문을 전면 제거하고, `config/model_catalog.json` 메타데이터 및 동적 NVML GPU VRAM 실측값에 기초하여 이진 탐색 초기 `n_ctx` 범위와 KV 캐시 VRAM 예산을 동적으로 산출해야 한다.
 - **FR-005**: System MUST 벤치마크 중 프로세스 강제 종료(`stop_process`)가 일어날 때, 파이프 EOF 피딩 및 안전 수거 메커니즘을 통해 백그라운드 로그 스트림 드레인 루프에 남은 잔여물이 유실되지 않도록 보장해야 한다.
 - **FR-006**: System MUST 벤치마크 완료 후 `config/model_context_profiles.json` 프로필 파일에 모델별 실패 사유(`failure_reason`) 및 측정 단계별 상태를 명확히 기록하여 대시보드 및 CLI에서 진단 가능하도록 보장해야 한다.
-- **FR-007**: System MUST `ensure_models.py` 및 `setup.sh`에 정적으로 지정되어 있던 `REQUIRED_MODELS` 배열 및 `"legacy-i7-930"` 하드코딩 조건문을 삭제하고, `config/server_config.json` 및 `config/model_catalog.json` 카탈로그와 `cpu_detector` 프로파일 매칭 결과로부터 필수 모델 목록 및 휠 경로를 동적 탐색해야 한다.
-- **FR-008**: System MUST `benchmark_context_window.py` 및 `ProcessManager` 내 가짜 정적 산정식(`2600 + int(mid * 0.4)` 및 `vram_est_mb = 6000`)을 전면 제거하고 GGUF 가중치 용량 및 NVML VRAM 실측 델타 기반 정밀 모듈로 교체해야 한다.
+- **FR-007**: System MUST `ensure_models.py` 및 `setup.sh`에 정적으로 지정되어 있던 `REQUIRED_MODELS` 배열 및 `"legacy-i7-930"` 하드코딩 조건문/경로를 삭제하고, `config/server_config.json` 및 `config/model_catalog.json` 카탈로그와 `cpu_detector` 프로파일 매칭 결과로부터 필수 모델 목록 및 `$MATCHED_PROFILE` 기반 휠 경로를 동적으로 탐색해야 한다.
+- **FR-008**: System MUST `benchmark_context_window.py` 및 `ProcessManager` 내 잔존하는 가짜 정적 산정식(`2600 + int(mid * 0.4)` 및 `vram_est_mb = 6000` 기본값)을 전면 제거하고 GGUF 가중치 용량 및 NVML VRAM 실측 델타 기반 정밀 산출 모듈로 전면 교체해야 한다.
 - **FR-009**: System MUST 커널 OOM Killer 등에 의해 exit code가 137 또는 -9로 강제 종료될 경우, 이를 명확히 감지하여 `failure_reason`에 "KERNEL_OOM_KILLER_EXIT_137" 진단 문구를 명시 기록해야 한다.
-- **FR-010**: System MUST 동적 VRAM 예산 산출 시 CUDA Context 및 드라이버 오버헤드 변동성에 대응할 수 있도록 가용 VRAM에서 최소 500MB의 안전 버퍼(Safety Cushion)를 차감한 가용 용량을 기준으로 이진 탐색을 구동해야 한다.
+- **FR-010**: System MUST 동적 VRAM 예산 산출 시 CUDA Context 및 드라이버 오버헤드 변동성에 대응할 수 있도록 가용 VRAM에서 최소 500MB의 안전 버퍼(Safety Cushion)를 차감한 가용 용량(`Usable VRAM = Total VRAM - 500MB`)을 기준으로 이진 탐색을 구동해야 한다.
 - **FR-011**: System MUST 벤치마크 개시 시 `logs/benchmark.log` 파일 용량을 검사하여 10MB 초과 시 `logs/benchmark.log.old`로 원자적 로테이션하여 디스크 고갈을 방지해야 한다.
 - **FR-012**: System MUST `ensure_models.py` / `ModelDownloader`에서 모델 다운로드 완납 시점뿐만 아니라 로컬 파일 존재 확인(Smart Skip) 시점에도, 실제 로컬 GGUF 파일의 정밀 용량(Bytes/GB)을 측정하여 `config/model_catalog.json` 내 해당 모델 항목의 `size_gb` 및 `exact_bytes` 필드에 원자적으로 동기화(Reconcile)해야 한다.
 

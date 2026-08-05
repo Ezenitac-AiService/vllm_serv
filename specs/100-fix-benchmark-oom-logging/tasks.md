@@ -124,3 +124,12 @@
 
 - T003, T004, T010, T017, T022 (test files across different modules) can run in parallel.
 - US1 (T004~T009) completes independently as MVP.
+
+---
+
+## Phase 8: Convergence
+
+- [x] T026 Refactor `scripts/benchmark_context_window.py` to remove static VRAM lookup table (`if total_vram >= 12000`) in `benchmark_context_window()` and replace fallback formula `base_vram + int(mid * 0.4)` with real NVML snapshot delta calculation per FR-004, FR-008 (partial)
+- [x] T027 Refactor `scripts/setup.sh` to remove `"legacy-i7-930"` hardcoded string matching/paths in favor of dynamic `$MATCHED_PROFILE` wheel search, and remove static `REQUIRED_MODELS` fallback array in `scripts/ensure_models.py` per FR-007 (partial)
+- [x] T028 Refactor `spawn_process()` in `src/core/process_manager.py` to replace `target_preset.get("vram_est_mb", 6000)` static fallback with `ProcessManager.calculate_base_vram_mb(model_file)` per FR-008 (partial)
+
