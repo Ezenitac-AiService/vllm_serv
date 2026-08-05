@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 328,
-  "preserved_files": 328,
+  "total_files_scanned": 338,
+  "preserved_files": 338,
   "archived_files": 0,
   "inventory": [
     {
@@ -790,6 +790,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/test_setup_smart_skip.py",
+      "name": "test_setup_smart_skip.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/test_quality_benchmark.py",
       "name": "test_quality_benchmark.py",
       "status": "ACTIVE",
@@ -816,6 +822,12 @@
     {
       "file_path": "tests/integration/test_subnet_security.py",
       "name": "test_subnet_security.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_gpu_spawn_warmup.py",
+      "name": "test_gpu_spawn_warmup.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -936,6 +948,12 @@
     {
       "file_path": "tests/integration/test_migration_pipeline.py",
       "name": "test_migration_pipeline.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_pre_cleanup_and_restore.py",
+      "name": "test_pre_cleanup_and_restore.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1062,6 +1080,12 @@
     {
       "file_path": "tests/unit/test_subnet_filter.py",
       "name": "test_subnet_filter.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_positive_tps_profile.py",
+      "name": "test_positive_tps_profile.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1200,6 +1224,12 @@
     {
       "file_path": "tests/unit/test_model_select_display_fix.py",
       "name": "test_model_select_display_fix.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_process_manager_health.py",
+      "name": "test_process_manager_health.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1498,6 +1528,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/__pycache__/test_pre_cleanup_and_restore.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_pre_cleanup_and_restore.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/__pycache__/test_educational_auxiliary_samples.cpython-312-pytest-9.1.1.pyc",
       "name": "test_educational_auxiliary_samples.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1606,6 +1642,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/__pycache__/test_setup_smart_skip.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_setup_smart_skip.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/__pycache__/test_quality_benchmark.cpython-312-pytest-9.1.1.pyc",
       "name": "test_quality_benchmark.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1614,6 +1656,12 @@
     {
       "file_path": "tests/integration/__pycache__/test_educational_samples.cpython-312-pytest-9.1.1.pyc",
       "name": "test_educational_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_gpu_spawn_warmup.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_gpu_spawn_warmup.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1642,8 +1690,20 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/__pycache__/test_positive_tps_profile.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_positive_tps_profile.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/__pycache__/test_auxiliary_sequential_init.cpython-312-pytest-9.1.1.pyc",
       "name": "test_auxiliary_sequential_init.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_process_manager_health.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager_health.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

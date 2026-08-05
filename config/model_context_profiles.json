@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T13:19:09Z",
+  "generated_at": "2026-08-05T13:33:39Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -62,7 +62,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:17:04Z"
+      "last_tested_at": "2026-08-05T13:32:20Z"
     },
     "gemma4-e4b": {
       "max_context_length": 2048,
@@ -91,7 +91,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:17:38Z"
+      "last_tested_at": "2026-08-05T13:32:54Z"
     },
     "gemma4-12b": {
       "max_context_length": 2048,
@@ -120,7 +120,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:17:50Z"
+      "last_tested_at": "2026-08-05T13:33:06Z"
     },
     "qwen3.5-2b": {
       "max_context_length": 2048,
@@ -149,7 +149,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:18:24Z"
+      "last_tested_at": "2026-08-05T13:33:39Z"
     },
     "qwen3.5-9b": {
       "max_context_length": 2048,
