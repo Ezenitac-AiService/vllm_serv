@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 344,
-  "preserved_files": 344,
+  "total_files_scanned": 346,
+  "preserved_files": 346,
   "archived_files": 0,
   "inventory": [
     {
@@ -1120,6 +1120,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_benchmark_context_window.py",
+      "name": "test_benchmark_context_window.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_legacy_extraction_llm.py",
       "name": "test_legacy_extraction_llm.py",
       "status": "ACTIVE",
@@ -1830,6 +1836,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_rerank_structured_samples.cpython-312-pytest-9.1.1.pyc",
       "name": "test_rerank_structured_samples.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_benchmark_context_window.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_benchmark_context_window.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
