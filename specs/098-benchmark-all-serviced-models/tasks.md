@@ -153,4 +153,4 @@ description: "Task list for feature 098-benchmark-all-serviced-models implementa
 
 **Purpose**: Remediation of gaps identified during convergence assessment (2026-08-05)
 
-- [ ] T025 Fix Stage 3 status string assertion mismatch in `tests/unit/test_setup_benchmark_integration.py::test_evaluate_all_catalog_models_force_benchmark`: test expects `"Multi-Model Catalog Forced Benchmark"` but `evaluate_all_catalog_models()` returns `"SUCCESS (Multi-Model Catalog Forced Real GPU Benchmark)"` — update assertion substring to match implementation per DoD-004 (partial)
+- [X] T025 Fix Stage 3 status string assertion mismatch in `tests/unit/test_setup_benchmark_integration.py::test_evaluate_all_catalog_models_force_benchmark`: test expects `"Multi-Model Catalog Forced Benchmark"` but `evaluate_all_catalog_models()` returns `"SUCCESS (Multi-Model Catalog Forced Real GPU Benchmark)"` — update assertion substring to match implementation per DoD-004 (partial)
