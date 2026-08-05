@@ -45,12 +45,12 @@
         "strict_json_schema": true
     },
     "model": "gemma4-e2b",
-    "context_window": 3584,
+    "context_window": 4096,
     "auto_benchmark_profile": {
         "recommended_model": "gemma4-e2b",
-        "recommended_context_window": 3584,
-        "benchmark_tps": 45.0,
+        "recommended_context_window": 4096,
+        "benchmark_tps": -1.0,
         "vram_used_mb": 4200,
-        "benchmark_timestamp": "2026-08-05T11:48:20Z"
+        "benchmark_timestamp": "2026-08-05T12:32:49Z"
     }
 }

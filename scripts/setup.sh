@@ -892,16 +892,20 @@ log_info "✓ 생성 완료: scripts/status_server.sh (루트 심볼릭 링크 .
 log_step "4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)"
 
 PROFILE_CACHE="$BASE_DIR/config/model_context_profiles.json"
-if [ "$FORCE_BENCHMARK" -eq 1 ]; then
-    log_info "🔥 --force-benchmark 옵션 감지: 기존 캐시를 무시하고 실제 컨텍스트 윈도우 스케일링 벤치마크를 강제 재수행합니다..."
-    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --fine-grained || \
+if [ "$SKIP_BENCHMARK" -eq 1 ]; then
+    log_info "⏩ --skip-benchmark 옵션 감지: Step 4.5 컨텍스트 윈도우 스케일링 벤치마크를 스킵합니다."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --skip-benchmark || log_warn "benchmark_context_window.py --skip-benchmark 실행 중 경고 발생"
+elif [ "$FORCE_BENCHMARK" -eq 1 ]; then
+    log_info "🔥 --force-benchmark 옵션 감지: 기존 캐시를 무시하고 카탈로그 전체 LLM 후보 모델 대상 실측 스케일링 벤치마크를 수행합니다..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --force-benchmark || \
     log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
 elif [ -f "$PROFILE_CACHE" ]; then
-    log_info "✓ 유효한 현지 컨텍스트 윈도우 캐시 감지 ($PROFILE_CACHE)."
-    log_info "기존 현지 캐시 프로필을 재사용합니다. (실제 벤치마크 강제 재수행 시: ./setup.sh --force-benchmark)"
+    log_info "✓ 현지 컨텍스트 윈도우 캐시 감지 ($PROFILE_CACHE)."
+    log_info "부분 캐시 미스 검증 및 기존 현지 캐시 프로필 동기화 수행 중..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" || log_warn "부분 캐시 미스 동기화 중 경고 발생"
 else
     log_info "컨텍스트 윈도우 실측 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
-    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --fine-grained || \
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --force-benchmark || \
     log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
 fi
 

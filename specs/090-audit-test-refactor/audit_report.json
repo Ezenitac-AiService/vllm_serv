@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 320,
-  "preserved_files": 320,
+  "total_files_scanned": 328,
+  "preserved_files": 328,
   "archived_files": 0,
   "inventory": [
     {
@@ -838,6 +838,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/test_benchmark_timeout_fallback.py",
+      "name": "test_benchmark_timeout_fallback.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/__init__.py",
       "name": "__init__.py",
       "status": "ACTIVE",
@@ -870,6 +876,12 @@
     {
       "file_path": "tests/integration/test_dashboard.py",
       "name": "test_dashboard.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_setup_benchmark_integration.py",
+      "name": "test_setup_benchmark_integration.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -960,6 +972,12 @@
     {
       "file_path": "tests/integration/test_auxiliary_503_gate.py",
       "name": "test_auxiliary_503_gate.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/test_multi_model_benchmark.py",
+      "name": "test_multi_model_benchmark.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1104,6 +1122,12 @@
     {
       "file_path": "tests/unit/test_auxiliary_embedding.py",
       "name": "test_auxiliary_embedding.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_partial_cache_miss.py",
+      "name": "test_partial_cache_miss.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1396,6 +1420,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/__pycache__/test_setup_benchmark_integration.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_setup_benchmark_integration.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/__pycache__/test_preflight_proxy_guard.cpython-312-pytest-9.1.1.pyc",
       "name": "test_preflight_proxy_guard.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1422,6 +1452,18 @@
     {
       "file_path": "tests/integration/__pycache__/test_multi_loopback_health_probe.cpython-312-pytest-9.1.1.pyc",
       "name": "test_multi_loopback_health_probe.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_multi_model_benchmark.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_multi_model_benchmark.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_benchmark_timeout_fallback.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_benchmark_timeout_fallback.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1608,6 +1650,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_client_access_logger.cpython-312-pytest-9.1.1.pyc",
       "name": "test_client_access_logger.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_partial_cache_miss.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_partial_cache_miss.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
