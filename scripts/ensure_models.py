@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 vllm_serv: 필수 GGUF 모델 가중치 자동 점검 및 다운로드 헬퍼 스크립트 (scripts/ensure_models.py)
-092-setup-auto-model-download: FR-001, FR-002, FR-003, FR-004, FR-005
+095-setup-benchmark-model-selection: FR-001, FR-008, US4
 
 Setup.sh 구동 과정에서 start_server.sh 구동에 필요한 3종 필수 모델
 (qwen3.5-4b, bge-m3, bge-reranker-v2-m3)의 로컬 존재 여부를 점검하고,

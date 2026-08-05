@@ -412,11 +412,11 @@ if [ -f "$BASE_DIR/scripts/audit_assets.py" ]; then
 fi
 
 # ==============================================================================
-# Step 2.8: 4단계 모듈화 벤치마크 파이프라인 (095-setup-benchmark-model-selection: FR-001..FR-005)
-# Stage 1: 모델 다운로드 (Step 2.6 완수)
-# Stage 2: 무결성 검증
-# Stage 3: 임시 서빙 가동 및 컨텍스트 윈도우(2K~16K) 실측 VRAM/TPS 벤치마크
-# Stage 4: 서비스 모델 선정 및 컨텍스트 윈도우 크기 결정 -> config/server_config.json 원자적 반영
+# Step 2.8: 4단계 모듈화 벤치마크 파이프라인 (095-setup-benchmark-model-selection: FR-001..FR-008)
+# Stage 1: 모델 다운로드 (Step 2.6 ensure_models.py 연동 완수)
+# Stage 2: 헤더 무결성 실체적 검증 (verify_model_integrity)
+# Stage 3: 임시 서빙 가동 및 컨텍스트 윈도우(2K~16K) 실측 GPU VRAM/TPS 벤치마크
+# Stage 4: 최적 서비스 모델 선정 및 컨텍스트 윈도우 크기 결정 -> config/server_config.json 원자적 반영
 # ==============================================================================
 log_step "2.8. 4단계 모듈화 벤치마크 & 최적 서비스 모델/컨텍스트 선정"
 if [ "$SKIP_BENCHMARK" -eq 1 ]; then

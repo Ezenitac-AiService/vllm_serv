@@ -86,12 +86,27 @@
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: User Story 4 - `setup.sh` 연동 하위 스크립트 전면 폴리싱 및 불용 파일 정리 (Priority: P3)
+
+**Goal**: `setup.sh`가 호출하는 연동 하위 스크립트들(`ensure_models.py`, `benchmark_context_window.py`, `start_server.sh`, `stop_server.sh`, `status_server.sh` 등)의 예외 처리, 비대화형 동작 및 100% 경로 분기를 전면 폴리싱하고, 만료된 불용 파일들을 정돈
+
+**Independent Test**: `setup.sh` 구동 시 연동 하위 스크립트들이 예외 없이 완료되고, 불용 파일 없이 깨끗이 정리되는지 검증
+
+### Implementation for User Story 4
+
+- [X] T018 [P] [US4] `scripts/ensure_models.py`, `scripts/start_server.sh`, `scripts/stop_server.sh`, `scripts/status_server.sh` 경로 분기 및 비대화형 예외 처리 전면 폴리싱 (FR-008)
+- [X] T019 [P] [US4] 용도가 상실되었거나 만료된 불용 스크립트 및 더미 파일 정리 및 아카이빙 (FR-009)
+
+**Checkpoint**: User Story 4 완료
+
+---
+
+## Phase 7: Polish & Cross-Cutting Concerns
 
 **Purpose**: 최종 문서화 및 DoD 검증 수행
 
 - [X] T012 [P] `specs/095-setup-benchmark-model-selection/quickstart.md` 가이드 문서 업데이트 (시나리오 4 포함)
-- [X] T013 [Quickstart 실측] Quickstart 시나리오 1~4 전체 수행 및 DoD(DoD-001~005) 달성 최종 검증
+- [X] T013 [Quickstart 실측] Quickstart 시나리오 1~4 전체 수행 및 DoD(DoD-001~006) 달성 최종 검증
 - [X] T017 [P] `README.md` 메인 문서 업데이트 (Step 2.8 4단계 파이프라인, `--skip-benchmark`, `--fine-grained` 이진 탐색 및 3개 플랫폼 매트릭스 수록)
 
 ---
@@ -133,3 +148,18 @@
 1. User Story 1 (4단계 모듈식 파이프라인 연동)
 2. User Story 2 (`--skip-benchmark` 고속 셋업 지원)
 3. User Story 3 (벤치마크 하드코딩 제거 및 이진 탐색 정밀 프로파일링)
+
+---
+
+## Phase 8: Convergence (연동 스크립트 모듈별 정밀 폴리싱 & 불용 파일 정리)
+
+- [X] T020 `scripts/setup.sh` 4단계 파이프라인(Stage 1~4) 호출부, non-blocking subshell 및 예외 트랩 전면 폴리싱 per FR-008, US4 (partial)
+- [X] T021 `scripts/ensure_models.py` 상대/절대 경로 자동 분기 및 모델 다운로드 예외 핸들링 폴리싱 per FR-008, US4 (partial)
+- [X] T022 `scripts/start_server.sh` 백그라운드 데몬 시그널 처리, 8081/8082 Readiness & 원자적 롤백 폴리싱 per FR-008, US4 (partial)
+- [X] T023 `scripts/stop_server.sh` SIGTERM->SIGKILL 2단계 종료 및 NVML VRAM 해제 검증 폴리싱 per FR-008, US4 (partial)
+- [X] T024 `scripts/status_server.sh` 메인/대시보드 PID 점유 및 GPU 메모리 실시간 조회 폴리싱 per FR-008, US4 (partial)
+- [X] T025 `scripts/configure_firewall.sh` 및 `scripts/common.sh` OS 방화벽 패키지 감지 및 로깅 헬퍼 폴리싱 per FR-008, US4 (partial)
+- [X] T026 `scripts/verify_wheel_binary.py` 및 `scripts/update_cuda_drivers.sh` CUDA 하드웨어 검증 스크립트 폴리싱 per FR-008, US4 (partial)
+- [X] T027 `scripts/seed_db.py` 및 `scripts/diagnose_server_health.py` DB 시드 초기화 및 헬스 진단 모듈 폴리싱 per FR-008, US4 (partial)
+- [X] T028 `scripts/audit_assets.py` 자산 감사 및 프로젝트 레거시 탐지 모듈 폴리싱 per FR-008, US4 (partial)
+- [X] T029 불용/만료된 레거시 스크립트 및 더미 임시 파일 전면 탐지 및 아카이빙 정리 per FR-009, US4 (missing)

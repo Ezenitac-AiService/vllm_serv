@@ -50,11 +50,14 @@
    - NVML GPU 실시간 VRAM 스냅샷 및 SSE 스트리밍 기반 실측 TTFT/TPOT 텔레메트리 추출 전환
    - 정밀 이진 탐색 결과를 `config/model_context_profiles.json` 및 `data/reports/analysis_report_quality.md`에 반영
 
-3. **`scripts/setup.sh` (EDIT)**:
-   - Step 2.8에 `--skip-benchmark` 시 `scripts/benchmark_context_window.py --skip-benchmark` 전달 연동
-   - 4단계 파이프라인(Stage 1~4) 및 정밀 모드 구동 로그 개선
+3. **`scripts/setup.sh` 및 연동 하위 스크립트 모듈 (EDIT/REFACTOR)** (FR-008):
+   - `scripts/setup.sh`: Step 2.8에 `--skip-benchmark` 시 `scripts/benchmark_context_window.py --skip-benchmark` 전달 연동, 4단계 파이프라인(Stage 1~4) 및 정밀 모드 구동 로그 개선
+   - `scripts/ensure_models.py`, `scripts/start_server.sh`, `scripts/stop_server.sh`, `scripts/status_server.sh`: 경로 분기 및 예외 처리 전면 폴리싱
 
-4. **`src/core/config_manager.py` (EDIT)**:
+4. **불용/만료 파일 정리 및 아카이빙** (FR-009):
+   - 용도가 다한 임시 스크립트, 레거시 더미 파일 탐지 및 정돈
+
+5. **`src/core/config_manager.py` (EDIT)**:
    - `auto_benchmark_profile` 및 `model_context_profiles` 원자적 저장 및 캐시 무효화 메소드 보완
 
 5. **`tests/unit/test_setup_benchmark_integration.py` (EDIT/EXPAND)**:
