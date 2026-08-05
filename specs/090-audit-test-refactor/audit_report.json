@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 303,
-  "preserved_files": 303,
+  "total_files_scanned": 320,
+  "preserved_files": 320,
   "archived_files": 0,
   "inventory": [
     {
@@ -12,6 +12,12 @@
     {
       "file_path": "scripts/common.sh",
       "name": "common.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/benchmark_context_window.py",
+      "name": "benchmark_context_window.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -30,6 +36,12 @@
     {
       "file_path": "scripts/update_cuda_drivers.sh",
       "name": "update_cuda_drivers.sh",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/ensure_models.py",
+      "name": "ensure_models.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -96,6 +108,18 @@
     {
       "file_path": "scripts/__pycache__/benchmark_quality.cpython-312.pyc",
       "name": "benchmark_quality.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/benchmark_context_window.cpython-312.pyc",
+      "name": "benchmark_context_window.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "scripts/__pycache__/ensure_models.cpython-312.pyc",
+      "name": "ensure_models.cpython-312.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -670,6 +694,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/test_sample_directory_structure.py",
+      "name": "test_sample_directory_structure.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/conftest.py",
       "name": "conftest.py",
       "status": "ACTIVE",
@@ -678,6 +708,30 @@
     {
       "file_path": "tests/__init__.py",
       "name": "__init__.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/test_cuda_env.py",
+      "name": "test_cuda_env.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/test_script_architecture.py",
+      "name": "test_script_architecture.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/test_ensure_models.py",
+      "name": "test_ensure_models.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/test_sample_scripts.py",
+      "name": "test_sample_scripts.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -916,8 +970,26 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/__pycache__/test_script_architecture.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_script_architecture.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/__pycache__/conftest.cpython-312-pytest-9.1.1.pyc",
       "name": "conftest.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_cuda_env.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_cuda_env.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_sample_scripts.cpython-312.pyc",
+      "name": "test_sample_scripts.cpython-312.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -928,8 +1000,38 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/__pycache__/test_ensure_models.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_ensure_models.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_sample_scripts.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_sample_scripts.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_asset_inventory.cpython-312.pyc",
+      "name": "test_asset_inventory.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/__pycache__/__init__.cpython-312.pyc",
       "name": "__init__.cpython-312.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_sample_directory_structure.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_sample_directory_structure.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/__pycache__/test_cuda_env.cpython-312.pyc",
+      "name": "test_cuda_env.cpython-312.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -954,12 +1056,6 @@
     {
       "file_path": "tests/unit/test_config_manager_profiles.py",
       "name": "test_config_manager_profiles.py",
-      "status": "ACTIVE",
-      "action": "PRESERVE"
-    },
-    {
-      "file_path": "tests/unit/test_embedding_samples.py",
-      "name": "test_embedding_samples.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1002,12 +1098,6 @@
     {
       "file_path": "tests/unit/test_auxiliary_circuit_breaker.py",
       "name": "test_auxiliary_circuit_breaker.py",
-      "status": "ACTIVE",
-      "action": "PRESERVE"
-    },
-    {
-      "file_path": "tests/unit/test_rerank_structured_samples.py",
-      "name": "test_rerank_structured_samples.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1066,6 +1156,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_setup_benchmark_integration.py",
+      "name": "test_setup_benchmark_integration.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_llm_payload_viewer.py",
       "name": "test_llm_payload_viewer.py",
       "status": "ACTIVE",
@@ -1120,12 +1216,6 @@
       "action": "PRESERVE"
     },
     {
-      "file_path": "tests/unit/test_chat_samples.py",
-      "name": "test_chat_samples.py",
-      "status": "ACTIVE",
-      "action": "PRESERVE"
-    },
-    {
       "file_path": "tests/unit/test_seed_pack.py",
       "name": "test_seed_pack.py",
       "status": "ACTIVE",
@@ -1158,6 +1248,12 @@
     {
       "file_path": "tests/unit/test_server_health_diagnostics.py",
       "name": "test_server_health_diagnostics.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_hardware_autodetect.py",
+      "name": "test_hardware_autodetect.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1212,12 +1308,6 @@
     {
       "file_path": "tests/unit/test_context_scaling_limits.py",
       "name": "test_context_scaling_limits.py",
-      "status": "ACTIVE",
-      "action": "PRESERVE"
-    },
-    {
-      "file_path": "tests/unit/test_sample_scripts.py",
-      "name": "test_sample_scripts.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1522,6 +1612,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/__pycache__/test_setup_benchmark_integration.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_setup_benchmark_integration.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/__pycache__/test_cpu_detector.cpython-312-pytest-9.1.1.pyc",
       "name": "test_cpu_detector.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1710,6 +1806,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_chat_completion_contract.cpython-312-pytest-9.1.1.pyc",
       "name": "test_chat_completion_contract.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_hardware_autodetect.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_hardware_autodetect.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
