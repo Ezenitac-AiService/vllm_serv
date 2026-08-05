@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnsureModelsCLIArgumentsSchema",
+  "description": "scripts/ensure_models.py CLI 인자 및 구문 규격 검증 계약",
+  "type": "object",
+  "properties": {
+    "all": {
+      "type": "boolean",
+      "default": false,
+      "description": "카탈로그 전체 14개 모델 점검 및 다운로드 플래그 (--all / --download-all)"
+    },
+    "model": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "특정 모델 ID 또는 쉼표 구분 복수 ID (--model qwen3.6-27b,gemma4-26b-a4b)"
+    },
+    "check_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "다운로드 없이 단순 상태 점검 전용 플래그 (--check-only)"
+    },
+    "no_auto_download": {
+      "type": "boolean",
+      "default": false,
+      "description": "자동 다운로드 비활성화 플래그 (--no-auto-download)"
+    }
+  },
+  "dependentRequired": {},
+  "allOf": [
+    {
+      "comment": "Mutual exclusion rule: 'all' and 'model' cannot both be active simultaneously",
+      "not": {
+        "required": ["all", "model"],
+        "properties": {
+          "all": { "const": true },
+          "model": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  ]
+}
