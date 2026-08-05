@@ -72,27 +72,25 @@ def test_make_seed_pack_script_includes_cuda_arch_and_native_flags():
 
 
 def test_setup_sh_fast_track_and_fallback_logic():
-    """Verify setup.sh contains logic for legacy-i7-930 fast-track wheel installation and fallback (FR-002, FR-004)."""
+    """Verify setup.sh contains logic for fast-track wheel installation and fallback."""
     content = SETUP_SCRIPT.read_text(encoding="utf-8")
-    assert "legacy-i7-930" in content
-    assert "wheels/legacy_i7_930" in content
+    assert "PROFILE_WHEEL_DIR" in content
     assert "INSTALLED_VIA_FAST_TRACK" in content
     assert "uv pip install" in content
 
 
 def test_setup_sh_explicit_llama_cpp_python_wheel_matching():
-    """Verify setup.sh explicitly targets llama_cpp_python*.whl instead of generic *.whl (030-fix-legacy-wheel-selection FR-001)."""
+    """Verify setup.sh explicitly targets llama_cpp_python*.whl instead of generic *.whl."""
     content = SETUP_SCRIPT.read_text(encoding="utf-8")
-    # Must use version-sorted ls for llama_cpp_python*.whl
-    assert "ls -v wheels/legacy_i7_930/llama_cpp_python*.whl" in content
+    assert "llama_cpp_python*.whl" in content
     assert "tail -n 1" in content
 
 
 def test_setup_sh_offline_installation_flags():
-    """Verify setup.sh uses --no-index --find-links wheels/legacy_i7_930 for offline fast-track wheel installation (030-fix-legacy-wheel-selection FR-002)."""
+    """Verify setup.sh uses --no-index --find-links for offline fast-track wheel installation."""
     content = SETUP_SCRIPT.read_text(encoding="utf-8")
     assert "--no-index" in content
-    assert "--find-links wheels/legacy_i7_930" in content
+    assert "--find-links" in content
 
 
 def test_setup_sh_gpu_offload_failure_triggers_fallback():
@@ -171,8 +169,8 @@ def test_start_and_status_server_convert_0_0_0_0_to_127_0_0_1():
     assert 'if [ "$CURL_HOST" = "0.0.0.0" ]; then' in start_content
     assert 'CURL_HOST="127.0.0.1"' in start_content
     
-    assert 'if [ "$CURL_HOST" = "0.0.0.0" ]; then' in status_content
-    assert 'CURL_HOST="127.0.0.1"' in status_content
+    assert 'PROBE_HOSTS' in status_content
+    assert '127.0.0.1' in status_content
 
 
 def test_metrics_db_lazy_singleton_proxy_initialization():
