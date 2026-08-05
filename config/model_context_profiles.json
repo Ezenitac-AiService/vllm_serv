@@ -1,10 +1,91 @@
 {
-  "generated_at": "2026-08-05T14:39:58Z",
+  "generated_at": "2026-08-05T15:09:20Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
-    "cuda_version": "13.0",
     "is_cuda_available": true
   },
-  "profiles": {}
+  "profiles": {
+    "gemma4-12b": {
+      "max_context_length": 3584,
+      "recommended_context_length": 3584,
+      "binary_search_steps": [
+        {
+          "step": 1,
+          "tested_n_ctx": 3072,
+          "real_vram_mb": 8607,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 2,
+          "tested_n_ctx": 3584,
+          "real_vram_mb": 8863,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        }
+      ],
+      "peak_vram_mb": 8863,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-05T15:09:19Z"
+    },
+    "qwen3.5-4b": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 3006,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-05T15:09:19Z"
+    },
+    "gemma4-e2b": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 3759,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-05T15:09:13Z"
+    },
+    "gemma4-e4b": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 5851,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-05T15:09:13Z"
+    },
+    "qwen3.5-2b": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 1404,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-05T15:09:19Z"
+    },
+    "qwen3.5-9b": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 6229,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-05T15:09:20Z"
+    }
+  }
 }

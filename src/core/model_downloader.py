@@ -2,8 +2,11 @@
 HuggingFace Hub GGUF & mmproj CLIP 자동 다운로더 모듈 (FR-001, FR-002, FR-003).
 
 지원 모델:
-  - Qwen 3.5 (2B, 4B, 9B) — q4_k_m GGUF
-  - Gemma 4 (E2B, E4B, 12B) — q4_0 GGUF + mmproj CLIP 프로젝터
+  - Qwen 3.5 (2B, 4B, 9B)
+  - Qwen 3.6 (27B, 35B-A3B MoE)
+  - Gemma 4 (E2B, E4B, 12B) with mmproj CLIP
+  - Gemma 4 Text-Only (2B, 4B, 12B) without mmproj
+  - Gemma 4 26B A4B MoE without mmproj
 
 기능:
   - 로컬 파일 미존재 탐지 및 HuggingFace Hub 자동 다운로드

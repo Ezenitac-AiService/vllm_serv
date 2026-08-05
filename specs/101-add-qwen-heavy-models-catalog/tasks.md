@@ -14,7 +14,7 @@
 
 **Purpose**: Project initialization and JSON schema contracts setup
 
-- [ ] T001 Verify contract schema `specs/101-add-qwen-heavy-models-catalog/contracts/model-catalog-schema.json` against `config/model_catalog.json`
+- [X] T001 Verify contract schema `specs/101-add-qwen-heavy-models-catalog/contracts/model-catalog-schema.json` against `config/model_catalog.json`
 
 ---
 
@@ -24,8 +24,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 Update `config/model_catalog.json` to include 6 new models (`qwen3.6-27b`, `qwen3.6-35b-a3b`, `gemma4-26b-a4b`, `gemma4-2b-text`, `gemma4-4b-text`, `gemma4-12b-text`)
-- [ ] T003 [P] Update HuggingFace Hub download mapping in `src/core/model_downloader.py`
+- [X] T002 Update `config/model_catalog.json` to include 6 new models (`qwen3.6-27b`, `qwen3.6-35b-a3b`, `gemma4-26b-a4b`, `gemma4-2b-text`, `gemma4-4b-text`, `gemma4-12b-text`)
+- [X] T003 [P] Update HuggingFace Hub download mapping in `src/core/model_downloader.py`
 
 **Checkpoint**: Model catalog metadata expanded (14 models total).
 
@@ -39,12 +39,12 @@
 
 ### Tests for User Story 1
 
-- [ ] T004 [P] [US1] Add unit test for 14 model catalog items & HuggingFace downloader path resolution in `tests/unit/test_model_downloader.py`
+- [X] T004 [P] [US1] Add unit test for 14 model catalog items & HuggingFace downloader path resolution in `tests/unit/test_model_downloader.py`
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Update catalog downloader reconciliation logic in `src/core/model_downloader.py`
-- [ ] T006 [US1] Update dynamic model catalog keys query in `scripts/ensure_models.py` (ensure `requires_mmproj: false` text-only models skip CLIP projector integrity checks)
+- [X] T005 [US1] Update catalog downloader reconciliation logic in `src/core/model_downloader.py`
+- [X] T006 [US1] Update dynamic model catalog keys query in `scripts/ensure_models.py` (ensure `requires_mmproj: false` text-only models skip CLIP projector integrity checks)
 
 **Checkpoint**: User Story 1 complete - all 14 models defined, loaded, and verified via unit tests.
 
@@ -58,12 +58,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T007 [P] [US2] Add unit test for candidate LLM models filtering (12 LLMs) & Pre-flight Usable VRAM check (covering multi-tier 8G/11G/24G/32G/40G/80G VRAM parametric testing) in `tests/unit/test_benchmark_context_window.py`
+- [X] T007 [P] [US2] Add unit test for candidate LLM models filtering (12 LLMs) & Pre-flight Usable VRAM check (covering multi-tier 8G/11G/24G/32G/40G/80G VRAM parametric testing) in `tests/unit/test_benchmark_context_window.py`
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Verify `get_candidate_llm_models()` in `scripts/benchmark_context_window.py` dynamically loads all 12 candidate LLM models
-- [ ] T009 [US2] Verify pre-flight VRAM threshold calculation (`Usable VRAM < Base VRAM`) in `scripts/benchmark_context_window.py` to record `is_supported: false` and `CUDA OOM Risk` without throwing exceptions
+- [X] T008 [US2] Verify `get_candidate_llm_models()` in `scripts/benchmark_context_window.py` dynamically loads all 12 candidate LLM models
+- [X] T009 [US2] Verify pre-flight VRAM threshold calculation (`Usable VRAM < Base VRAM`) in `scripts/benchmark_context_window.py` to record `is_supported: false` and `CUDA OOM Risk` without throwing exceptions
 
 **Checkpoint**: User Story 2 complete - heavy models safely excluded during benchmark, valid model selected for serving.
 

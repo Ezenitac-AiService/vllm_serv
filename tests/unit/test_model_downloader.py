@@ -62,8 +62,8 @@ class TestModelDownloadCatalog:
     """MODEL_DOWNLOAD_CATALOG 카탈로그 무결성 단위 테스트."""
 
     def test_catalog_has_six_models(self):
-        """카탈로그에 Qwen 3.5 3종 + Gemma 4 3종 + BGE-M3 + BGE-Reranker = 8개 모델이 등록되어야 함."""
-        assert len(MODEL_DOWNLOAD_CATALOG) == 8
+        """카탈로그에 Qwen 3.5 3종 + Gemma 4 3종 + BGE-M3 + BGE-Reranker + 신규 6종 = 14개 모델이 등록되어야 함."""
+        assert len(MODEL_DOWNLOAD_CATALOG) == 14
 
     def test_qwen_models_no_clip(self):
         """Qwen 3.5 모델은 CLIP mmproj가 없어야 함."""
@@ -83,6 +83,39 @@ class TestModelDownloadCatalog:
             assert "repo_id" in entry, f"{model_id}: repo_id 누락"
             assert "filename" in entry, f"{model_id}: filename 누락"
             assert "target_dir" in entry, f"{model_id}: target_dir 누락"
+
+    def test_new_qwen36_models_no_clip(self):
+        """verify qwen3.6-27b and qwen3.6-35b-a3b have clip_filename: null and requires_mmproj: false"""
+        for model_id in ["qwen3.6-27b", "qwen3.6-35b-a3b"]:
+            entry = MODEL_DOWNLOAD_CATALOG[model_id]
+            assert entry.get("clip_filename") is None
+            assert entry.get("requires_mmproj") is False
+
+    def test_gemma4_text_only_models_no_clip(self):
+        """verify gemma4-2b-text, gemma4-4b-text, gemma4-12b-text have clip_filename: null and requires_mmproj: false"""
+        for model_id in ["gemma4-2b-text", "gemma4-4b-text", "gemma4-12b-text"]:
+            entry = MODEL_DOWNLOAD_CATALOG[model_id]
+            assert entry.get("clip_filename") is None
+            assert entry.get("requires_mmproj") is False
+
+    def test_gemma4_26b_a4b_moe_model(self):
+        """verify gemma4-26b-a4b has requires_mmproj: false and vram_est_mb: 18800"""
+        entry = MODEL_DOWNLOAD_CATALOG["gemma4-26b-a4b"]
+        assert entry.get("requires_mmproj") is False
+        assert entry.get("vram_est_mb") == 18800
+
+    def test_all_14_models_have_required_schema_fields(self):
+        """verify all 14 models have: name, repo_id, filename, target_dir, model_path, default_n_ctx, vram_est_mb, requires_mmproj, quant_type, size_gb"""
+        required_fields = ["name", "repo_id", "filename", "target_dir", "model_path", "default_n_ctx", "vram_est_mb", "requires_mmproj", "quant_type", "size_gb"]
+        for model_id, entry in MODEL_DOWNLOAD_CATALOG.items():
+            for field in required_fields:
+                assert field in entry, f"{model_id}: {field} 누락"
+
+    def test_vram_estimates_are_plausible(self):
+        """verify all vram_est_mb values are >= 100 and size_gb >= 0.1"""
+        for model_id, entry in MODEL_DOWNLOAD_CATALOG.items():
+            assert entry["vram_est_mb"] >= 100, f"{model_id}: 비정상 vram_est_mb"
+            assert entry["size_gb"] >= 0.1, f"{model_id}: 비정상 size_gb"
 
 
 class TestModelDownloader:

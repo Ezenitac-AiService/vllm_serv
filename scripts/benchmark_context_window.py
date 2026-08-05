@@ -490,6 +490,24 @@ def evaluate_all_catalog_models(force: bool = True) -> Dict[str, Any]:
         rel_path = model_cfg.get("model_path", f"models/{model_name}/{model_name}.gguf")
         abs_model_path = config_mgr.get_absolute_path(rel_path) or str(REPO_ROOT / rel_path)
 
+        # Pre-flight VRAM check: exclude models exceeding usable VRAM
+        try:
+            from src.core.cpu_detector import detect_gpu_capability_safe
+            gpu_info = detect_gpu_capability_safe()
+            total_vram = gpu_info.total_vram_mb
+        except Exception:
+            total_vram = 8192
+        
+        usable_vram = max(0, total_vram - 500)
+        vram_est = model_cfg.get("vram_est_mb", 0)
+        
+        if vram_est > usable_vram:
+            reason = f"CUDA OOM Risk: Base VRAM ({vram_est}MB) exceeds Usable VRAM ({usable_vram}MB)"
+            res = _record_unsupported_fallback_profile(model_name, reason=reason)
+            results[model_name] = res
+            print(f"    └─ Pre-flight VRAM exclusion: {reason}")
+            continue
+
         integrity = verify_model_integrity(abs_model_path)
         status_str = "✓ PASSED" if integrity else "⚠️ WARN (Local file absent)"
         print(f"  - [{model_name}] GGUF 무결성 점검: {status_str}")
