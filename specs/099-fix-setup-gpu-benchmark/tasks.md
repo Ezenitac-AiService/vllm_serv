@@ -35,9 +35,9 @@ description: "Task list for feature 099-fix-setup-gpu-benchmark implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 [P] Add `--host 127.0.0.1` and `-ngl 99` default arguments to `llama-server` process spawn logic in `src/core/process_manager.py`
-- [ ] T004 [P] Add `signal` (SIGINT/SIGTERM) and `atexit` handlers calling `force_kill_zombie_llama_servers()` in `src/core/process_manager.py`
-- [ ] T005 [P] Create unit tests for `/health` polling helper and process cleanup in `tests/unit/test_process_manager_health.py`
+- [x] T003 [P] Add `--host 127.0.0.1` and `-ngl 99` default arguments to `llama-server` process spawn logic in `src/core/process_manager.py`
+- [x] T004 [P] Add `signal` (SIGINT/SIGTERM) and `atexit` handlers calling `force_kill_zombie_llama_servers()` in `src/core/process_manager.py`
+- [x] T005 [P] Create unit tests for `/health` polling helper and process cleanup in `tests/unit/test_process_manager_health.py`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -53,15 +53,15 @@ description: "Task list for feature 099-fix-setup-gpu-benchmark implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T006 [P] [US1] Create failing integration test for `/health` polling ready check and real GPU warmup in `tests/integration/test_gpu_spawn_warmup.py`
-- [ ] T007 [P] [US1] Create failing unit test for `is_supported` positive TPS profile recording in `tests/unit/test_positive_tps_profile.py`
+- [x] T006 [P] [US1] Create failing integration test for `/health` polling ready check and real GPU warmup in `tests/integration/test_gpu_spawn_warmup.py`
+- [x] T007 [P] [US1] Create failing unit test for `is_supported` positive TPS profile recording in `tests/unit/test_positive_tps_profile.py`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Implement async `/health` polling helper (`poll_server_health(port, timeout=10.0, interval=0.2)`) using `httpx` in `src/core/process_manager.py`
-- [ ] T009 [US1] Refactor `_execute_single_binary_search_inner()` in `scripts/benchmark_context_window.py` to call `/health` polling before sending `/v1/chat/completions` warmup POST
-- [ ] T010 [US1] Ensure proper model GGUF file path resolution and `-ngl 99` flag passing in `scripts/benchmark_context_window.py` and `src/core/process_manager.py`
-- [ ] T011 [US1] Verify all tests pass in `tests/integration/test_gpu_spawn_warmup.py` and `tests/unit/test_positive_tps_profile.py`
+- [x] T008 [US1] Implement async `/health` polling helper (`poll_server_health(port, timeout=10.0, interval=0.2)`) using `httpx` in `src/core/process_manager.py`
+- [x] T009 [US1] Refactor `_execute_single_binary_search_inner()` in `scripts/benchmark_context_window.py` to call `/health` polling before sending `/v1/chat/completions` warmup POST
+- [x] T010 [US1] Ensure proper model GGUF file path resolution and `-ngl 99` flag passing in `scripts/benchmark_context_window.py` and `src/core/process_manager.py`
+- [x] T011 [US1] Verify all tests pass in `tests/integration/test_gpu_spawn_warmup.py` and `tests/unit/test_positive_tps_profile.py`
 
 **Checkpoint**: At this point, User Story 1 (MVP) is fully functional and testable independently
 
@@ -71,16 +71,16 @@ description: "Task list for feature 099-fix-setup-gpu-benchmark implementation"
 
 **Goal**: Step 2.8에서 카탈로그 전체 모델 벤치마크 완료 시 Step 4.5에서 무필요한 재벤치마크를 건너뛰고 5초 이내 고속 통과(Smart Skip)
 
-**Independent Test**: `./setup.sh --force-benchmark` 구동 시 Step 2.8에서 전체 실측 벤치마크가 수행된 후 Step 4.5에서는 "캐시 프로필 완비"로 감지하여 5초 이내에 추가 재벤치마킹 없이 완료되는지 검증
+**Independent Test**: `./setup.sh --force-benchmark` 구동 시 Step 2.8에서 전체 실측 벤치마크가 수행된 후 Step 4.5에서는 "캐시 프로필 완비"로 감지하여 5초 이내에 추가 재벤치마킹 없이 완료되는지 로그를 검증
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
-- [ ] T012 [P] [US2] Create failing shell integration test for `./setup.sh --force-benchmark` Step 4.5 smart skip behavior in `tests/integration/test_setup_smart_skip.py`
+- [x] T012 [P] [US2] Create failing shell integration test for `./setup.sh --force-benchmark` Step 4.5 smart skip behavior in `tests/integration/test_setup_smart_skip.py`
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Refactor Step 4.5 in `scripts/setup.sh` to check `config/model_context_profiles.json` cache freshness after Step 2.8 and bypass duplicate `--force-benchmark` execution
-- [ ] T014 [US2] Verify shell integration tests pass in `tests/integration/test_setup_smart_skip.py`
+- [x] T013 [US2] Refactor Step 4.5 in `scripts/setup.sh` to check `config/model_context_profiles.json` cache freshness after Step 2.8 and bypass duplicate `--force-benchmark` execution
+- [x] T014 [US2] Verify shell integration tests pass in `tests/integration/test_setup_smart_skip.py`
 
 **Checkpoint**: User Story 1 and 2 are fully integrated and independently testable
 

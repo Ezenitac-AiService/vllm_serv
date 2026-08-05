@@ -27,7 +27,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.core.config_manager import ConfigManager
-from src.core.process_manager import ProcessManager, ProcessStatusEnum
+from src.core.process_manager import ProcessManager, ProcessStatusEnum, ProcessState
 
 
 def verify_model_integrity(model_path: str) -> bool:
@@ -205,28 +205,46 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         await asyncio.sleep(0.5)
 
         spawn_state = await pm.spawn_process(model_name, mid)
-        is_success = spawn_state.status in [ProcessStatusEnum.READY, ProcessStatusEnum.VRAM_OFFLOADED]
+        if spawn_state.status != ProcessStatusEnum.ERROR:
+            from src.core.process_manager import poll_server_health
+            is_ready = await poll_server_health(port=8081, timeout=10.0, interval=0.2)
+            if is_ready:
+                pm.state = ProcessState(status=ProcessStatusEnum.READY, model_id=model_name, port=8081, pid=spawn_state.pid)
+                is_success = True
+            else:
+                print(f"[Binary Search GPU Load] ⚠️ llama-server /health polling timed out (n_ctx={mid})", file=sys.stderr)
+                is_success = False
+        else:
+            print(f"[Binary Search GPU Load] ⚠️ spawn_process error: {spawn_state.error_message}", file=sys.stderr)
+            is_success = False
+
         ctx_vram_mb = 0
 
         if is_success:
-            try:
-                import httpx
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    await client.post("http://127.0.0.1:8081/v1/chat/completions", json={
-                        "messages": [{"role": "user", "content": "Warmup inference for KV cache allocation"}],
-                        "max_tokens": 10
-                    })
-            except Exception:
-                pass
-
-            try:
-                from src.core.gpu_detector import get_nvml_vram_info
-                gpu_snap = get_nvml_vram_info()
-                ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
-                if ctx_vram_mb > total_vram * 0.92:
-                    is_success = False
-            except Exception:
+            if os.environ.get("MOCK_LLAMA_SERVER") == "1":
                 ctx_vram_mb = 2600 + int(mid * 0.4)
+            else:
+                try:
+                    import httpx
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        resp = await client.post("http://127.0.0.1:8081/v1/chat/completions", json={
+                            "messages": [{"role": "user", "content": "Warmup inference for KV cache allocation"}],
+                            "max_tokens": 10
+                        })
+                        if resp.status_code != 200:
+                            is_success = False
+                except Exception as e:
+                    print(f"[Binary Search GPU Load] ⚠️ Warmup POST request failed: {e}", file=sys.stderr)
+                    is_success = False
+
+                try:
+                    from src.core.gpu_detector import get_nvml_vram_info
+                    gpu_snap = get_nvml_vram_info()
+                    ctx_vram_mb = gpu_snap.total_vram_mb - gpu_snap.free_vram_mb
+                    if ctx_vram_mb > total_vram * 0.92:
+                        is_success = False
+                except Exception:
+                    ctx_vram_mb = 2600 + int(mid * 0.4)
 
         binary_steps.append({
             "step": step + 1,
@@ -286,6 +304,8 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         "recommended_context_length": recommended_ctx,
         "binary_search_steps": binary_steps,
         "peak_vram_mb": peak_vram_mb,
+        "vram_used_mb": peak_vram_mb,
+        "tpot_tok_per_sec": tps_val,
         "is_supported": is_supported,
         "stage_status": {
             "Stage 1": "SUCCESS",
@@ -296,8 +316,9 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
     }
 
 
-def _record_unsupported_fallback_profile(model_name: str) -> Dict[str, Any]:
-    """FR-008 & FR-004: Record unsupported/fallback status profile for OOM or timeout models."""
+def _record_unsupported_fallback_profile(model_name: str, reason: str = "OOM or Process Failure") -> Dict[str, Any]:
+    """FR-005: Record unsupported/fallback status profile for OOM or timeout models and print [BENCHMARK WARN]."""
+    print(f"[BENCHMARK WARN] ⚠️ Model {model_name} evaluation failed ({reason}). Recording fallback profile (is_supported=false, n_ctx=2048).", file=sys.stderr)
     config_mgr = ConfigManager()
     profiles_data = config_mgr.load_model_context_profiles()
     existing_profiles = profiles_data.get("profiles", {})

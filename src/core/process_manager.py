@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import collections
 import datetime
 import os
@@ -9,6 +10,7 @@ import socket
 import subprocess
 import sys
 import time
+import httpx
 from enum import Enum
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,6 +25,44 @@ from src.core.gpu_detector import (
     VramOverflowError,
     PortCollisionError
 )
+
+_signal_handlers_registered = False
+
+def register_process_cleanup_hooks() -> None:
+    """FR-003: Register signal (SIGINT/SIGTERM) & atexit hooks to force kill zombie llama-servers."""
+    global _signal_handlers_registered
+    if _signal_handlers_registered:
+        return
+    _signal_handlers_registered = True
+    atexit.register(ProcessManager.force_kill_zombie_llama_servers)
+
+    def _sig_handler(sig, frame):
+        ProcessManager.force_kill_zombie_llama_servers()
+        sys.exit(128 + sig)
+
+    for s in (signal.SIGINT, signal.SIGTERM):
+        try:
+            signal.signal(s, _sig_handler)
+        except (ValueError, OSError):
+            pass
+
+async def poll_server_health(port: int = 8081, timeout: float = 10.0, interval: float = 0.2) -> bool:
+    """FR-002: Poll /health endpoint up to timeout (max 10s) with 0.2s interval until HTTP 200 OK."""
+    if os.environ.get("MOCK_LLAMA_SERVER") == "1":
+        return True
+
+    url = f"http://127.0.0.1:{port}/health"
+    start_time = time.perf_counter()
+    while (time.perf_counter() - start_time) < timeout:
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(url, timeout=0.5)
+                if res.status_code == 200:
+                    return True
+        except Exception:
+            pass
+        await asyncio.sleep(interval)
+    return False
 
 class ProcessStatusEnum(str, Enum):
     UNLOADED = "UNLOADED"
@@ -158,6 +198,7 @@ class ProcessManager:
         self.state: ProcessState = ProcessState(status=ProcessStatusEnum.UNLOADED, port=self.port)
         self.vram_offload_status: Optional[VramOffloadStatus] = None
         self._log_drain_task: Optional[asyncio.Task] = None
+        register_process_cleanup_hooks()
 
 
     def verify_vram_released(self, baseline_free_vram_mb: int = 0, tolerance_mb: int = 200) -> bool:
@@ -597,7 +638,7 @@ class ProcessManager:
         env["CUDA_VISIBLE_DEVICES"] = "0"
 
         server_cfg = self._config_manager.get_server_config()
-        bind_host = server_cfg.get("host", "0.0.0.0")
+        bind_host = server_cfg.get("host", "127.0.0.1")
 
         if binary_info.build_source != "PYTHON_MODULE_FALLBACK":
             cmd = [

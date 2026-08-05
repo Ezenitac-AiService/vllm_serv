@@ -889,23 +889,23 @@ chmod +x "$BASE_DIR/scripts/status_server.sh"
 ln -sf "$BASE_DIR/scripts/status_server.sh" "$BASE_DIR/status_server.sh"
 log_info "✓ 생성 완료: scripts/status_server.sh (루트 심볼릭 링크 ./status_server.sh)"
 
-log_step "4.5 컨텍스트 윈도우 스케일링 벤치마크 (Non-blocking & Fallback)"
+log_step "4.5 컨텍스트 윈도우 스케일링 벤치마크 (Smart Skip & Fallback)"
 
 PROFILE_CACHE="$BASE_DIR/config/model_context_profiles.json"
 if [ "$SKIP_BENCHMARK" -eq 1 ]; then
     log_info "⏩ --skip-benchmark 옵션 감지: Step 4.5 컨텍스트 윈도우 스케일링 벤치마크를 스킵합니다."
     "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --skip-benchmark || log_warn "benchmark_context_window.py --skip-benchmark 실행 중 경고 발생"
+elif [ -f "$PROFILE_CACHE" ]; then
+    log_info "⚡ Step 2.8에서 실측 벤치마크 및 캐시 생성 완납 감지 ($PROFILE_CACHE)."
+    log_info "Step 4.5 캐시 프로필 재활용으로 고속 스킵 (Smart Skip)..."
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --skip-benchmark || log_warn "Smart Skip 프로필 검증 중 경고 발생"
 elif [ "$FORCE_BENCHMARK" -eq 1 ]; then
-    log_info "🔥 --force-benchmark 옵션 감지: 기존 캐시를 무시하고 카탈로그 전체 LLM 후보 모델 대상 실측 스케일링 벤치마크를 수행합니다..."
+    log_info "🔥 --force-benchmark 옵션 감지: 카탈로그 전체 LLM 후보 모델 대상 실측 스케일링 벤치마크를 수행합니다..."
     "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --force-benchmark || \
     log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
-elif [ -f "$PROFILE_CACHE" ]; then
-    log_info "✓ 현지 컨텍스트 윈도우 캐시 감지 ($PROFILE_CACHE)."
-    log_info "부분 캐시 미스 검증 및 기존 현지 캐시 프로필 동기화 수행 중..."
-    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" || log_warn "부분 캐시 미스 동기화 중 경고 발생"
 else
     log_info "컨텍스트 윈도우 실측 벤치마크 실행 및 config/model_context_profiles.json 캐싱 중..."
-    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --force-benchmark || \
+    "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" || \
     log_warn "컨텍스트 벤치마크 실측 실패/건너뜀 (기본 프로필로 진행)."
 fi
 

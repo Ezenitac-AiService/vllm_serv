@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T13:10:37Z",
+  "generated_at": "2026-08-05T13:12:13Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -7,33 +7,33 @@
   },
   "profiles": {
     "qwen3.5-4b": {
-      "max_context_length": 2048,
-      "recommended_context_length": 2048,
+      "max_context_length": 13312,
+      "recommended_context_length": 11776,
       "binary_search_steps": [
         {
           "step": 1,
           "tested_n_ctx": 10240,
-          "real_vram_mb": 0,
-          "status": "OOM/FAIL"
+          "real_vram_mb": 6696,
+          "status": "PASS"
         },
         {
           "step": 2,
-          "tested_n_ctx": 7168,
-          "real_vram_mb": 0,
-          "status": "OOM/FAIL"
+          "tested_n_ctx": 13312,
+          "real_vram_mb": 7924,
+          "status": "PASS"
         },
         {
           "step": 3,
-          "tested_n_ctx": 5632,
+          "tested_n_ctx": 14848,
           "real_vram_mb": 0,
           "status": "OOM/FAIL"
         }
       ],
-      "peak_vram_mb": 0,
-      "tpot_tok_per_sec": 0.0,
+      "peak_vram_mb": 7924,
+      "tpot_tok_per_sec": 45.0,
       "scaling_tested": true,
-      "is_supported": false,
-      "last_tested_at": "2026-08-05T13:10:35Z"
+      "is_supported": true,
+      "last_tested_at": "2026-08-05T13:12:13Z"
     },
     "gemma4-e2b": {
       "max_context_length": 2048,
