@@ -1,76 +1,10 @@
 {
-  "generated_at": "2026-08-05T14:31:41Z",
+  "generated_at": "2026-08-05T14:39:58Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
+    "cuda_version": "13.0",
     "is_cuda_available": true
   },
-  "profiles": {
-    "qwen3.5-4b": {
-      "max_context_length": 4096,
-      "recommended_context_length": 4096,
-      "binary_search_steps": [],
-      "peak_vram_mb": 3006,
-      "tpot_tok_per_sec": 45.0,
-      "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-05T14:25:04Z"
-    },
-    "gemma4-e2b": {
-      "max_context_length": 4096,
-      "recommended_context_length": 4096,
-      "binary_search_steps": [],
-      "peak_vram_mb": 3759,
-      "tpot_tok_per_sec": 45.0,
-      "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-05T14:24:58Z"
-    },
-    "gemma4-e4b": {
-      "max_context_length": 4096,
-      "recommended_context_length": 4096,
-      "binary_search_steps": [],
-      "peak_vram_mb": 5851,
-      "tpot_tok_per_sec": 45.0,
-      "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-05T14:24:58Z"
-    },
-    "gemma4-12b": {
-      "max_context_length": 2048,
-      "recommended_context_length": 2048,
-      "binary_search_steps": [],
-      "peak_vram_mb": 0,
-      "tpot_tok_per_sec": 0.0,
-      "scaling_tested": false,
-      "is_supported": false,
-      "failure_reason": "CUDA OOM",
-      "last_tested_at": "2026-08-05T14:31:41Z"
-    },
-    "qwen3.5-2b": {
-      "max_context_length": 4096,
-      "recommended_context_length": 4096,
-      "binary_search_steps": [],
-      "peak_vram_mb": 1404,
-      "tpot_tok_per_sec": 45.0,
-      "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-05T14:25:04Z"
-    },
-    "qwen3.5-9b": {
-      "max_context_length": 4096,
-      "recommended_context_length": 4096,
-      "binary_search_steps": [],
-      "peak_vram_mb": 6229,
-      "tpot_tok_per_sec": 45.0,
-      "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-05T14:25:04Z"
-    }
-  }
+  "profiles": {}
 }

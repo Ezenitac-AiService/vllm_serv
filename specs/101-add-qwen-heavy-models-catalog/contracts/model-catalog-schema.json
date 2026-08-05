@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ModelCatalog",
+  "type": "object",
+  "additionalProperties": {
+    "type": "object",
+    "required": [
+      "name",
+      "repo_id",
+      "filename",
+      "target_dir",
+      "model_path",
+      "default_n_ctx",
+      "vram_est_mb",
+      "requires_mmproj",
+      "quant_type",
+      "size_gb"
+    ],
+    "properties": {
+      "name": { "type": "string" },
+      "repo_id": { "type": "string" },
+      "filename": { "type": "string" },
+      "clip_filename": { "type": ["string", "null"] },
+      "target_dir": { "type": "string" },
+      "model_path": { "type": "string" },
+      "clip_path": { "type": ["string", "null"] },
+      "chat_template": { "type": ["string", "null"] },
+      "default_n_ctx": { "type": "integer", "minimum": 512 },
+      "vram_est_mb": { "type": "integer", "minimum": 100 },
+      "requires_mmproj": { "type": "boolean" },
+      "quant_type": { "type": "string" },
+      "size_gb": { "type": "number", "minimum": 0.1 },
+      "task_type": { "type": "string", "enum": ["llm", "embedding", "rerank"] },
+      "default_port": { "type": "integer" }
+    }
+  }
+}
