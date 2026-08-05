@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T08:21:34Z",
+  "generated_at": "2026-08-05T08:23:52Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -32,7 +32,7 @@
       "peak_vram_mb": 8744,
       "tpot_tok_per_sec": 42.5,
       "scaling_tested": true,
-      "last_tested_at": "2026-08-05T08:21:34Z"
+      "last_tested_at": "2026-08-05T08:23:52Z"
     }
   }
 }
