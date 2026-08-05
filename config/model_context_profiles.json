@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T12:32:49Z",
+  "generated_at": "2026-08-05T13:10:37Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -33,7 +33,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T12:32:47Z"
+      "last_tested_at": "2026-08-05T13:10:35Z"
     },
     "gemma4-e2b": {
       "max_context_length": 2048,
@@ -62,7 +62,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T12:32:39Z"
+      "last_tested_at": "2026-08-05T13:10:27Z"
     },
     "gemma4-e4b": {
       "max_context_length": 2048,
@@ -91,7 +91,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T12:32:41Z"
+      "last_tested_at": "2026-08-05T13:10:29Z"
     },
     "gemma4-12b": {
       "max_context_length": 2048,
@@ -120,7 +120,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T12:32:43Z"
+      "last_tested_at": "2026-08-05T13:10:31Z"
     },
     "qwen3.5-2b": {
       "max_context_length": 2048,
@@ -149,7 +149,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T12:32:45Z"
+      "last_tested_at": "2026-08-05T13:10:33Z"
     },
     "qwen3.5-9b": {
       "max_context_length": 2048,
@@ -178,7 +178,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T12:32:49Z"
+      "last_tested_at": "2026-08-05T13:10:37Z"
     }
   }
 }
