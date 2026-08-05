@@ -432,6 +432,11 @@ if [ "$SKIP_BENCHMARK" -eq 1 ]; then
     if [ -f "$BASE_DIR/scripts/benchmark_context_window.py" ]; then
         "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --skip-benchmark || log_warn "benchmark_context_window.py --skip-benchmark 실행 중 경고 발생"
     fi
+elif [ "$FORCE_BENCHMARK" -eq 1 ]; then
+    log_info "🔥 --force-benchmark 옵션 감지: 카탈로그 전체 LLM 후보 모델 대상 강제 실측 벤치마킹 수행 중..."
+    if [ -f "$BASE_DIR/scripts/benchmark_context_window.py" ]; then
+        "$VENV_PYTHON" "$BASE_DIR/scripts/benchmark_context_window.py" --force-benchmark || log_warn "benchmark_context_window.py 실행 중 경고 발생"
+    fi
 else
     if [ -f "$BASE_DIR/scripts/benchmark_context_window.py" ]; then
         log_info "4단계 모듈화 벤치마크 및 설정 자동 반영 수행 중 (scripts/benchmark_context_window.py)..."

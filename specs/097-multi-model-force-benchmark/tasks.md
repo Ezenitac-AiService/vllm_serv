@@ -1,28 +1,28 @@
 # Tasks: Full Multi-Model GPU Benchmarking & Forced Optimization Pipeline
 
 **Feature**: 097-multi-model-force-benchmark  
-**Status**: IN_PROGRESS  
+**Status**: COMPLETED  
 
 ---
 
 ## Phase 1: Setup & Foundational
 
-- [ ] T001 Inspect `config/model_catalog.json` and candidate LLM models parsing in `scripts/benchmark_context_window.py`
+- [X] T001 Inspect `config/model_catalog.json` and candidate LLM models parsing in `scripts/benchmark_context_window.py`
 
 ---
 
 ## Phase 2: User Story 1 - Multi-Model Catalog Evaluation & Forced Benchmarking
 
-- [ ] T002 [P] [US1] Add `--force-benchmark` and catalog iteration logic in `scripts/benchmark_context_window.py` to evaluate all candidate LLM models
-- [ ] T003 [P] [US1] Update `scripts/setup.sh` Step 2.8 and Step 4.5 to pass `--force-benchmark` down to `benchmark_context_window.py`
-- [ ] T004 [P] [US1] Implement automatic selection of optimal serving model and context window determination via fine-grained binary search in `scripts/benchmark_context_window.py`
+- [X] T002 [P] [US1] Add `--force-benchmark` and catalog iteration logic in `scripts/benchmark_context_window.py` to evaluate all candidate LLM models
+- [X] T003 [P] [US1] Update `scripts/setup.sh` Step 2.8 and Step 4.5 to pass `--force-benchmark` down to `benchmark_context_window.py`
+- [X] T004 [P] [US1] Implement automatic selection of optimal serving model and context window determination via fine-grained binary search in `scripts/benchmark_context_window.py`
 
 ---
 
 ## Phase 3: Polish & Validation
 
-- [ ] T005 [P] Run `./setup.sh --force-benchmark` validation scenario per `quickstart.md`
-- [ ] T006 [P] Update unit test suite in `tests/unit/test_setup_benchmark_integration.py` to test multi-model forced benchmark catalog iteration
+- [X] T005 [P] Run `./setup.sh --force-benchmark` validation scenario per `quickstart.md`
+- [X] T006 [P] Update unit test suite in `tests/unit/test_setup_benchmark_integration.py` to test multi-model forced benchmark catalog iteration
 
 ---
 
