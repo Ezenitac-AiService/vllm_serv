@@ -18,7 +18,7 @@
 
 **Purpose**: Logging directory initialization and permissions setup
 
-- [ ] T001 Verify `logs/` directory creation and ensure append write permissions for `logs/benchmark.log` and `logs/error.log` in `scripts/setup.sh`
+- [x] T001 Verify `logs/` directory creation and ensure append write permissions for `logs/benchmark.log` and `logs/error.log` in `scripts/setup.sh`
 
 ---
 
@@ -26,8 +26,8 @@
 
 **Purpose**: Unit test harnesses for logging, dynamic VRAM calculation, and profile persistence
 
-- [ ] T002 Create unit test harness `TestProcessManagerLogging` in `tests/unit/test_process_manager_logging.py` importing `ProcessManager` and `asyncio` stream mocks
-- [ ] T003 [P] Create unit test harness `TestDynamicVramCalculation` in `tests/unit/test_dynamic_vram_calculation.py` importing `get_nvml_vram_info` and `estimate_kv_cache_vram`
+- [x] T002 Create unit test harness `TestProcessManagerLogging` in `tests/unit/test_process_manager_logging.py` importing `ProcessManager` and `asyncio` stream mocks
+- [x] T003 [P] Create unit test harness `TestDynamicVramCalculation` in `tests/unit/test_dynamic_vram_calculation.py` importing `get_nvml_vram_info` and `estimate_kv_cache_vram`
 
 ---
 
@@ -39,12 +39,12 @@
 
 ### Implementation & Tests for User Story 1
 
-- [ ] T004 [P] [US1] Write unit test `test_drain_stdout_flushes_to_log_file()` in `tests/unit/test_process_manager_logging.py` asserting `StreamReader` output is immediately written and `flush()`ed to `logs/benchmark.log`
-- [ ] T005 [US1] Open `logs/benchmark.log` in append mode within `_drain_stdout(self, stream: asyncio.StreamReader)` in `src/core/process_manager.py` and call `log_file.flush()` after every `stream.readline()` iteration
-- [ ] T006 [US1] Implement circular buffer `recent_lines = collections.deque(maxlen=50)` inside `_drain_stdout()` in `src/core/process_manager.py` to capture recent subprocess logs
-- [ ] T007 [US1] Write crash/timeout dump logic inside `_drain_stdout()` in `src/core/process_manager.py` to write the last 20 lines from `recent_lines` to `logs/error.log` and `logs/benchmark.log` when `self.process.returncode != 0` (including explicit Exit Code 137 / SIGKILL Kernel OOM Killer header insertion)
-- [ ] T008 [US1] Refactor `stop_process()` in `src/core/process_manager.py` to feed EOF to pipe transport and await `_log_drain_task` completion with a 2.0s timeout before calling task cancellation, preventing log loss on process termination
-- [ ] T009 [US1] Verify US1 log streaming, real-time flushing, and error tail dumping with `uv run pytest tests/unit/test_process_manager_logging.py`
+- [x] T004 [P] [US1] Write unit test `test_drain_stdout_flushes_to_log_file()` in `tests/unit/test_process_manager_logging.py` asserting `StreamReader` output is immediately written and `flush()`ed to `logs/benchmark.log`
+- [x] T005 [US1] Open `logs/benchmark.log` in append mode within `_drain_stdout(self, stream: asyncio.StreamReader)` in `src/core/process_manager.py` and call `log_file.flush()` after every `stream.readline()` iteration
+- [x] T006 [US1] Implement circular buffer `recent_lines = collections.deque(maxlen=50)` inside `_drain_stdout()` in `src/core/process_manager.py` to capture recent subprocess logs
+- [x] T007 [US1] Write crash/timeout dump logic inside `_drain_stdout()` in `src/core/process_manager.py` to write the last 20 lines from `recent_lines` to `logs/error.log` and `logs/benchmark.log` when `self.process.returncode != 0` (including explicit Exit Code 137 / SIGKILL Kernel OOM Killer header insertion)
+- [x] T008 [US1] Refactor `stop_process()` in `src/core/process_manager.py` to feed EOF to pipe transport and await `_log_drain_task` completion with a 2.0s timeout before calling task cancellation, preventing log loss on process termination
+- [x] T009 [US1] Verify US1 log streaming, real-time flushing, and error tail dumping with `uv run pytest tests/unit/test_process_manager_logging.py`
 
 **Checkpoint**: User Story 1 complete - all backend stdout/stderr outputs are written to `logs/benchmark.log` in real time with crash dumps saved to `logs/error.log`.
 
@@ -58,13 +58,13 @@
 
 ### Implementation & Tests for User Story 2
 
-- [ ] T010 [P] [US2] Write unit tests `test_dynamic_vram_estimation()` and `test_dynamic_polling_timeout()` in `tests/unit/test_dynamic_vram_calculation.py`
-- [ ] T011 [US2] Implement Base VRAM calculation formula (`os.path.getsize(model_path) * 1.15 / (1024*1024)`) in `spawn_process()` within `src/core/process_manager.py` replacing `base_vram = 6000`
-- [ ] T012 [US2] Calculate `usable_vram = available_nvml_vram - 500` (500MB Safety Cushion) and `remaining_kv_budget = usable_vram - base_vram` in `_execute_single_binary_search_inner()` in `scripts/benchmark_context_window.py` and set initial `low=2048`, `high=4096` when budget < 3000MB to prevent pre-flight OOM risk blocks
-- [ ] T013 [US2] Remove `"2b"` model string check and static VRAM tables (`total_vram >= 12000` / `8000`) in `_execute_single_binary_search_inner()` within `scripts/benchmark_context_window.py`
-- [ ] T014 [US2] Replace static fallback formula `2600 + int(mid * 0.4)` with real NVML VRAM snapshot delta measurement (`gpu_snap.total_vram_mb - gpu_snap.free_vram_mb`) in `scripts/benchmark_context_window.py`
-- [ ] T015 [US2] Implement dynamic health check polling timeout formula `min(30.0, max(15.0, 10.0 + file_size_mb/500))` in `poll_server_health()` in `src/core/process_manager.py` and call site in `scripts/benchmark_context_window.py`
-- [ ] T016 [US2] Verify US2 dynamic VRAM estimation and timeout scaling with `uv run pytest tests/unit/test_dynamic_vram_calculation.py`
+- [x] T010 [P] [US2] Write unit tests `test_dynamic_vram_estimation()` and `test_dynamic_polling_timeout()` in `tests/unit/test_dynamic_vram_calculation.py`
+- [x] T011 [US2] Implement Base VRAM calculation formula (`os.path.getsize(model_path) * 1.15 / (1024*1024)`) in `spawn_process()` within `src/core/process_manager.py` replacing `base_vram = 6000`
+- [x] T012 [US2] Calculate `usable_vram = available_nvml_vram - 500` (500MB Safety Cushion) and `remaining_kv_budget = usable_vram - base_vram` in `_execute_single_binary_search_inner()` in `scripts/benchmark_context_window.py` and set initial `low=2048`, `high=4096` when budget < 3000MB to prevent pre-flight OOM risk blocks
+- [x] T013 [US2] Remove `"2b"` model string check and static VRAM tables (`total_vram >= 12000` / `8000`) in `_execute_single_binary_search_inner()` within `scripts/benchmark_context_window.py`
+- [x] T014 [US2] Replace static fallback formula `2600 + int(mid * 0.4)` with real NVML VRAM snapshot delta measurement (`gpu_snap.total_vram_mb - gpu_snap.free_vram_mb`) in `scripts/benchmark_context_window.py`
+- [x] T015 [US2] Implement dynamic health check polling timeout formula `min(30.0, max(15.0, 10.0 + file_size_mb/500))` in `poll_server_health()` in `src/core/process_manager.py` and call site in `scripts/benchmark_context_window.py`
+- [x] T016 [US2] Verify US2 dynamic VRAM estimation and timeout scaling with `uv run pytest tests/unit/test_dynamic_vram_calculation.py`
 
 **Checkpoint**: User Story 2 complete - 100% data-driven dynamic VRAM estimation with 500MB safety cushion and dynamic timeout scaling without hardcoded strings or false OOM risk.
 
@@ -78,11 +78,11 @@
 
 ### Implementation & Tests for User Story 3
 
-- [ ] T017 [P] [US3] Write unit test `test_failure_reason_json_persistence()` in `tests/unit/test_model_profiles_persistence.py` asserting `failure_reason` string field (including "KERNEL_OOM_KILLER_EXIT_137") is saved in `model_context_profiles.json`
-- [ ] T018 [US3] Refactor `ensure_models.py` and `src/core/model_downloader.py` to dynamically query required model IDs from `config/server_config.json` (`model`, `embedding_model`, `rerank_model`) and `config/model_catalog.json` instead of hardcoded `REQUIRED_MODELS` list, and implement atomic catalog write-back reconciliation of `exact_bytes` and `size_gb` upon download completion OR Smart Skip local file verification (`FR-012`)
-- [ ] T019 [US3] Refactor `scripts/setup.sh` to dynamically search for wheel files under `wheels/${MATCHED_PROFILE}/` based on `$MATCHED_PROFILE` variable instead of `"legacy-i7-930"` string match
-- [ ] T020 [US3] Implement detailed `failure_reason` string recording (`KERNEL_OOM_KILLER_EXIT_137`, `HEALTH_CHECK_TIMEOUT`, `CUDA_OOM_EXCEEDED`, `PROCESS_CRASH_EXIT_<CODE>`, `MODEL_FILE_NOT_FOUND`) in `_record_unsupported_fallback_profile()` in `scripts/benchmark_context_window.py`
-- [ ] T021 [US3] Verify US3 profile persistence, dynamic catalog provisioning, and Smart Skip catalog metadata write-back reconciliation with `uv run pytest tests/unit/test_model_profiles_persistence.py`
+- [x] T017 [P] [US3] Write unit test `test_failure_reason_json_persistence()` in `tests/unit/test_model_profiles_persistence.py` asserting `failure_reason` string field (including "KERNEL_OOM_KILLER_EXIT_137") is saved in `model_context_profiles.json`
+- [x] T018 [US3] Refactor `ensure_models.py` and `src/core/model_downloader.py` to dynamically query required model IDs from `config/server_config.json` (`model`, `embedding_model`, `rerank_model`) and `config/model_catalog.json` instead of hardcoded `REQUIRED_MODELS` list, and implement atomic catalog write-back reconciliation of `exact_bytes` and `size_gb` upon download completion OR Smart Skip local file verification (`FR-012`)
+- [x] T019 [US3] Refactor `scripts/setup.sh` to dynamically search for wheel files under `wheels/${MATCHED_PROFILE}/` based on `$MATCHED_PROFILE` variable instead of `"legacy-i7-930"` string match
+- [x] T020 [US3] Implement detailed `failure_reason` string recording (`KERNEL_OOM_KILLER_EXIT_137`, `HEALTH_CHECK_TIMEOUT`, `CUDA_OOM_EXCEEDED`, `PROCESS_CRASH_EXIT_<CODE>`, `MODEL_FILE_NOT_FOUND`) in `_record_unsupported_fallback_profile()` in `scripts/benchmark_context_window.py`
+- [x] T021 [US3] Verify US3 profile persistence, dynamic catalog provisioning, and Smart Skip catalog metadata write-back reconciliation with `uv run pytest tests/unit/test_model_profiles_persistence.py`
 
 **Checkpoint**: User Story 3 complete - detailed failure_reason recorded in JSON profile, model catalog updated with exact downloaded/local bytes on Smart Skip, and all 5 hardcoded areas cleaned up.
 
@@ -96,8 +96,8 @@
 
 ### Implementation & Tests for User Story 4
 
-- [ ] T022 [P] [US4] Write unit test `test_benchmark_log_rotation()` in `tests/unit/test_process_manager_logging.py` asserting log files > 10MB are rotated to `.old`
-- [ ] T023 [US4] Implement 10MB log rotation check before opening `logs/benchmark.log` in `_drain_stdout()` in `src/core/process_manager.py` and `scripts/setup.sh`
+- [x] T022 [P] [US4] Write unit test `test_benchmark_log_rotation()` in `tests/unit/test_process_manager_logging.py` asserting log files > 10MB are rotated to `.old`
+- [x] T023 [US4] Implement 10MB log rotation check before opening `logs/benchmark.log` in `_drain_stdout()` in `src/core/process_manager.py` and `scripts/setup.sh`
 
 ---
 
@@ -105,8 +105,8 @@
 
 **Purpose**: System-wide regression verification and quickstart validation
 
-- [ ] T024 Run full suite regression tests via `uv run pytest`
-- [ ] T025 Execute end-to-end quickstart validation scenarios in `specs/100-fix-benchmark-oom-logging/quickstart.md` via `./setup.sh --force-benchmark`
+- [x] T024 Run full suite regression tests via `uv run pytest`
+- [x] T025 Execute end-to-end quickstart validation scenarios in `specs/100-fix-benchmark-oom-logging/quickstart.md` via `./setup.sh --force-benchmark`
 
 ---
 

@@ -72,6 +72,7 @@ def test_check_api_endpoints_mock(mock_post, mock_get):
 def test_check_dashboard_e2e_mock(mock_get):
     mock_resp = MagicMock()
     mock_resp.status_code = 200
+    mock_resp.text = "<html><title>vLLM Serving Dashboard</title></html>"
     mock_get.return_value = mock_resp
 
     status = check_dashboard_e2e("http://10.0.0.15:8082")

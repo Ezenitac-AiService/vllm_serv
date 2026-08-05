@@ -72,16 +72,21 @@ echo -e "${COLOR_GREEN}✓ 서버 데몬 백그라운드 구동 시작! (8081 PI
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
 SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
+CURL_HOST="$SERVER_HOST"
+if [ "$CURL_HOST" = "0.0.0.0" ]; then
+    CURL_HOST="127.0.0.1"
+fi
+
 # 동시 Readiness 검증 대기 (최대 30초)
 echo -n "[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 30초)..."
 READY=0
 for i in {1..30}; do
     P8081_OK=0
     P8082_OK=0
-    if curl -s "http://127.0.0.1:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://127.0.0.1:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
+    if curl -s "http://$CURL_HOST:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://$CURL_HOST:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
         P8081_OK=1
     fi
-    if curl -s "http://127.0.0.1:8082/" > /dev/null 2>&1; then
+    if curl -s "http://$CURL_HOST:8082/" > /dev/null 2>&1; then
         P8082_OK=1
     fi
 
@@ -99,7 +104,9 @@ if [ "$READY" -eq 1 ]; then
     echo -e "웹 대시보드 URL: http://$SERVER_HOST:8082/"
     exit 0
 else
-    echo -e "\n${COLOR_RED}[SERVER ERROR] 30초 이내 8081/8082 동시 Readiness 검증 실패! 원자적 롤백(Clean Exit)을 수행합니다.${COLOR_NC}"
+    echo -e "\n${COLOR_RED}[SERVER ERROR] [SERVER DIAGNOSTICS] 30초 이내 8081/8082 동시 Readiness 검증 실패! 원자적 롤백(Clean Exit)을 수행합니다.${COLOR_NC}"
+    echo -e "${COLOR_RED}최근 서버 로그 출력 (tail -n 15):${COLOR_NC}"
+    tail -n 15 "$LOG_FILE" 2>/dev/null || true
     [ -n "$ACTUAL_SERVER_PID" ] && kill -9 "$ACTUAL_SERVER_PID" 2>/dev/null || true
     [ -n "$ACTUAL_DASHBOARD_PID" ] && kill -9 "$ACTUAL_DASHBOARD_PID" 2>/dev/null || true
     pkill -f "src.api.server" 2>/dev/null || true

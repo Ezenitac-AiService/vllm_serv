@@ -21,8 +21,9 @@ def app():
 
 
 @pytest.mark.asyncio
-async def test_reverse_proxy_strips_content_length_and_transfer_encoding_headers():
+async def test_reverse_proxy_strips_content_length_and_transfer_encoding_headers(monkeypatch):
     """US1 & FR-001: Verify reverse_proxy removes content-length, transfer-encoding, and connection headers."""
+    monkeypatch.delenv("MOCK_LLAMA_SERVER", raising=False)
     mock_upstream_headers = Headers({
         "content-type": "application/json",
         "content-length": "1285",

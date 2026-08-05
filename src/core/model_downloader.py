@@ -154,23 +154,25 @@ class ModelDownloader:
                 continue
 
             target_filename = catalog_entry.get("filename")
+            has_main = False
             if target_filename:
                 exact_main = os.path.join(abs_dir, target_filename)
                 has_main = os.path.isfile(exact_main)
-            else:
+            if not has_main:
                 has_main = any(f.endswith(".gguf") and "mmproj" not in f for f in os.listdir(abs_dir))
 
             if not has_main:
                 continue
 
             clip_name = catalog_entry.get("clip_filename")
+            has_clip = True
             if clip_name:
                 exact_clip = os.path.join(abs_dir, clip_name)
                 has_clip = os.path.isfile(exact_clip)
                 if not has_clip:
                     has_clip = any(f.endswith(".gguf") and "mmproj" in f for f in os.listdir(abs_dir))
-                if not has_clip:
-                    continue
+            if not has_clip:
+                continue
 
             # FR-012: Trigger metadata reconciliation on Smart Skip detection
             self.reconcile_catalog_metadata(model_id)
