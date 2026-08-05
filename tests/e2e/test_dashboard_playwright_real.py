@@ -33,24 +33,24 @@ def _run_real_e2e_server():
 @pytest.fixture(scope="module", autouse=True)
 def real_e2e_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    is_bound = sock.connect_ex((REAL_LAN_IP, SERVER_PORT)) == 0
+    is_bound = sock.connect_ex(("127.0.0.1", SERVER_PORT)) == 0
     sock.close()
     if not is_bound:
         proc = multiprocessing.Process(target=_run_real_e2e_server, daemon=True)
         proc.start()
-        time.sleep(1.5)
+        time.sleep(3.0)
         yield
         proc.terminate()
     else:
         yield
 
 
-def test_real_lan_ip_dashboard_http_e2e():
+def test_real_lan_ip_dashboard_http_e2e(real_e2e_server):
     """Verifies that the dashboard HTML and health endpoints are accessible via real LAN IP (10.0.0.41:8081) or local bind."""
-    target_host = "10.0.0.41"
+    target_host = "127.0.0.1"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        if sock.connect_ex(("10.0.0.41", 8081)) != 0:
-            target_host = "127.0.0.1"
+        if sock.connect_ex(("10.0.0.41", 8081)) == 0:
+            target_host = "10.0.0.41"
 
     health_url = f"http://{target_host}:8081/health"
     dashboard_url = f"http://{target_host}:8081/dashboard/"

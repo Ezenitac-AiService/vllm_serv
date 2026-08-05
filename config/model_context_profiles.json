@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T13:12:13Z",
+  "generated_at": "2026-08-05T13:19:09Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -7,33 +7,33 @@
   },
   "profiles": {
     "qwen3.5-4b": {
-      "max_context_length": 13312,
-      "recommended_context_length": 11776,
+      "max_context_length": 2048,
+      "recommended_context_length": 2048,
       "binary_search_steps": [
         {
           "step": 1,
           "tested_n_ctx": 10240,
-          "real_vram_mb": 6696,
-          "status": "PASS"
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL"
         },
         {
           "step": 2,
-          "tested_n_ctx": 13312,
-          "real_vram_mb": 7924,
-          "status": "PASS"
+          "tested_n_ctx": 7168,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL"
         },
         {
           "step": 3,
-          "tested_n_ctx": 14848,
+          "tested_n_ctx": 5632,
           "real_vram_mb": 0,
           "status": "OOM/FAIL"
         }
       ],
-      "peak_vram_mb": 7924,
-      "tpot_tok_per_sec": 45.0,
+      "peak_vram_mb": 0,
+      "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
-      "is_supported": true,
-      "last_tested_at": "2026-08-05T13:12:13Z"
+      "is_supported": false,
+      "last_tested_at": "2026-08-05T13:18:57Z"
     },
     "gemma4-e2b": {
       "max_context_length": 2048,
@@ -62,7 +62,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:10:27Z"
+      "last_tested_at": "2026-08-05T13:17:04Z"
     },
     "gemma4-e4b": {
       "max_context_length": 2048,
@@ -91,7 +91,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:10:29Z"
+      "last_tested_at": "2026-08-05T13:17:38Z"
     },
     "gemma4-12b": {
       "max_context_length": 2048,
@@ -120,7 +120,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:10:31Z"
+      "last_tested_at": "2026-08-05T13:17:50Z"
     },
     "qwen3.5-2b": {
       "max_context_length": 2048,
@@ -149,7 +149,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:10:33Z"
+      "last_tested_at": "2026-08-05T13:18:24Z"
     },
     "qwen3.5-9b": {
       "max_context_length": 2048,
@@ -178,7 +178,7 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
       "is_supported": false,
-      "last_tested_at": "2026-08-05T13:10:37Z"
+      "last_tested_at": "2026-08-05T13:19:09Z"
     }
   }
 }

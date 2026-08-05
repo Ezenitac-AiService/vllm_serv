@@ -410,6 +410,13 @@ if [ -f "$BASE_DIR/scripts/ensure_models.py" ]; then
     }
 fi
 
+log_info "🧹 [FR-006] 사전 가동 중인 서빙 프로세스 및 포트 점유 정리 (Pre-execution cleanup)..."
+if [ -f "$BASE_DIR/scripts/stop_server.sh" ]; then
+    "$BASE_DIR/scripts/stop_server.sh" 2>/dev/null || true
+elif [ -f "$BASE_DIR/stop_server.sh" ]; then
+    "$BASE_DIR/stop_server.sh" 2>/dev/null || true
+fi
+
 # ==============================================================================
 # Step 2.7: Asset Audit & Cleanup (T011)
 # ==============================================================================
@@ -945,6 +952,13 @@ if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
 elif [ "$EUID" -eq 0 ] && [ -z "$SUDO_USER" ]; then
     log_warn "순수 root 계정으로 직접 실행 중입니다. .venv, logs, config 소유권이 root:root로 유지됩니다."
     log_warn "일반 사용자 계정으로 서버를 구동하려면 'sudo -u <계정> ./setup.sh' 또는 일반 계정에서 실행을 권장합니다."
+fi
+
+log_info "🚀 [FR-007] 최적 서빙 모델 및 프로필 기반 서버 자동 구동 및 서빙 복구 중..."
+if [ -f "$BASE_DIR/start_server.sh" ]; then
+    "$BASE_DIR/start_server.sh" || log_warn "서버 자동 구동 중 경고 발생 (수동 ./start_server.sh 구동 가능)"
+elif [ -f "$BASE_DIR/scripts/start_server.sh" ]; then
+    "$BASE_DIR/scripts/start_server.sh" || log_warn "서버 자동 구동 중 경고 발생 (수동 ./start_server.sh 구동 가능)"
 fi
 
 log_info "vllm_serv 환경 설정 및 제어 스크립트 생성이 완료되었습니다!"

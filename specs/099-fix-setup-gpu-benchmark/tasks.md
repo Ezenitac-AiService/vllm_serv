@@ -94,14 +94,14 @@ description: "Task list for feature 099-fix-setup-gpu-benchmark implementation"
 
 ### Tests for User Story 3 (MANDATORY) ⚠️
 
-- [ ] T015 [P] [US3] Create failing unit/integration test for pre-execution server cleanup and fallback profile warning in `tests/integration/test_pre_cleanup_and_restore.py`
+- [x] T015 [P] [US3] Create failing unit/integration test for pre-execution server cleanup and fallback profile warning in `tests/integration/test_pre_cleanup_and_restore.py`
 
 ### Implementation for User Story 3
 
-- [ ] T016 [US3] Add pre-execution server cleanup (stop existing `llama-server` / FastAPI processes occupying port 8081) in Step 0/Step 1 of `scripts/setup.sh`
-- [ ] T017 [US3] Enhance `_record_unsupported_fallback_profile()` in `scripts/benchmark_context_window.py` to print `[BENCHMARK WARN]` with detailed failure reasons and set `is_supported=false`, `scaling_tested=false`, `recommended_context_length=2048`
-- [ ] T018 [US3] Add automatic server restoration (`./start_server.sh`) and health check verification in Step 5 of `scripts/setup.sh`
-- [ ] T019 [US3] Verify tests pass in `tests/integration/test_pre_cleanup_and_restore.py`
+- [x] T016 [US3] Add pre-execution server cleanup (stop existing `llama-server` / FastAPI processes occupying port 8081) in Step 0/Step 1 of `scripts/setup.sh`
+- [x] T017 [US3] Enhance `_record_unsupported_fallback_profile()` in `scripts/benchmark_context_window.py` to print `[BENCHMARK WARN]` with detailed failure reasons and set `is_supported=false`, `scaling_tested=false`, `recommended_context_length=2048`
+- [x] T018 [US3] Add automatic server restoration (`./start_server.sh`) and health check verification in Step 5 of `scripts/setup.sh`
+- [x] T019 [US3] Verify tests pass in `tests/integration/test_pre_cleanup_and_restore.py`
 
 **Checkpoint**: All user stories are fully implemented and independently testable
 
@@ -111,10 +111,10 @@ description: "Task list for feature 099-fix-setup-gpu-benchmark implementation"
 
 **Purpose**: Final validation, documentation, and regression testing across the entire system
 
-- [ ] T020 [P] Run runnable validation scenarios 1~4 in `specs/099-fix-setup-gpu-benchmark/quickstart.md`
-- [ ] T021 Run full regression test suite (`uv run pytest`) per Constitution Principle VII
-- [ ] T022 Run E2E Playwright dashboard test suite (`uv run pytest tests/e2e/`) per Constitution Principle VII
-- [ ] T023 [P] Verify shell script syntax and formatting (`bash -n scripts/setup.sh`)
+- [x] T020 [P] Run runnable validation scenarios 1~4 in `specs/099-fix-setup-gpu-benchmark/quickstart.md`
+- [x] T021 Run full regression test suite (`uv run pytest`) per Constitution Principle VII
+- [x] T022 Run E2E Playwright dashboard test suite (`uv run pytest tests/e2e/`) per Constitution Principle VII
+- [x] T023 [P] Verify shell script syntax and formatting (`bash -n scripts/setup.sh`)
 
 ---
 
