@@ -21,6 +21,10 @@ if BASE_DIR not in sys.path:
 from src.core.model_downloader import ModelDownloader, DownloadStatusEnum
 
 
+# REQUIRED_MODELS export for backward compatibility
+REQUIRED_MODELS = ["qwen3.5-4b", "bge-m3", "bge-reranker-v2-m3"]
+
+
 def get_dynamic_required_models(server_config: Dict[str, Any] = None, catalog: Dict[str, Any] = None) -> List[str]:
     """FR-007: Dynamically resolve required models from server_config.json and model_catalog.json."""
     if server_config is None or catalog is None:
@@ -34,25 +38,20 @@ def get_dynamic_required_models(server_config: Dict[str, Any] = None, catalog: D
             catalog = catalog or {}
 
     req_models = []
-    main_model = server_config.get("model")
-    if main_model:
+    main_model = server_config.get("model", "qwen3.5-4b")
+    if main_model and main_model in catalog:
         req_models.append(main_model)
 
-    emb_model = server_config.get("embedding_model")
-    if emb_model:
+    emb_model = server_config.get("embedding_model", "bge-m3")
+    if emb_model and emb_model in catalog:
         req_models.append(emb_model)
 
-    rerank_model = server_config.get("rerank_model")
-    if rerank_model:
+    rerank_model = server_config.get("rerank_model", "bge-reranker-v2-m3")
+    if rerank_model and rerank_model in catalog:
         req_models.append(rerank_model)
 
-    for m_id, entry in catalog.items():
-        if entry.get("task_type") in ("embedding", "rerank") or entry.get("requires_mmproj"):
-            if m_id not in req_models:
-                req_models.append(m_id)
-
     if not req_models:
-        req_models = ["qwen3.5-4b", "bge-m3", "bge-reranker-v2-m3"]
+        req_models = list(REQUIRED_MODELS)
 
     return list(dict.fromkeys(req_models))
 
