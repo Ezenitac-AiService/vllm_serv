@@ -79,11 +79,8 @@ fi
 rm -f "$PID_FILE" "$DASHBOARD_PID_FILE" 2>/dev/null || true
 
 if command -v nvidia-smi &> /dev/null; then
-    echo -e "${COLOR_GREEN}✓ VRAM 해제 상태 실측 검증:${COLOR_NC}"
-    VRAM_USAGE=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -n 1 | tr -d ' ')
-    if [ -n "$VRAM_USAGE" ]; then
-        echo -e "  - 현재 GPU VRAM 점유량: ${VRAM_USAGE} MiB"
-    fi
+    echo -e "${COLOR_GREEN}✓ VRAM 해제 상태 확인:${COLOR_NC}"
+    nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader
 fi
 
 echo -e "${COLOR_GREEN}✓ vllm_serv 서버 및 대시보드 프로세스 종료 완료.${COLOR_NC}"

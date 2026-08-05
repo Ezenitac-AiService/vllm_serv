@@ -17,9 +17,6 @@ log_err()  { echo -e "${COLOR_RED}[SETUP ERROR]${COLOR_NC} $1"; }
 log_step() { echo -e "\n${COLOR_CYAN}====================================================${COLOR_NC}\n${COLOR_CYAN}▶ $1${COLOR_NC}\n${COLOR_CYAN}====================================================${COLOR_NC}"; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/common.sh" ]; then
-    source "$SCRIPT_DIR/common.sh"
-fi
 
 if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
     BASE_DIR="$SCRIPT_DIR"
@@ -29,6 +26,12 @@ else
     BASE_DIR="$(pwd)"
 fi
 cd "$BASE_DIR"
+
+if [ -f "$BASE_DIR/scripts/common.sh" ]; then
+    source "$BASE_DIR/scripts/common.sh"
+elif [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+fi
 
 WHEEL_PATH=""
 SKIP_BUILD=0

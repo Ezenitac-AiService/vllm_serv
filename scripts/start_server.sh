@@ -8,7 +8,6 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-trap 'if [ "$READY" -eq 0 ]; then rm -f "$PID_FILE" "$DASHBOARD_PID_FILE" 2>/dev/null || true; fi' EXIT
 if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
     BASE_DIR="$SCRIPT_DIR"
 elif [ -f "$SCRIPT_DIR/../pyproject.toml" ]; then
@@ -70,11 +69,8 @@ echo "$ACTUAL_DASHBOARD_PID" > "$DASHBOARD_PID_FILE"
 
 echo -e "${COLOR_GREEN}✓ 서버 데몬 백그라운드 구동 시작! (8081 PID: $ACTUAL_SERVER_PID, 8082 PID: $ACTUAL_DASHBOARD_PID)${COLOR_NC}"
 
-source "$SCRIPT_DIR/common.sh"
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
-SERVER_PORT=$(get_configured_port main)
-DASHBOARD_PORT=$(get_configured_port dashboard)
-
+SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
 # 동시 Readiness 검증 대기 (최대 30초)
 echo -n "[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 30초)..."

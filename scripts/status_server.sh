@@ -22,16 +22,6 @@ COLOR_RED='\033[0;31m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
-if [ "$1" = "--json" ]; then
-    uv run python -c "
-import json
-from src.core.config_manager import ConfigManager
-cfg = ConfigManager().get_server_config()
-print(json.dumps({'status': 'ok', 'config': cfg}, indent=2))
-" 2>/dev/null || echo '{"status": "ok"}'
-    exit 0
-fi
-
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
 echo -e "${COLOR_CYAN} ⚡ vllm_serv 서버 및 멀티 플랫폼 하드웨어 리포트${COLOR_NC}"
 echo -e "${COLOR_CYAN}====================================================${COLOR_NC}"
@@ -70,11 +60,8 @@ else
     echo -e "8082 대시보드 프로세스  : ${COLOR_YELLOW}⚪ 중지됨 (UNLOADED)${COLOR_NC}"
 fi
 
-source "$SCRIPT_DIR/common.sh"
 SERVER_HOST=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('host', '127.0.0.1'))" 2>/dev/null || echo "127.0.0.1")
-SERVER_PORT=$(get_configured_port main)
-DASHBOARD_PORT=$(get_configured_port dashboard)
-
+SERVER_PORT=$(uv run python -c "from src.core.config_manager import ConfigManager; print(ConfigManager().get_server_config().get('port', 8081))" 2>/dev/null || echo "8081")
 
 LAN_IP=$(uv run python -c "from src.core.network_detector import NetworkDetector; print(NetworkDetector.get_active_lan_ips()[-1] if NetworkDetector.get_active_lan_ips() else '127.0.0.1')" 2>/dev/null || echo "127.0.0.1")
 
