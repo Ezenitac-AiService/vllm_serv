@@ -107,3 +107,13 @@
 1. Complete User Story 1 (`--all` flag)
 2. Complete User Story 2 (`--model` flag & mutual exclusion / invalid ID checks)
 3. Run Phase 5 regression tests & quickstart validation scenarios
+
+---
+
+## Phase 6: Convergence
+
+- [X] T012 Add explicit `downloader.reconcile_catalog_metadata(model_id)` invocation upon download completion in `scripts/ensure_models.py` per FR-005 (partial)
+- [X] T013 Add `--download-all` alias CLI test and direct `ensure_all_models` test cases in `tests/unit/test_ensure_models_cli.py` per FR-001, DoD-002 (partial)
+- [X] T014 Execute and verify full unit test suite regression pass `uv run pytest tests/unit/` per DoD-003, Constitution VII (partial)
+
+

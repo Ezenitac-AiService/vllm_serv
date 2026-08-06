@@ -149,6 +149,7 @@ def ensure_all_models(
                             results["details"][model_id]["status"] = "DOWNLOADED"
                             results["details"][model_id]["is_present"] = True
                             results["download_summary"]["downloaded_count"] += 1
+                            downloader.reconcile_catalog_metadata(model_id)
                             success = True
                             break
                         else:

@@ -82,3 +82,27 @@ def test_cli_all_check_only_runs_clean():
     proc = subprocess.run(cmd, capture_output=True, text=True)
     # Output should mention Target: 14 models
     assert "Target: 14 models" in proc.stdout
+
+
+def test_cli_download_all_alias():
+    """Verify CLI --download-all alias runs cleanly and checks all 14 catalog models."""
+    cmd = [sys.executable, str(REPO_ROOT / "scripts" / "ensure_models.py"), "--download-all", "--check-only"]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    assert "Target: 14 models" in proc.stdout
+
+
+def test_cli_comma_separated_models_check_only():
+    """Verify CLI --model with comma-separated IDs targets specified models."""
+    cmd = [sys.executable, str(REPO_ROOT / "scripts" / "ensure_models.py"), "--model", "qwen3.6-27b,gemma4-26b-a4b", "--check-only"]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    assert "Target: 2 models" in proc.stdout
+
+
+def test_ensure_all_models_function_direct():
+    """Verify ensure_all_models helper function directly with check_only and all_flag."""
+    from scripts.ensure_models import ensure_all_models
+    res = ensure_all_models(check_only=True, all_flag=True, auto_download=False)
+    assert "target_models" in res
+    assert len(res["target_models"]) == 14
+    assert res["download_summary"]["total_models"] == 14
+
