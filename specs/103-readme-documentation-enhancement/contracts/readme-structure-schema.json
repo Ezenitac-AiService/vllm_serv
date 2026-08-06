@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReadmeDocumentationStructureSchema",
+  "description": "README.md 프로젝트 설명, 셋업 파이프라인, 상태 제어 쉘 명령 및 수동 스크립트 가이드 고도화 구조 계약",
+  "type": "object",
+  "required": [
+    "title",
+    "overview_section",
+    "setup_workflow_section",
+    "control_scripts_section",
+    "manual_scripts_section",
+    "speckit_reference_section"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "const": "vllm_serv: Qwen 3.5 & Gemma 4 High-Performance GPU Serving Engine"
+    },
+    "overview_section": {
+      "type": "object",
+      "required": ["gpu_vram_offload_principle", "openai_compatibility"],
+      "properties": {
+        "gpu_vram_offload_principle": { "type": "boolean", "const": true },
+        "openai_compatibility": { "type": "boolean", "const": true }
+      }
+    },
+    "setup_workflow_section": {
+      "type": "object",
+      "required": ["command_example", "pipeline_stages_count", "mermaid_diagram"],
+      "properties": {
+        "command_example": { "type": "string" },
+        "pipeline_stages_count": { "type": "integer", "const": 9 },
+        "mermaid_diagram": { "type": "boolean", "const": true }
+      }
+    },
+    "control_scripts_section": {
+      "type": "object",
+      "required": ["start_server", "stop_server", "status_server"],
+      "properties": {
+        "start_server": { "type": "string" },
+        "stop_server": { "type": "string" },
+        "status_server": { "type": "string" }
+      }
+    },
+    "manual_scripts_section": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["script_name", "execution_command", "parameter_table"],
+        "properties": {
+          "script_name": { "type": "string" },
+          "execution_command": { "type": "string" },
+          "parameter_table": { "type": "boolean" }
+        }
+      }
+    },
+    "speckit_reference_section": {
+      "type": "object",
+      "required": ["script_path", "parameter_table"],
+      "properties": {
+        "script_path": { "type": "string" },
+        "parameter_table": { "type": "boolean" }
+      }
+    }
+  }
+}
