@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 346,
-  "preserved_files": 346,
+  "total_files_scanned": 348,
+  "preserved_files": 348,
   "archived_files": 0,
   "inventory": [
     {
@@ -1276,6 +1276,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_ensure_models_cli.py",
+      "name": "test_ensure_models_cli.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_seed_pack.py",
       "name": "test_seed_pack.py",
       "status": "ACTIVE",
@@ -1830,6 +1836,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_reranker_contract.cpython-312-pytest-9.1.1.pyc",
       "name": "test_reranker_contract.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_ensure_models_cli.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_ensure_models_cli.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

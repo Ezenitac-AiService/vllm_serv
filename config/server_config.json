@@ -44,13 +44,13 @@
         "enabled": true,
         "strict_json_schema": true
     },
-    "model": "gemma4-e2b",
+    "model": "qwen3.5-4b",
     "context_window": 4096,
     "auto_benchmark_profile": {
-        "recommended_model": "gemma4-e2b",
+        "recommended_model": "qwen3.5-4b",
         "recommended_context_window": 4096,
         "benchmark_tps": 45.0,
-        "vram_used_mb": 0,
-        "benchmark_timestamp": "2026-08-05T15:40:17Z"
+        "vram_used_mb": 4030,
+        "benchmark_timestamp": "2026-08-06T02:15:35Z"
     }
 }

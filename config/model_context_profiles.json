@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T15:40:17Z",
+  "generated_at": "2026-08-06T02:15:34Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -119,6 +119,54 @@
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (24500MB) exceeds Usable VRAM (10764MB)",
       "last_tested_at": "2026-08-05T15:40:17Z"
+    },
+    "gemma4-2b-text": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 3407,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-06T02:14:41Z"
+    },
+    "gemma4-4b-text": {
+      "max_context_length": 4096,
+      "recommended_context_length": 4096,
+      "binary_search_steps": [],
+      "peak_vram_mb": 5458,
+      "tpot_tok_per_sec": 45.0,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-06T02:14:41Z"
+    },
+    "gemma4-12b-text": {
+      "max_context_length": 2048,
+      "recommended_context_length": 2048,
+      "binary_search_steps": [
+        {
+          "step": 1,
+          "tested_n_ctx": 3072,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
+        },
+        {
+          "step": 2,
+          "tested_n_ctx": 2560,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
+        }
+      ],
+      "peak_vram_mb": 0,
+      "tpot_tok_per_sec": 0.0,
+      "scaling_tested": true,
+      "is_supported": false,
+      "failure_reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)",
+      "last_tested_at": "2026-08-06T02:15:34Z"
     }
   }
 }
