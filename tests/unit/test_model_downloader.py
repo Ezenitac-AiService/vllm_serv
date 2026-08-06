@@ -266,5 +266,35 @@ def test_gemma4_mmproj_availability_check():
             f.write(b"MMPROJ_GGUF")
         assert downloader.is_model_available("gemma4-e2b") is True
 
+def test_model_catalog_instruct_and_text_only_specs():
+    """Verify Gemma 4 text-only models require no mmproj and LLM models are quantized GGUFs."""
+    text_only_models = ["gemma4-2b-text", "gemma4-4b-text", "gemma4-12b-text", "gemma4-26b-a4b"]
+    for model_id in text_only_models:
+        entry = MODEL_DOWNLOAD_CATALOG[model_id]
+        assert entry.get("requires_mmproj") is False, f"{model_id}: requires_mmproj should be False"
+        assert entry.get("clip_filename") is None, f"{model_id}: clip_filename should be None"
+
+    # All 14 models must be quantized GGUFs (q4_k_m or q8_0)
+    for model_id, entry in MODEL_DOWNLOAD_CATALOG.items():
+        assert entry["filename"].endswith(".gguf"), f"{model_id}: filename must end with .gguf"
+        assert entry.get("quant_type") in ("q4_k_m", "q8_0", "q4_0"), f"{model_id}: invalid quant_type"
 
 
+def test_model_catalog_hf_urls_valid():
+    """Live HTTP HEAD verification for all 14 catalog model URLs on HuggingFace Hub (T007)."""
+    import urllib.request
+    
+    failed_urls = []
+    for model_id, entry in MODEL_DOWNLOAD_CATALOG.items():
+        repo_id = entry["repo_id"]
+        filename = entry["filename"]
+        url = f"https://huggingface.co/{repo_id}/resolve/main/{filename}"
+        req = urllib.request.Request(url, method="HEAD")
+        req.add_header("User-Agent", "Mozilla/5.0 (vllm_serv_test)")
+        try:
+            res = urllib.request.urlopen(req, timeout=10)
+            assert res.status == 200, f"{model_id}: unexpected status {res.status}"
+        except Exception as e:
+            failed_urls.append((model_id, url, str(e)))
+
+    assert len(failed_urls) == 0, f"Failed HF Hub URLs: {failed_urls}"

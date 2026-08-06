@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ModelCatalogHFUrlSchema",
+  "description": "Model catalog HuggingFace Hub download URL validation contract",
+  "type": "object",
+  "patternProperties": {
+    "^[a-zA-Z0-9._-]+$": {
+      "type": "object",
+      "required": ["repo_id", "filename", "model_path"],
+      "properties": {
+        "repo_id": { "type": "string", "pattern": "^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$" },
+        "filename": { "type": "string", "pattern": "\\.gguf$" },
+        "model_path": { "type": "string" }
+      }
+    }
+  }
+}
