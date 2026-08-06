@@ -116,6 +116,66 @@ graph TD
 
 ---
 
+## 📐 SpecKit 기능 명세 CLI 레퍼런스 (SpecKit Specification Script Reference)
+
+`vllm_serv` 프로젝트는 `/speckit-specify` 슬래시 커맨드 및 백엔드 쉘 스크립트(`.specify/scripts/bash/create-new-feature.sh`)를 통한 모듈식 기능 명세 자동화 및 TDD 기반 수렴 개발 파이프라인을 내장하고 있습니다.
+
+### 💡 스크립트 리펙토링 및 주요 기능 개선 사항 (Refactoring Highlights)
+
+1. **스마트 슬러그(Short Name) 자동 추출 백엔드**:
+   - 자연어 기능 설명문에서 영어 불용어(stop words: `the`, `for`, `add`, `with`, `in` 등)를 자동 제거하고, 핵심 의미 단어를 2~4개 결합하여 단축 식별자(slug)를 생성합니다.
+   - **한글 키워드 및 대문자 기술 약어(GGUF, CUDA, API, JWT 등) 100% 보존**하여 한국어 자연어 입력을 기본 지원합니다.
+2. **독립적 기능 디렉터리 분리 및 상태 영구화**:
+   - 명세 디렉토리(`specs/<prefix>-<short-name>`)와 git 브랜치를 독립적으로 관리합니다.
+   - 생성된 디렉터리 경로를 `.specify/feature.json` 파일에 원자적으로 저장하여 `/speckit-plan`, `/speckit-tasks`, `/speckit-implement`, `/speckit-converge` 등 후속 파이프라인과의 정합성을 보장합니다.
+3. **번호 체계 및 규격 안전장치**:
+   - 기존 `specs/` 디렉터리의 최대 번호를 스캔하여 3자리 자동 패딩(`001`, `002`, `102`...) 순차 할당 또는 타임스탬프(`YYYYMMDD-HHMMSS`) 할당 방식을 지원합니다.
+   - GitHub의 244바이트 브랜치명 상한을 초과하는 경우 단어 경계 기준 트렁케이션 및 안전한 접두사 보존을 수행합니다.
+
+---
+
+### 🎛️ CLI 실행 명령 및 입력 파라미터 레퍼런스
+
+```bash
+# 기본 구동 양식
+.specify/scripts/bash/create-new-feature.sh [OPTIONS] <feature_description>
+```
+
+| 파라미터 / 플래그 | 타입 | 기본값 | 설명 |
+|-------------------|------|--------|------|
+| **`<feature_description>`** *(필수)* | `string` (위치 인자) | - | 구현할 기능의 자연어 설명 문구. 스마트 필터링을 통해 2~4단어 슬러그가 자동 생성됩니다. |
+| **`--short-name <name>`** | `string` | 자동 생성 | 자동 추출 대신 사용자가 직접 지정하는 2~4단어 커스텀 슬러그 식별자 (예: `user-auth`). |
+| **`--number N`** | `integer` | 자동 탐색 | 디렉터리/브랜치 3자리 순차 번호를 수동으로 지정 (예: `5` 지정 시 `005` 할당). 미지정 시 기존 디렉터리 스캔 후 `(최고 번호 + 1)` 자동 할당. |
+| **`--timestamp`** | `flag` | `false` | 순차 번호 대신 타임스탬프 (`YYYYMMDD-HHMMSS`) 접두사를 사용하도록 변경 (예: `20260806-010200-user-auth`). `--number`와 함께 사용 시 `--number`는 무시됨. |
+| **`--json`** | `flag` | `false` | 생성된 `BRANCH_NAME`, `SPEC_FILE`, `FEATURE_NUM` 정보를 JSON 규격으로 반환. |
+| **`--dry-run`** | `flag` | `false` | 실제 디렉터리 생성 및 `spec.md` 템플릿 복사를 수행하지 않고 계산된 브랜치명과 파일 경로만 사전 확인. |
+| **`--allow-existing-branch`** | `flag` | `false` | 이미 존재하는 동일 기능 디렉터리가 있을 경우 에러로 차단하지 않고 재사용 허용. |
+| **`--help`, `-h`** | `flag` | - | 스크립트 도움말 및 옵션 사용 예시 출력. |
+
+---
+
+### 💻 실행 예시 (Usage Examples)
+
+#### 1. 자연어 문구로 신규 기능 명세 자동 생성 (기본 3자리 순차 번호)
+```bash
+.specify/scripts/bash/create-new-feature.sh "Add user authentication and OAuth2 integration"
+# 결과: specs/004-user-authentication-oauth2/spec.md 생성 및 .specify/feature.json 자동 수록
+```
+
+#### 2. 커스텀 Short Name 및 지정 번호 적용
+```bash
+.specify/scripts/bash/create-new-feature.sh --number 102 --short-name "catalog-full-download-cli" "scripts/ensure_models.py 전체/특정 모델 다운로드 CLI 옵션 확장"
+# 결과: specs/102-catalog-full-download-cli/spec.md 생성
+```
+
+#### 3. 타임스탬프 접두사 및 JSON 결과 출력
+```bash
+.specify/scripts/bash/create-new-feature.sh --timestamp --short-name "user-auth" --json "Add user login system"
+# 결과: {"BRANCH_NAME":"20260806-010200-user-auth","SPEC_FILE":"/home/dev/storage/vllm_serv/specs/20260806-010200-user-auth/spec.md","FEATURE_NUM":"20260806-010200"}
+```
+
+---
+
 ## 🔥 핵심 기능 (Key Features)
 
 ### 1. 🌐 OpenAI API 표준 100% 호환 (`/v1/models`, `/v1/chat/completions`)
