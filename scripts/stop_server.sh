@@ -67,20 +67,13 @@ if [ -n "$DASH_PIDS" ]; then
     done
 fi
 
-# llama-server 및 llama_cpp.server 잔여 프로세스 추가 정리
+# llama-server 잔여 프로세스 추가 정리
 LLAMA_PIDS=$(pgrep -f "llama-server" || true)
-LLAMA_CPP_PIDS=$(pgrep -f "llama_cpp.server" || true)
-ALL_LLAMA_PIDS=$(echo "$LLAMA_PIDS $LLAMA_CPP_PIDS" | xargs -n1 | sort -u | xargs)
-
-if [ -n "$ALL_LLAMA_PIDS" ]; then
-    echo -e "${COLOR_CYAN}[STOP] 잔여 llama 서빙 하위 프로세스 정리 중: $ALL_LLAMA_PIDS${COLOR_NC}"
-    for pid in $ALL_LLAMA_PIDS; do
+if [ -n "$LLAMA_PIDS" ]; then
+    echo -e "${COLOR_CYAN}[STOP] 잔여 llama-server 하위 프로세스 정리 중: $LLAMA_PIDS${COLOR_NC}"
+    for pid in $LLAMA_PIDS; do
         kill -9 "$pid" 2>/dev/null || true
     done
-fi
-
-if command -v fuser &> /dev/null; then
-    fuser -k -9 8081/tcp 8089/tcp 8090/tcp 8091/tcp 2>/dev/null || true
 fi
 
 rm -f "$PID_FILE" "$DASHBOARD_PID_FILE" 2>/dev/null || true
