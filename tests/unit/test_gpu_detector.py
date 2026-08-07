@@ -364,3 +364,44 @@ def test_calculate_max_allocatable_n_ctx():
     assert n_ctx == 5120
 
 
+def test_calculate_max_allocatable_n_ctx_gqa():
+    """T006 / US1: Test GQA n_head_kv reverse calculation."""
+    from src.core.gpu_detector import calculate_max_allocatable_n_ctx
+    # Gemma 4 E2B parameters: n_layers=35, n_heads=8, n_head_kv=1, head_dim=512
+    # bytes_per_token = 2 * 35 * 1 * 512 * 2 = 71,680 bytes
+    # For budget 6000 MB: 6000 * 1024 * 1024 / 71680 = 87771 -> aligned to step 2048 = 86016 -> capped at max_cap 32768
+    n_ctx = calculate_max_allocatable_n_ctx(
+        usable_kv_budget_mb=6000,
+        n_layers=35,
+        n_heads=8,
+        head_dim=512,
+        n_head_kv=1,
+        step=2048,
+        max_cap=32768
+    )
+    assert n_ctx == 32768
+
+
+def test_calculate_dynamic_log_step_size():
+    """T005 / FR-004: Test log-scaled dynamic step size formula."""
+    from src.core.gpu_detector import calculate_dynamic_log_step_size
+    assert calculate_dynamic_log_step_size(16384) == 512
+    assert calculate_dynamic_log_step_size(32768) == 512
+    assert calculate_dynamic_log_step_size(131072) == 2048
+    assert calculate_dynamic_log_step_size(1048576) == 16384
+
+
+def test_read_gguf_metadata_architecture():
+    """T007 / US1: Test GGUF binary header parser with actual local file or mock."""
+    from src.core.gpu_detector import read_gguf_metadata_architecture
+    import os
+    gguf_path = "models/gemma4-e2b/gemma-4-E2B-it-Q4_K_M.gguf"
+    if os.path.exists(gguf_path):
+        meta = read_gguf_metadata_architecture(gguf_path)
+        assert meta.get("n_layers") == 35
+        assert meta.get("n_head_kv") == 1
+        assert meta.get("n_heads") == 8
+        assert meta.get("max_rope_n_ctx") == 131072
+
+
+

@@ -204,17 +204,24 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
         return _record_unsupported_fallback_profile(model_name, reason=reason, force_overwrite=force_overwrite)
 
     # T008/T009: 100% Dynamic binary search bounds calculation without magic numbers
-    from src.core.gpu_detector import calculate_max_allocatable_n_ctx
-    n_layers = model_cfg.get("n_layers", 36)
-    n_heads = model_cfg.get("n_heads", 32)
-    head_dim = model_cfg.get("head_dim", 128)
-    model_max_rope = model_cfg.get("max_n_ctx", 131072)
+    from src.core.gpu_detector import (
+        calculate_max_allocatable_n_ctx,
+        calculate_dynamic_log_step_size,
+        read_gguf_metadata_architecture,
+    )
+    gguf_meta = read_gguf_metadata_architecture(abs_model_path)
+    n_layers = gguf_meta.get("n_layers") or model_cfg.get("n_layers", 36)
+    n_heads = gguf_meta.get("n_heads") or model_cfg.get("n_heads", 32)
+    n_head_kv = gguf_meta.get("n_head_kv") or model_cfg.get("n_head_kv", n_heads)
+    head_dim = gguf_meta.get("head_dim") or model_cfg.get("head_dim", 128)
+    model_max_rope = gguf_meta.get("max_rope_n_ctx") or model_cfg.get("max_n_ctx", 131072)
 
     max_allocatable_ctx = calculate_max_allocatable_n_ctx(
         usable_kv_budget_mb=remaining_kv_budget,
         n_layers=n_layers,
         n_heads=n_heads,
         head_dim=head_dim,
+        n_head_kv=n_head_kv,
         max_cap=model_max_rope
     )
     high = min(model_max_rope, max_allocatable_ctx)
@@ -228,10 +235,11 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
 
     print(f"[Binary Search GPU Load] 🚀 실측 GPU 프로세스 스폰 이진 탐색 개시 (모델={model_name}, Base VRAM={base_vram}MB, 구간=[{low}, {high}])...", file=sys.stderr)
 
-    for step in range(5):
-        if high - low <= 512:
+    for step in range(8):
+        step_size = calculate_dynamic_log_step_size(high)
+        if high - low <= step_size:
             break
-        mid = ((low + high) // 2 // 512) * 512
+        mid = ((low + high) // 2 // step_size) * step_size
         mid = min(mid, model_max_rope)
         if mid <= low or mid >= high:
             break
@@ -315,6 +323,15 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
             best_n_ctx = mid
             low = mid
             peak_vram_mb = max(peak_vram_mb, ctx_vram_mb)
+
+            # T013 / FR-002: Dynamic range re-expansion algorithm if VRAM > 50% free
+            if mid == high or (high - mid) <= step_size:
+                free_vram_ratio = (usable_vram - ctx_vram_mb) / usable_vram if usable_vram else 0
+                if free_vram_ratio >= 0.50 and high < model_max_rope:
+                    new_high = min(high * 2, model_max_rope)
+                    if new_high > high:
+                        print(f"[Binary Search GPU Load] 🔄 VRAM 여유({free_vram_ratio*100:.1f}%)로 상한선 재확장: {high} -> {new_high}", file=sys.stderr)
+                        high = new_high
         else:
             high = mid
 

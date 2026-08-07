@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GgufNctxProfileContract",
+  "type": "object",
+  "required": [
+    "model_name",
+    "max_context_length",
+    "recommended_context_length",
+    "architecture_params",
+    "binary_search_steps"
+  ],
+  "properties": {
+    "model_name": {
+      "type": "string"
+    },
+    "max_context_length": {
+      "type": "integer",
+      "minimum": 2048
+    },
+    "recommended_context_length": {
+      "type": "integer",
+      "minimum": 2048
+    },
+    "architecture_params": {
+      "type": "object",
+      "properties": {
+        "n_layers": { "type": "integer" },
+        "n_heads": { "type": "integer" },
+        "n_head_kv": { "type": "integer" },
+        "head_dim": { "type": "integer" },
+        "max_rope_n_ctx": { "type": "integer" }
+      }
+    },
+    "binary_search_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "type": "integer" },
+          "tested_n_ctx": { "type": "integer" },
+          "real_vram_mb": { "type": "integer" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  }
+}

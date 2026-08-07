@@ -3,6 +3,7 @@ GPU and CUDA Acceleration Detector and Exception Hierarchy.
 Provides hardware validation, VRAM memory checks, and CUDA backend verification.
 """
 
+import os
 import re
 import subprocess
 import shutil
@@ -208,16 +209,99 @@ def wait_for_nvml_vram_settled(
     return prev_info
 
 
+def read_gguf_metadata_architecture(gguf_file_path: str) -> dict:
+    """T008 / US1: Fast pure-Python GGUF binary header parser extracting architecture metadata."""
+    if not gguf_file_path or not os.path.exists(gguf_file_path):
+        return {}
+
+    try:
+        import struct
+        meta = {}
+        with open(gguf_file_path, "rb") as f:
+            magic = f.read(4)
+            if magic != b"GGUF":
+                return {}
+            version, n_tensors, n_kv = struct.unpack("<IQQ", f.read(20))
+
+            def _read_str(file_handle):
+                length = struct.unpack("<Q", file_handle.read(8))[0]
+                return file_handle.read(length).decode("utf-8", errors="ignore")
+
+            def _skip_val(file_handle, v_type):
+                if v_type in (0, 1, 7):
+                    file_handle.read(1)
+                elif v_type in (2, 3):
+                    file_handle.read(2)
+                elif v_type in (4, 5, 6):
+                    file_handle.read(4)
+                elif v_type in (10, 11, 12):
+                    file_handle.read(8)
+                elif v_type == 8:
+                    _read_str(file_handle)
+                elif v_type == 9:
+                    elem_type, elem_count = struct.unpack("<IQ", file_handle.read(12))
+                    for _ in range(elem_count):
+                        _skip_val(file_handle, elem_type)
+
+            for _ in range(n_kv):
+                k = _read_str(f)
+                val_type = struct.unpack("<I", f.read(4))[0]
+                k_lower = k.lower()
+                if any(x in k_lower for x in ("block_count", "head_count", "key_length", "context_length")):
+                    if val_type in (4, 5):
+                        val = struct.unpack("<I", f.read(4))[0]
+                        if "block_count" in k_lower:
+                            meta["n_layers"] = val
+                        elif "head_count_kv" in k_lower:
+                            meta["n_head_kv"] = val
+                        elif "head_count" in k_lower:
+                            meta["n_heads"] = val
+                        elif "key_length" in k_lower and "key_length_swa" not in k_lower:
+                            meta["head_dim"] = val
+                        elif "context_length" in k_lower:
+                            meta["max_rope_n_ctx"] = val
+                    elif val_type in (10, 11):
+                        val = struct.unpack("<Q", f.read(8))[0]
+                        if "block_count" in k_lower:
+                            meta["n_layers"] = val
+                        elif "head_count_kv" in k_lower:
+                            meta["n_head_kv"] = val
+                        elif "head_count" in k_lower:
+                            meta["n_heads"] = val
+                        elif "key_length" in k_lower and "key_length_swa" not in k_lower:
+                            meta["head_dim"] = val
+                        elif "context_length" in k_lower:
+                            meta["max_rope_n_ctx"] = val
+                    else:
+                        _skip_val(f, val_type)
+                else:
+                    _skip_val(f, val_type)
+        return meta
+    except Exception as e:
+        print(f"[GpuDetector] Warning: Failed to read GGUF binary header {gguf_file_path}: {e}")
+        return {}
+
+
+def calculate_dynamic_log_step_size(high: int) -> int:
+    """T004 / FR-004: Log-scaled dynamic step size calculation (step = max(512, 2^(floor(log2(high / 64)))))."""
+    import math
+    if high <= 32768:
+        return 512
+    raw = 2 ** math.floor(math.log2(high / 64.0))
+    return max(512, int(raw))
+
+
 def estimate_kv_cache_vram(
     n_layers: int = 36,
     n_heads: int = 32,
     head_dim: int = 128,
     n_ctx: int = 4096,
-    bytes_per_element: int = 2
+    bytes_per_element: float = 2.0,
+    n_head_kv: Optional[int] = None
 ) -> int:
-    """FR-012: Pre-flight KV Cache VRAM estimator (2 * L * H * D * n_ctx * bytes). Returns VRAM MB."""
-    # 2 for Key and Value matrices
-    total_bytes = 2 * n_layers * n_heads * head_dim * n_ctx * bytes_per_element
+    """T003 / FR-001: Pre-flight GQA KV Cache VRAM estimator (2 * L * H_kv * D * n_ctx * bytes). Returns VRAM MB."""
+    kv_heads = n_head_kv if n_head_kv is not None and n_head_kv > 0 else n_heads
+    total_bytes = 2 * n_layers * kv_heads * head_dim * n_ctx * bytes_per_element
     return max(1, int(total_bytes / (1024 * 1024)))
 
 
@@ -226,15 +310,17 @@ def calculate_max_allocatable_n_ctx(
     n_layers: int = 36,
     n_heads: int = 32,
     head_dim: int = 128,
-    bytes_per_element: int = 2,
+    bytes_per_element: float = 2.0,
     step: int = 512,
-    max_cap: int = 131072
+    max_cap: int = 131072,
+    n_head_kv: Optional[int] = None
 ) -> int:
-    """T008 / FR-002: Calculates the maximum allocatable n_ctx (aligned to step) fitting within usable_kv_budget_mb."""
+    """T008, T009 / FR-001: Calculates max allocatable n_ctx with GQA n_head_kv support and dynamic step alignment."""
     if usable_kv_budget_mb <= 0:
         return 2048
 
-    bytes_per_ctx_token = 2 * n_layers * n_heads * head_dim * bytes_per_element
+    kv_heads = n_head_kv if n_head_kv is not None and n_head_kv > 0 else n_heads
+    bytes_per_ctx_token = 2 * n_layers * kv_heads * head_dim * bytes_per_element
     max_bytes = usable_kv_budget_mb * 1024 * 1024
     raw_n_ctx = int(max_bytes / bytes_per_ctx_token) if bytes_per_ctx_token > 0 else 2048
 

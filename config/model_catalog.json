@@ -12,7 +12,12 @@
         "vram_est_mb": 3500,
         "requires_mmproj": true,
         "quant_type": "q4_k_m",
-        "size_gb": 1.8
+        "size_gb": 1.8,
+        "n_layers": 35,
+        "n_heads": 8,
+        "n_head_kv": 1,
+        "head_dim": 512,
+        "max_n_ctx": 131072
     },
     "gemma4-e4b": {
         "name": "Gemma 4 E4B",
@@ -27,7 +32,12 @@
         "vram_est_mb": 6500,
         "requires_mmproj": true,
         "quant_type": "q4_k_m",
-        "size_gb": 3.1
+        "size_gb": 3.1,
+        "n_layers": 36,
+        "n_heads": 8,
+        "n_head_kv": 1,
+        "head_dim": 512,
+        "max_n_ctx": 131072
     },
     "gemma4-12b": {
         "name": "Gemma 4 12B",
@@ -42,7 +52,12 @@
         "vram_est_mb": 9500,
         "requires_mmproj": true,
         "quant_type": "q4_k_m",
-        "size_gb": 7.4
+        "size_gb": 7.4,
+        "n_layers": 48,
+        "n_heads": 16,
+        "n_head_kv": 16,
+        "head_dim": 256,
+        "max_n_ctx": 131072
     },
     "qwen3.5-2b": {
         "name": "Qwen 3.5 2B",
@@ -57,7 +72,12 @@
         "vram_est_mb": 3000,
         "requires_mmproj": false,
         "quant_type": "q4_k_m",
-        "size_gb": 1.6
+        "size_gb": 1.6,
+        "n_layers": 24,
+        "n_heads": 14,
+        "n_head_kv": 2,
+        "head_dim": 128,
+        "max_n_ctx": 131072
     },
     "qwen3.5-4b": {
         "name": "Qwen 3.5 4B",
@@ -72,7 +92,12 @@
         "vram_est_mb": 5500,
         "requires_mmproj": false,
         "quant_type": "q4_k_m",
-        "size_gb": 2.8
+        "size_gb": 2.8,
+        "n_layers": 36,
+        "n_heads": 20,
+        "n_head_kv": 4,
+        "head_dim": 128,
+        "max_n_ctx": 131072
     },
     "qwen3.5-9b": {
         "name": "Qwen 3.5 9B",
@@ -87,7 +112,12 @@
         "vram_est_mb": 9800,
         "requires_mmproj": false,
         "quant_type": "q4_k_m",
-        "size_gb": 5.8
+        "size_gb": 5.8,
+        "n_layers": 40,
+        "n_heads": 32,
+        "n_head_kv": 8,
+        "head_dim": 128,
+        "max_n_ctx": 131072
     },
     "gemma4-2b-text": {
         "name": "Gemma 4 2B Text-Only",
