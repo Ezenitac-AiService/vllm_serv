@@ -19,7 +19,7 @@ import asyncio
 import argparse
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 
 # Add project root to sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -61,6 +61,128 @@ def get_candidate_llm_models() -> List[str]:
     if not candidate_models:
         candidate_models = ["qwen3.5-4b"]
     return candidate_models
+
+
+def get_benchmark_metric(res: Dict[str, Any], key: str, default_val: Any = None) -> Any:
+    """
+    FR-001 & T002: 벤치마크 결과 딕셔너리에서 키 매칭 오차 없이 통일된 메트릭 값을 추출하는 안전 헬퍼.
+    """
+    if not isinstance(res, dict):
+        return default_val
+
+    if key in ["tpot_tok_per_sec", "benchmark_tps"]:
+        val = res.get("tpot_tok_per_sec")
+        if val is None:
+            val = res.get("benchmark_tps")
+        if val is None and res.get("is_supported", True):
+            val = 30.0
+        return float(val) if val is not None else 0.0
+
+    if key in ["recommended_context_length", "recommended_context_window", "max_context_length"]:
+        val = res.get("recommended_context_length")
+        if val is None:
+            val = res.get("max_context_length")
+        if val is None:
+            val = res.get("recommended_context_window")
+        return int(val) if val is not None else (default_val if default_val is not None else 4096)
+
+    if key in ["peak_vram_mb", "vram_used_mb"]:
+        val = res.get("peak_vram_mb")
+        if val is None:
+            val = res.get("vram_used_mb")
+        return int(val) if val is not None else (default_val if default_val is not None else 0)
+
+    return res.get(key, default_val)
+
+
+def select_best_model_cba(results: Dict[str, Dict[str, Any]], catalog: Dict[str, Dict[str, Any]]) -> Tuple[str, Dict[str, Any]]:
+    """
+    FR-002 & T004: C-B-A 혼합 정렬 알고리즘 기반 최적 모델 및 dynamic context window 선정.
+    
+    1단계 (C: 파라미터 품질 우대 & 8K/4K/2K Graceful Fallback):
+      - max_context_length >= active_floor (8192 -> 4096 -> 2048) 모델 탐색
+      - 파라미터 크기 가중치 (9B/12B/27B/35B: 3.0~4.0, 4B: 2.0, 2B: 1.0)
+    2단계 (B: 복합 평가 점수):
+      - Score = param_weight * TPS * log2(rec_ctx / 2048) / (vram_mb / 1024)
+    3단계 (A: 최대 컨텍스트/TPS 동률 해소):
+      - rec_ctx 내림차순, TPS 내림차순, vram_mb 오름차순
+    """
+    supported_models = {
+        m_name: res for m_name, res in results.items()
+        if res.get("is_supported", False) is True
+    }
+
+    if not supported_models:
+        first_m = list(results.keys())[0] if results else "qwen3.5-4b"
+        fallback_res = results.get(first_m, {
+            "recommended_model": first_m,
+            "recommended_context_length": 2048,
+            "recommended_context_window": 2048,
+            "tpot_tok_per_sec": 30.0,
+            "benchmark_tps": 30.0,
+            "peak_vram_mb": 4200,
+            "vram_used_mb": 4200,
+            "is_supported": False
+        })
+        return first_m, fallback_res
+
+    # Determine active context floor (8192 -> 4096 -> 2048)
+    active_floor = 8192
+    has_at_least_8k = any(
+        get_benchmark_metric(res, "recommended_context_length", 2048) >= 8192
+        for res in supported_models.values()
+    )
+    if not has_at_least_8k:
+        has_at_least_4k = any(
+            get_benchmark_metric(res, "recommended_context_length", 2048) >= 4096
+            for res in supported_models.values()
+        )
+        active_floor = 4096 if has_at_least_4k else 2048
+
+    import math
+    model_scores = []
+    for m_name, res in supported_models.items():
+        m_cfg = catalog.get(m_name, {})
+        rec_ctx = get_benchmark_metric(res, "recommended_context_length", 2048)
+        tps = get_benchmark_metric(res, "tpot_tok_per_sec", 30.0)
+        vram_mb = get_benchmark_metric(res, "peak_vram_mb", 4200)
+
+        # 1단계 (C): 8K/4K/2K Floor 통과 여부 및 파라미터 가중치
+        passes_floor = 1 if rec_ctx >= active_floor else 0
+        
+        vram_est = m_cfg.get("vram_est_mb", 4000)
+        m_name_lower = m_name.lower()
+        if "27b" in m_name_lower or "35b" in m_name_lower or vram_est >= 15000:
+            param_weight = 4.0
+        elif "9b" in m_name_lower or "12b" in m_name_lower or vram_est >= 6000:
+            param_weight = 3.0
+        elif "4b" in m_name_lower or vram_est >= 4000:
+            param_weight = 2.0
+        else:
+            param_weight = 1.0
+
+        # 2단계 (B): 복합 점수
+        ctx_factor = math.log2(max(1.0, rec_ctx / 2048.0)) + 1.0
+        vram_gb = max(0.5, vram_mb / 1024.0)
+        composite_score = (param_weight * tps * ctx_factor) / vram_gb
+
+        # 3단계 (A): 동률 해소 정렬 키
+        sort_key = (
+            passes_floor,
+            param_weight,
+            composite_score,
+            rec_ctx,
+            tps,
+            -vram_mb
+        )
+        model_scores.append((sort_key, m_name, res))
+
+    model_scores.sort(key=lambda x: x[0], reverse=True)
+    best_m_name = model_scores[0][1]
+    best_res = model_scores[0][2]
+
+    return best_m_name, best_res
+
 
 
 def benchmark_context_window(
@@ -148,15 +270,16 @@ def save_benchmark_profile(benchmark_result: Dict[str, Any]) -> bool:
         server_cfg = config_mgr.get_server_config()
 
         rec_model = benchmark_result.get("recommended_model", "qwen3.5-4b")
-        rec_ctx = benchmark_result.get("recommended_context_window", 8192)
+        rec_ctx = get_benchmark_metric(benchmark_result, "recommended_context_length", 8192)
 
         server_cfg["model"] = rec_model
         server_cfg["context_window"] = rec_ctx
         server_cfg["auto_benchmark_profile"] = {
             "recommended_model": rec_model,
             "recommended_context_window": rec_ctx,
-            "benchmark_tps": benchmark_result.get("benchmark_tps", 30.0),
-            "vram_used_mb": benchmark_result.get("vram_used_mb", 4200),
+            "recommended_context_length": rec_ctx,
+            "benchmark_tps": get_benchmark_metric(benchmark_result, "tpot_tok_per_sec", 30.0),
+            "vram_used_mb": get_benchmark_metric(benchmark_result, "peak_vram_mb", 4200),
             "benchmark_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
 
@@ -540,7 +663,7 @@ def sync_partial_cache_miss(
 def evaluate_all_catalog_models(force: bool = True, force_overwrite: bool = False) -> Dict[str, Any]:
     """
     FR-002: config/model_catalog.json 내 전체 후보 LLM 모델 순차 실측 벤치마크 수행,
-    최적 서빙 모델 자동 선택 및 전체 프로파일 갱신.
+    C-B-A 혼합 정렬 알고리즘 기반 최적 서빙 모델 자동 선택 및 전체 프로파일 갱신.
     """
     candidate_models = get_candidate_llm_models()
 
@@ -549,9 +672,6 @@ def evaluate_all_catalog_models(force: bool = True, force_overwrite: bool = Fals
     print(f"====================================================")
 
     results = {}
-    best_model = None
-    best_tps = -1.0
-    best_res = None
 
     config_mgr = ConfigManager()
     catalog = config_mgr.get_model_catalog()
@@ -587,32 +707,27 @@ def evaluate_all_catalog_models(force: bool = True, force_overwrite: bool = Fals
             res = benchmark_context_window(model_name=model_name)
 
         results[model_name] = res
-        tps = res.get("benchmark_tps", 30.0 if res.get("is_supported") else 0.0)
-        vram = res.get("vram_used_mb", 4200)
+        tps = get_benchmark_metric(res, "tpot_tok_per_sec", 30.0 if res.get("is_supported") else 0.0)
+        vram = get_benchmark_metric(res, "peak_vram_mb", 4200)
+        rec_ctx_single = get_benchmark_metric(res, "recommended_context_length", 4096)
         is_sup = res.get("is_supported", True)
-        print(f"    └─ TPS: {tps:.1f}, VRAM 점유: {vram}MB, Supported: {is_sup}")
+        print(f"    └─ TPS: {tps:.1f}, VRAM 점유: {vram}MB, rec_ctx: {rec_ctx_single}, Supported: {is_sup}")
 
-        if is_sup and tps > best_tps:
-            best_tps = tps
-            best_model = model_name
-            best_res = res
+    # FR-002: C-B-A 혼합 우선순위 정렬 알고리즘 적용
+    best_model, best_res = select_best_model_cba(results, catalog)
 
-    if not best_model:
-        best_model = candidate_models[0]
-        best_res = results.get(best_model, {
-            "recommended_model": best_model,
-            "recommended_context_window": 4096,
-            "benchmark_tps": 30.0,
-            "vram_used_mb": 4200
-        })
-
-    rec_ctx = best_res.get("recommended_context_window", 4096)
+    best_tps = get_benchmark_metric(best_res, "tpot_tok_per_sec", 30.0)
+    best_vram = get_benchmark_metric(best_res, "peak_vram_mb", 4200)
+    rec_ctx = get_benchmark_metric(best_res, "recommended_context_length", 4096)
 
     final_result = {
         "recommended_model": best_model,
         "recommended_context_window": rec_ctx,
+        "recommended_context_length": rec_ctx,
         "benchmark_tps": best_tps,
-        "vram_used_mb": best_res.get("vram_used_mb", 4200),
+        "tpot_tok_per_sec": best_tps,
+        "vram_used_mb": best_vram,
+        "peak_vram_mb": best_vram,
         "evaluated_models": results,
         "stage_status": {
             "Stage 1": "SUCCESS",
