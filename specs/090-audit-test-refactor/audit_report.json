@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 350,
-  "preserved_files": 350,
+  "total_files_scanned": 352,
+  "preserved_files": 352,
   "archived_files": 0,
   "inventory": [
     {
@@ -1360,6 +1360,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_process_manager_cleanup.py",
+      "name": "test_process_manager_cleanup.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_client_access_logger.py",
       "name": "test_client_access_logger.py",
       "status": "ACTIVE",
@@ -1800,6 +1806,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_legacy_extraction_llm.cpython-312-pytest-9.1.1.pyc",
       "name": "test_legacy_extraction_llm.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_process_manager_cleanup.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager_cleanup.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

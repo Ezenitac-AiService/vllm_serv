@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ModelContextProfilesContract",
+  "type": "object",
+  "required": [
+    "generated_at",
+    "system_hardware",
+    "profiles"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "system_hardware": {
+      "type": "object",
+      "required": [
+        "gpu_name",
+        "total_vram_mb",
+        "is_cuda_available"
+      ],
+      "properties": {
+        "gpu_name": {
+          "type": "string"
+        },
+        "total_vram_mb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "is_cuda_available": {
+          "type": "boolean"
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "max_context_length",
+          "recommended_context_length",
+          "is_supported"
+        ],
+        "properties": {
+          "max_context_length": {
+            "type": "integer",
+            "minimum": 2048
+          },
+          "recommended_context_length": {
+            "type": "integer",
+            "minimum": 2048
+          },
+          "binary_search_steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "step",
+                "tested_n_ctx",
+                "status"
+              ],
+              "properties": {
+                "step": {
+                  "type": "integer"
+                },
+                "tested_n_ctx": {
+                  "type": "integer"
+                },
+                "real_vram_mb": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PASS",
+                    "OOM/FAIL"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "peak_vram_mb": {
+            "type": "integer"
+          },
+          "tpot_tok_per_sec": {
+            "type": "number"
+          },
+          "scaling_tested": {
+            "type": "boolean"
+          },
+          "is_supported": {
+            "type": "boolean"
+          },
+          "failure_reason": {
+            "type": "string"
+          },
+          "last_tested_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -165,16 +165,18 @@ def save_benchmark_profile(benchmark_result: Dict[str, Any]) -> bool:
         return False
 
 
-async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]:
+async def _execute_single_binary_search_inner(model_name: str, force_overwrite: bool = False) -> Dict[str, Any]:
     """Internal helper to execute real GPU binary search for a given model."""
     try:
-        from src.core.cpu_detector import detect_gpu_capability_safe
-        gpu_info = detect_gpu_capability_safe()
+        from src.core.gpu_detector import get_nvml_vram_info, get_realtime_usable_vram
+        gpu_info = get_nvml_vram_info()
         total_vram = gpu_info.total_vram_mb
-        gpu_name = gpu_info.gpu_name or "NVIDIA GPU"
+        gpu_name = gpu_info.name or "NVIDIA GPU"
+        usable_vram = get_realtime_usable_vram(safety_margin_mb=500)
     except Exception:
         total_vram = 8192
         gpu_name = "NVIDIA GeForce GPU"
+        usable_vram = 7692
 
     pm = ProcessManager()
     config_mgr = ConfigManager()
@@ -191,9 +193,14 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
     # Base VRAM calculation (file size * 1.15)
     base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path, file_size_bytes=file_size_bytes)
     
-    # 500MB Safety Cushion: usable VRAM = total_vram - 500
-    usable_vram = max(0, total_vram - 500)
+    # Dynamic usable VRAM from NVML free VRAM minus 500MB safety cushion
     remaining_kv_budget = usable_vram - base_vram
+
+    if remaining_kv_budget < 0:
+        reason = f"CUDA OOM Risk: Base VRAM ({base_vram}MB) exceeds Real-time Usable VRAM ({usable_vram}MB)"
+        print(f"[Binary Search GPU Load] ⚠️ {reason}", file=sys.stderr)
+        return _record_unsupported_fallback_profile(model_name, reason=reason, force_overwrite=force_overwrite)
+
 
     # Set initial search range based on remaining KV budget
     if remaining_kv_budget < 3000:
@@ -351,12 +358,34 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
     }
 
 
-def _record_unsupported_fallback_profile(model_name: str, reason: str = "OOM or Process Failure") -> Dict[str, Any]:
-    """FR-005: Record unsupported/fallback status profile for OOM or timeout models and print [BENCHMARK WARN]."""
-    print(f"[BENCHMARK WARN] ⚠️ Model {model_name} evaluation failed ({reason}). Recording fallback profile (is_supported=false, n_ctx=2048).", file=sys.stderr)
+def _record_unsupported_fallback_profile(model_name: str, reason: str = "OOM or Process Failure", force_overwrite: bool = False) -> Dict[str, Any]:
+    """FR-005 & US2: Record unsupported/fallback status profile for OOM or timeout models. Preserves existing valid profile unless force_overwrite is True."""
     config_mgr = ConfigManager()
     profiles_data = config_mgr.load_model_context_profiles()
     existing_profiles = profiles_data.get("profiles", {})
+
+    # Non-destructive preservation: If existing valid profile exists and force_overwrite is False, do not overwrite it
+    if not force_overwrite and model_name in existing_profiles:
+        existing_item = existing_profiles[model_name]
+        if existing_item.get("is_supported") is True:
+            print(f"[BENCHMARK WARN] ⚠️ Model {model_name} evaluation failed ({reason}), but preserving existing valid profile (is_supported=true, max_ctx={existing_item.get('max_context_length')}). Use --force-overwrite-profiles to overwrite.", file=sys.stderr)
+            return {
+                "recommended_model": model_name,
+                "max_context_length": existing_item.get("max_context_length", 2048),
+                "recommended_context_length": existing_item.get("recommended_context_length", 2048),
+                "benchmark_tps": existing_item.get("tpot_tok_per_sec", 45.0),
+                "vram_used_mb": existing_item.get("peak_vram_mb", 0),
+                "is_supported": True,
+                "failure_reason": existing_item.get("failure_reason", "PRESERVED_EXISTING_VALID_PROFILE"),
+                "stage_status": {
+                    "Stage 1": "SUCCESS",
+                    "Stage 2": "SUCCESS",
+                    "Stage 3": "PRESERVED_EXISTING_PROFILE",
+                    "Stage 4": "SUCCESS"
+                }
+            }
+
+    print(f"[BENCHMARK WARN] ⚠️ Model {model_name} evaluation failed ({reason}). Recording fallback profile (is_supported=false, n_ctx=2048).", file=sys.stderr)
 
     existing_profiles[model_name] = {
         "max_context_length": 2048,
@@ -390,22 +419,22 @@ def _record_unsupported_fallback_profile(model_name: str, reason: str = "OOM or 
     }
 
 
-async def async_run_fine_grained_binary_search(model_name: str = "qwen3.5-4b") -> Dict[str, Any]:
+async def async_run_fine_grained_binary_search(model_name: str = "qwen3.5-4b", force_overwrite: bool = False) -> Dict[str, Any]:
     """
     FR-008: 120초 비동기 타임아웃 래퍼 및 OOM/스폰 실패 시 ProcessManager SIGKILL 정리 및 unsupported 기록.
     """
     pm = ProcessManager()
     try:
-        result = await asyncio.wait_for(_execute_single_binary_search_inner(model_name), timeout=120.0)
+        result = await asyncio.wait_for(_execute_single_binary_search_inner(model_name, force_overwrite=force_overwrite), timeout=120.0)
         return result
     except Exception as e:
         print(f"[BENCHMARK WARN] Model {model_name} search failed or timed out (120s): {e}", file=sys.stderr)
         await pm.stop_process()
         pm.force_kill_zombie_llama_servers()
-        return _record_unsupported_fallback_profile(model_name)
+        return _record_unsupported_fallback_profile(model_name, reason=str(e), force_overwrite=force_overwrite)
 
 
-def run_fine_grained_binary_search(model_name: str = "qwen3.5-4b") -> Dict[str, Any]:
+def run_fine_grained_binary_search(model_name: str = "qwen3.5-4b", force_overwrite: bool = False) -> Dict[str, Any]:
     """Sync wrapper for async_run_fine_grained_binary_search."""
     try:
         loop = asyncio.get_running_loop()
@@ -415,10 +444,11 @@ def run_fine_grained_binary_search(model_name: str = "qwen3.5-4b") -> Dict[str, 
     if loop and loop.is_running():
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(lambda: asyncio.run(async_run_fine_grained_binary_search(model_name=model_name)))
+            future = executor.submit(lambda: asyncio.run(async_run_fine_grained_binary_search(model_name=model_name, force_overwrite=force_overwrite)))
             return future.result()
     else:
-        return asyncio.run(async_run_fine_grained_binary_search(model_name=model_name))
+        return asyncio.run(async_run_fine_grained_binary_search(model_name=model_name, force_overwrite=force_overwrite))
+
 
 
 def sync_partial_cache_miss(
@@ -471,7 +501,7 @@ def sync_partial_cache_miss(
     return missing_models
 
 
-def evaluate_all_catalog_models(force: bool = True) -> Dict[str, Any]:
+def evaluate_all_catalog_models(force: bool = True, force_overwrite: bool = False) -> Dict[str, Any]:
     """
     FR-002: config/model_catalog.json 내 전체 후보 LLM 모델 순차 실측 벤치마크 수행,
     최적 서빙 모델 자동 선택 및 전체 프로파일 갱신.
@@ -495,20 +525,18 @@ def evaluate_all_catalog_models(force: bool = True) -> Dict[str, Any]:
         rel_path = model_cfg.get("model_path", f"models/{model_name}/{model_name}.gguf")
         abs_model_path = config_mgr.get_absolute_path(rel_path) or str(REPO_ROOT / rel_path)
 
-        # Pre-flight VRAM check: exclude models exceeding usable VRAM
+        # Pre-flight VRAM check: exclude models exceeding real-time usable VRAM
         try:
-            from src.core.cpu_detector import detect_gpu_capability_safe
-            gpu_info = detect_gpu_capability_safe()
-            total_vram = gpu_info.total_vram_mb
+            from src.core.gpu_detector import get_realtime_usable_vram
+            usable_vram = get_realtime_usable_vram(safety_margin_mb=500)
         except Exception:
-            total_vram = 8192
+            usable_vram = 7692
         
-        usable_vram = max(0, total_vram - 500)
         vram_est = model_cfg.get("vram_est_mb", 0)
         
         if vram_est > usable_vram:
-            reason = f"CUDA OOM Risk: Base VRAM ({vram_est}MB) exceeds Usable VRAM ({usable_vram}MB)"
-            res = _record_unsupported_fallback_profile(model_name, reason=reason)
+            reason = f"CUDA OOM Risk: Base VRAM ({vram_est}MB) exceeds Real-time Usable VRAM ({usable_vram}MB)"
+            res = _record_unsupported_fallback_profile(model_name, reason=reason, force_overwrite=force_overwrite)
             results[model_name] = res
             print(f"    └─ Pre-flight VRAM exclusion: {reason}")
             continue
@@ -518,7 +546,7 @@ def evaluate_all_catalog_models(force: bool = True) -> Dict[str, Any]:
         print(f"  - [{model_name}] GGUF 무결성 점검: {status_str}")
 
         if integrity:
-            res = run_fine_grained_binary_search(model_name=model_name)
+            res = run_fine_grained_binary_search(model_name=model_name, force_overwrite=force_overwrite)
         else:
             res = benchmark_context_window(model_name=model_name)
 
@@ -570,23 +598,25 @@ def main():
     parser.add_argument("--skip-benchmark", action="store_true", help="3단계 실측 벤치마크를 스킵하고 기존 설정 보존")
     parser.add_argument("--force-benchmark", action="store_true", help="카탈로그 전체 LLM 후보 모델 대상 강제 실측 벤치마킹 구동")
     parser.add_argument("--fine-grained", action="store_true", help="2단계 이진 탐색(512/1024 블록 얼라인먼트) 정밀 프로파일링 구동")
+    parser.add_argument("--force-overwrite-profiles", action="store_true", help="기존 검증된 프로파일 데이터 덮어쓰기 허용")
     parser.add_argument("--model", type=str, default="qwen3.5-4b", help="벤치마크 대상 모델명")
     parser.add_argument("--json", action="store_true", help="JSON 형태로 결과 출력")
     args = parser.parse_args()
 
     if args.force_benchmark:
-        res = evaluate_all_catalog_models(force=True)
+        res = evaluate_all_catalog_models(force=True, force_overwrite=args.force_overwrite_profiles)
         if args.json:
             print(json.dumps(res, indent=2))
         sys.exit(0)
 
     if args.fine_grained:
-        fg_res = run_fine_grained_binary_search(model_name=args.model)
+        fg_res = run_fine_grained_binary_search(model_name=args.model, force_overwrite=args.force_overwrite_profiles)
         if args.json:
             print(json.dumps(fg_res, indent=2))
         else:
             print(f"[BENCHMARK INFO] 🎯 2단계 이진 탐색 완료: max_ctx={fg_res['max_context_length']}, recommended_ctx={fg_res['recommended_context_length']}")
         sys.exit(0)
+
 
     if args.skip_benchmark:
         config_mgr = ConfigManager()

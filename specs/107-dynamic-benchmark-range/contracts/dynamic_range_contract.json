@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DynamicBenchmarkRangeContract",
+  "type": "object",
+  "required": [
+    "model_id",
+    "total_vram_mb",
+    "free_vram_mb",
+    "base_vram_mb",
+    "dynamic_high_bound",
+    "dynamic_low_bound",
+    "measured_tps"
+  ],
+  "properties": {
+    "model_id": { "type": "string" },
+    "total_vram_mb": { "type": "integer", "minimum": 1024 },
+    "free_vram_mb": { "type": "integer", "minimum": 0 },
+    "base_vram_mb": { "type": "integer", "minimum": 100 },
+    "dynamic_high_bound": { "type": "integer", "minimum": 2048 },
+    "dynamic_low_bound": { "type": "integer", "minimum": 512 },
+    "measured_tps": { "type": "number", "minimum": 0.0 }
+  }
+}

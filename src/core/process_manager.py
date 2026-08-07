@@ -66,6 +66,7 @@ async def poll_server_health(
         timeout = min(60.0, max(15.0, calc))
 
     url = f"http://127.0.0.1:{port}/health"
+    fallback_url = f"http://127.0.0.1:{port}/v1/models"
     start_time = time.perf_counter()
     while (time.perf_counter() - start_time) < timeout:
         try:
@@ -73,10 +74,15 @@ async def poll_server_health(
                 res = await client.get(url, timeout=0.5)
                 if res.status_code == 200:
                     return True
+                elif res.status_code == 404:
+                    res_fb = await client.get(fallback_url, timeout=0.5)
+                    if res_fb.status_code == 200:
+                        return True
         except Exception:
             pass
         await asyncio.sleep(interval)
     return False
+
 
 class ProcessStatusEnum(str, Enum):
     UNLOADED = "UNLOADED"
@@ -926,10 +932,11 @@ class ProcessManager:
             return sock.connect_ex(('127.0.0.1', self.port)) != 0
 
     @staticmethod
-    def force_kill_zombie_llama_servers() -> None:
-        """098-benchmark-all-serviced-models (T004): Force kills any orphan/zombie llama-server processes with SIGKILL."""
+    def force_kill_zombie_llama_servers(target_port: int = 8081) -> None:
+        """T015 / US3: Pinpoint kills zombie llama-server processes targeting only benchmark port (default 8081). Avoids broad pkill wildcards that kill production backend servers on 8089/8090/8091."""
         import subprocess
         try:
-            subprocess.run(["pkill", "-9", "-f", "llama-server"], capture_output=True, check=False)
+            subprocess.run(["fuser", "-k", "-9", f"{target_port}/tcp"], capture_output=True, check=False)
         except Exception:
             pass
+

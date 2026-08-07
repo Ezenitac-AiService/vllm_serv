@@ -325,3 +325,15 @@ def test_validate_cuda_build_env_cpu_only_llama(mock_which):
             sys.modules["llama_cpp"] = original_module
         else:
             sys.modules.pop("llama_cpp", None)
+
+
+def test_get_realtime_usable_vram():
+    """T005 / US1: get_realtime_usable_vram calculates free_vram_mb - safety_margin."""
+    from src.core.gpu_detector import get_realtime_usable_vram
+    with patch("src.core.gpu_detector.get_nvml_vram_info") as mock_nvml:
+        mock_nvml.return_value = GpuDeviceInfo(
+            device_id=0, name="Test GPU", total_vram_mb=11264, free_vram_mb=8000, is_cuda_available=True
+        )
+        usable = get_realtime_usable_vram(safety_margin_mb=500)
+        assert usable == 7500
+

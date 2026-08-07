@@ -180,6 +180,16 @@ def get_nvml_vram_info(device_index: int = 0) -> GpuDeviceInfo:
         return check_gpu_availability()
 
 
+def get_realtime_usable_vram(safety_margin_mb: int = 500) -> int:
+    """T003 / FR-001: Returns real-time usable VRAM in MB calculated from NVML free VRAM minus safety margin."""
+    try:
+        gpu_info = get_nvml_vram_info()
+        return max(0, gpu_info.free_vram_mb - safety_margin_mb)
+    except Exception:
+        return 0
+
+
+
 def estimate_kv_cache_vram(
     n_layers: int = 36,
     n_heads: int = 32,
