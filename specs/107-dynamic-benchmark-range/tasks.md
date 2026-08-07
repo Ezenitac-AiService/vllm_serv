@@ -16,8 +16,8 @@
 
 **Purpose**: Environment verification and prerequisite setup
 
-- [ ] T001 Verify virtualenv environment (`uv run pytest --version`) and PyNVML driver bindings
-- [ ] T002 Verify model catalog config and profiles integrity in `config/model_catalog.json`
+- [X] T001 Verify virtualenv environment (`uv run pytest --version`) and PyNVML driver bindings
+- [X] T002 Verify model catalog config and profiles integrity in `config/model_catalog.json`
 
 ---
 
@@ -25,9 +25,9 @@
 
 **Purpose**: Core infrastructure and base utilities for dynamic VRAM calculation & process management
 
-- [ ] T003 Implement dynamic Scratchpad safety margin calculation ($\text{safety\_margin\_mb} = 500 + \lfloor n_{\text{ctx}} \times 0.05 \rfloor$) in `src/core/gpu_detector.py`
-- [ ] T004 Implement NVML Settling Loop (0.2s interval polling until Delta < 10MB across consecutive reads) in `src/core/gpu_detector.py`
-- [ ] T005 [P] Create unit test for NVML Settling Loop in `tests/unit/test_gpu_detector.py`
+- [X] T003 Implement dynamic Scratchpad safety margin calculation ($\text{safety\_margin\_mb} = 500 + \lfloor n_{\text{ctx}} \times 0.05 \rfloor$) in `src/core/gpu_detector.py`
+- [X] T004 Implement NVML Settling Loop (0.2s interval polling until Delta < 10MB across consecutive reads) in `src/core/gpu_detector.py`
+- [X] T005 [P] Create unit test for NVML Settling Loop in `tests/unit/test_gpu_detector.py`
 
 ---
 
@@ -39,14 +39,14 @@
 
 ### Tests for User Story 1 (MANDATORY) ⚠️
 
-- [ ] T006 [P] [US1] Create unit test for dynamic high-bound calculation (`test_dynamic_high_bound_calculation`) in `tests/unit/test_benchmark_context_window.py`
-- [ ] T007 [P] [US1] Create unit test for small model (`gemma4-e2b`) context range expansion in `tests/unit/test_benchmark_context_window.py`
+- [X] T006 [P] [US1] Create unit test for dynamic high-bound calculation (`test_dynamic_high_bound_calculation`) in `tests/unit/test_benchmark_context_window.py`
+- [X] T007 [P] [US1] Create unit test for small model (`gemma4-e2b`) context range expansion in `tests/unit/test_benchmark_context_window.py`
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Implement `calculate_max_allocatable_n_ctx` using `estimate_kv_cache_vram` reverse mapping in `src/core/gpu_detector.py`
-- [ ] T009 [US1] Remove hardcoded upper bound `16384` and `4096` in `scripts/benchmark_context_window.py` and replace with `high = min(model_max_n_ctx, max_allocatable_n_ctx)`
-- [ ] T010 [US1] Implement dynamic inference timeout scaling ($\text{timeout\_s} = \max(60.0, 30.0 + n_{\text{ctx}} \times 0.005)$) in `scripts/benchmark_context_window.py`
+- [X] T008 [US1] Implement `calculate_max_allocatable_n_ctx` using `estimate_kv_cache_vram` reverse mapping in `src/core/gpu_detector.py`
+- [X] T009 [US1] Remove hardcoded upper bound `16384` and `4096` in `scripts/benchmark_context_window.py` and replace with `high = min(model_max_n_ctx, max_allocatable_n_ctx)`
+- [X] T010 [US1] Implement dynamic inference timeout scaling ($\text{timeout\_s} = \max(60.0, 30.0 + n_{\text{ctx}} \times 0.005)$) in `scripts/benchmark_context_window.py`
 
 **Checkpoint**: User Story 1 is fully functional and testable independently (`uv run pytest tests/unit/test_benchmark_context_window.py`).
 
@@ -60,14 +60,14 @@
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
-- [ ] T011 [P] [US2] Create unit test for `llama_cpp.server` and port 8089/8090/8091 fuser cleanup in `tests/unit/test_process_manager_cleanup.py`
-- [ ] T012 [P] [US2] Create unit test for TCP TIME_WAIT port readiness check in `tests/unit/test_process_manager_cleanup.py`
+- [X] T011 [P] [US2] Create unit test for `llama_cpp.server` and port 8089/8090/8091 fuser cleanup in `tests/unit/test_process_manager_cleanup.py`
+- [X] T012 [P] [US2] Create unit test for TCP TIME_WAIT port readiness check in `tests/unit/test_process_manager_cleanup.py`
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Add `pgrep -f "llama_cpp.server"` and `fuser -k -9 8089/tcp 8090/tcp 8091/tcp` cleanup commands to `stop_server.sh`
-- [ ] T014 [US2] Add Python `llama_cpp.server` module patterns and socket port cleanup to `force_kill_zombie_llama_servers` in `src/core/process_manager.py`
-- [ ] T015 [US2] Add TCP Port Readiness Polling (verify `socket.connect_ex` returns non-zero) to `src/core/process_manager.py`
+- [X] T013 [US2] Add `pgrep -f "llama_cpp.server"` and `fuser -k -9 8089/tcp 8090/tcp 8091/tcp` cleanup commands to `stop_server.sh`
+- [X] T014 [US2] Add Python `llama_cpp.server` module patterns and socket port cleanup to `force_kill_zombie_llama_servers` in `src/core/process_manager.py`
+- [X] T015 [US2] Add TCP Port Readiness Polling (verify `socket.connect_ex` returns non-zero) to `src/core/process_manager.py`
 
 **Checkpoint**: User Stories 1 AND 2 are both independently functional and testable.
 
@@ -81,14 +81,14 @@
 
 ### Tests for User Story 3 (MANDATORY) ⚠️
 
-- [ ] T016 [P] [US3] Create unit test verifying zero magic numbers (`remaining_kv_budget < 3000`, `45.0 TPS`) in `tests/unit/test_benchmark_context_window.py`
-- [ ] T017 [P] [US3] Create unit test for real TPS calculation in `tests/unit/test_benchmark_context_window.py`
+- [X] T016 [P] [US3] Create unit test verifying zero magic numbers (`remaining_kv_budget < 3000`, `45.0 TPS`) in `tests/unit/test_benchmark_context_window.py`
+- [X] T017 [P] [US3] Create unit test for real TPS calculation in `tests/unit/test_benchmark_context_window.py`
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] Remove hardcoded `remaining_kv_budget < 3000` rule in `scripts/benchmark_context_window.py`
-- [ ] T019 [US3] Remove hardcoded `tps_val = 45.0` fallback in `scripts/benchmark_context_window.py` and replace with real measured TPS (`max_tokens / elapsed_time`)
-- [ ] T020 [US3] Remove hardcoded `file_size_mb = 3000.0` fallback in `scripts/benchmark_context_window.py` and replace with catalog `size_gb * 1024`
+- [X] T018 [US3] Remove hardcoded `remaining_kv_budget < 3000` rule in `scripts/benchmark_context_window.py`
+- [X] T019 [US3] Remove hardcoded `tps_val = 45.0` fallback in `scripts/benchmark_context_window.py` and replace with real measured TPS (`max_tokens / elapsed_time`)
+- [X] T020 [US3] Remove hardcoded `file_size_mb = 3000.0` fallback in `scripts/benchmark_context_window.py` and replace with catalog `size_gb * 1024`
 
 **Checkpoint**: All user stories are independently functional with zero magic numbers.
 
@@ -98,9 +98,9 @@
 
 **Purpose**: Full regression testing and validation against quickstart scenarios
 
-- [ ] T021 Run quickstart validation scenarios from `specs/107-dynamic-benchmark-range/quickstart.md`
-- [ ] T022 Run complete test suite (`uv run pytest`) across all unit tests
-- [ ] T023 Verify Constitution Principle II compliance across codebase
+- [X] T021 Run quickstart validation scenarios from `specs/107-dynamic-benchmark-range/quickstart.md`
+- [X] T022 Run complete test suite (`uv run pytest`) across all unit tests
+- [X] T023 Verify Constitution Principle II compliance across codebase
 
 ---
 
