@@ -84,3 +84,25 @@ def test_dynamic_vram_capacity_binding():
     assert isinstance(vram_mb, int)
     assert vram_mb > 0
 
+
+def test_merge_and_save_model_context_profiles_atomic_preservation():
+    """T009 [US2]: Verify atomic load, merge, and save preservation of model context profiles."""
+    cm = ConfigManager()
+    cm.invalidate_all_caches()
+    
+    current_data = cm.load_model_context_profiles()
+    initial_profiles_count = len(current_data.get("profiles", {}))
+    
+    new_profile = {
+        "test-dummy-model": {
+            "max_context_length": 4096,
+            "recommended_context_length": 4096,
+            "is_supported": True
+        }
+    }
+    
+    merged = cm.merge_and_save_model_context_profiles(new_profile)
+    assert "test-dummy-model" in merged["profiles"]
+    assert len(merged["profiles"]) >= initial_profiles_count
+
+

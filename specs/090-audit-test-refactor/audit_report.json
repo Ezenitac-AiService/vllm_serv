@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 348,
-  "preserved_files": 348,
+  "total_files_scanned": 350,
+  "preserved_files": 350,
   "archived_files": 0,
   "inventory": [
     {
@@ -1222,6 +1222,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_benchmark_context.py",
+      "name": "test_benchmark_context.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_api_key_manager.py",
       "name": "test_api_key_manager.py",
       "status": "ACTIVE",
@@ -1872,6 +1878,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_auxiliary_reranker.cpython-312-pytest-9.1.1.pyc",
       "name": "test_auxiliary_reranker.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_benchmark_context.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_benchmark_context.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

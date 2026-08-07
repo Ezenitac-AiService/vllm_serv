@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import tempfile
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, field_validator
@@ -464,4 +465,23 @@ class ConfigManager:
             if os.path.exists(temp_name):
                 os.remove(temp_name)
             raise
+
+    def merge_and_save_model_context_profiles(self, new_profiles: Dict[str, Any], system_hardware: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Atomically loads existing profiles, merges new_profiles into existing profiles, and saves."""
+        current_data = self.load_model_context_profiles()
+        existing_profiles = current_data.get("profiles", {})
+        if not isinstance(existing_profiles, dict):
+            existing_profiles = {}
+
+        for m_id, prof in new_profiles.items():
+            existing_profiles[m_id] = prof
+
+        hardware = system_hardware if system_hardware else current_data.get("system_hardware", {})
+        merged_data = {
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "system_hardware": hardware,
+            "profiles": existing_profiles
+        }
+        self.save_model_context_profiles(merged_data)
+        return merged_data
 

@@ -179,6 +179,7 @@ if [ "$USE_ZIP" -eq 1 ]; then
         "*.tar.gz" "*.zip" "*.pid" ".coverage" "htmlcov/*"
 else
     tar -czf "$ABS_OUTPUT_PATH" \
+        --warning=no-file-changed \
         --exclude="models" \
         --exclude=".venv" \
         --exclude=".bin" \
@@ -249,6 +250,13 @@ if echo "$ARCHIVE_FILES" | grep "ensure_models.py" > /dev/null; then
     log_info "✓ 모델 자동 다운로드 헬퍼(scripts/ensure_models.py) 아카이브 수록 검증 완료"
 else
     log_err "아카이브 검증 실패: scripts/ensure_models.py 파일이 수록되지 않았습니다."
+    exit 1
+fi
+
+if echo "$ARCHIVE_FILES" | grep "auxiliary_manager.py" > /dev/null; then
+    log_info "✓ 보조 매니저(src/core/auxiliary_manager.py) 아카이브 수록 검증 완료"
+else
+    log_err "아카이브 검증 실패: src/core/auxiliary_manager.py 파일이 수록되지 않았습니다."
     exit 1
 fi
 

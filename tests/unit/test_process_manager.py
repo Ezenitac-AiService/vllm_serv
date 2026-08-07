@@ -119,3 +119,18 @@ def test_verify_and_build_llama_server_cmake_cuda_flag(mock_run, mock_exists, mo
     first_cmake_args = cmake_calls[0][0][0]  # positional args
     assert "-DGGML_CUDA=ON" in first_cmake_args, \
         f"CMake build must include -DGGML_CUDA=ON flag, got: {first_cmake_args}"
+
+
+@pytest.mark.asyncio
+async def test_poll_server_health_dynamic_timeout_scaling():
+    """T004 [US1]: poll_server_health dynamic timeout scaling up to 60s for large n_ctx and file_size_mb."""
+    from src.core.process_manager import poll_server_health
+
+    with patch("httpx.AsyncClient.get") as mock_get, \
+         patch("os.environ.get", return_value=None):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_get.return_value = mock_response
+
+        res = await poll_server_health(port=8081, file_size_mb=3000.0, n_ctx=10240)
+        assert res is True

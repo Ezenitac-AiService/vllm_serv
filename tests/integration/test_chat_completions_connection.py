@@ -12,7 +12,10 @@ from src.api.main import app
 async def test_chat_completions_mock_connection():
     """Test Chat Completions proxy endpoint when MOCK_LLAMA_SERVER is enabled."""
     import os
+    from src.core.llama_manager import llama_manager
+    from src.core.process_manager import ProcessStatusEnum
     os.environ["MOCK_LLAMA_SERVER"] = "1"
+    llama_manager.state = ProcessStatusEnum.READY
     
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:

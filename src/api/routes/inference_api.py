@@ -80,6 +80,8 @@ def parse_response_format(body: dict[str, Any]) -> dict[str, Any]:
 
 async def check_llama_status() -> bool:
     """Check if the backend LLM engine is ready to accept requests."""
+    if llama_manager.process_manager.state.status == ProcessStatusEnum.UNLOADED:
+        return False
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
         return True
     return llama_manager.is_ready()

@@ -12,9 +12,11 @@ uv run python scripts/benchmark_context_window.py [OPTIONS]
 | :--- | :--- | :--- | :--- |
 | `--model` | String | `qwen3.5-4b` | 탐색할 타겟 모델 ID |
 | `--force-benchmark` | Flag | `False` | 카탈로그 전체 LLM 후보 모델 대상 실측 이진 탐색 전체 수행 |
-| `--fine-grained` | Flag | `False` | 지정 모델 대상 5단계 정밀 이진 탐색(`range(5)`) 수행 |
+| `--fine-grained` | Flag | `False` | 지정 모델(`--model`) 대상 5단계 정밀 이진 탐색(`range(5)`) 단독 수행 |
 | `--skip-benchmark` | Flag | `False` | 3단계 실측 탐색 스킵 및 기존 설정 보존 |
 | `--json` | Flag | `False` | 탐색 결과를 JSON 포맷으로 표준 출력에 출력 |
+
+> **Usage Note**: `--fine-grained` 옵션은 특정 모델(`--model`)에 대해 단독 정밀 탐색을 진행할 때 사용하며, `--force-benchmark` 옵션은 모델 카탈로그 전 모델을 순차적으로 벤치마킹할 때 적용합니다.
 
 ### Output JSON Format Specification (`--json`)
 

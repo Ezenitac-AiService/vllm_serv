@@ -50,7 +50,7 @@
         "recommended_model": "gemma4-e2b",
         "recommended_context_window": 4096,
         "benchmark_tps": 45.0,
-        "vram_used_mb": 0,
-        "benchmark_timestamp": "2026-08-07T06:39:27Z"
+        "vram_used_mb": 10671,
+        "benchmark_timestamp": "2026-08-07T08:39:39Z"
     }
 }

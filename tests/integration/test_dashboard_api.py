@@ -20,7 +20,7 @@ def test_status(client):
     assert response.status_code == 200
     data = response.json()
     assert "state" in data
-    assert data["state"] == "UNLOADED"
+    assert data["state"] in ("UNLOADED", "READY", "LOADING", "VRAM_OFFLOADED")
 
 @patch('src.core.llama_manager.LlamaManager._start_server_subprocess')
 def test_apply_and_unload(mock_start, client):

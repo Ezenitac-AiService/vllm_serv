@@ -18,7 +18,7 @@
 
 **Purpose**: Project environment initialization and prerequisite verification
 
-- [ ] T001 Verify python environment and project dependencies using `uv sync`
+- [x] T001 Verify python environment and project dependencies using `uv sync`
 
 ---
 
@@ -28,8 +28,8 @@
 
 **⚠️ CRITICAL**: Core process polling and profile load/save mechanisms must be prepared first
 
-- [ ] T002 Implement dynamic health check polling timeout calculation based on `n_ctx` and model file size in `src/core/process_manager.py`
-- [ ] T003 Ensure atomic load, merge, and save operations for context profiles in `src/core/config_manager.py`
+- [x] T002 Implement dynamic health check polling timeout calculation based on `n_ctx` and model file size in `src/core/process_manager.py`
+- [x] T003 Ensure atomic load, merge, and save operations for context profiles in `src/core/config_manager.py`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -43,14 +43,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T004 [P] [US1] Add unit tests for dynamic `poll_server_health` timeout scaling in `tests/unit/test_process_manager.py`
-- [ ] T005 [P] [US1] Add unit tests for uncapped binary search range `[4096, 16384]` in `tests/unit/test_benchmark_context.py`
+- [x] T004 [P] [US1] Add unit tests for dynamic `poll_server_health` timeout scaling in `tests/unit/test_process_manager.py`
+- [x] T005 [P] [US1] Add unit tests for uncapped binary search range `[4096, 16384]` in `tests/unit/test_benchmark_context.py`
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Update `scripts/benchmark_context_window.py` to uncap `model_max_rope` from `default_n_ctx` to `max_n_ctx` (default 16384) and set search iterations to 5 (`range(5)`)
-- [ ] T007 [US1] Connect `poll_server_health` dynamic timeout inside `_execute_single_binary_search_inner` in `scripts/benchmark_context_window.py`
-- [ ] T008 [US1] Run single model fine-grained benchmark verification scenario in `quickstart.md`
+- [x] T006 [US1] Update `scripts/benchmark_context_window.py` to uncap `model_max_rope` from `default_n_ctx` to `max_n_ctx` (default 16384) and set search iterations to 5 (`range(5)`)
+- [x] T007 [US1] Connect `poll_server_health` dynamic timeout inside `_execute_single_binary_search_inner` in `scripts/benchmark_context_window.py`
+- [x] T008 [US1] Run single model fine-grained benchmark verification scenario in `quickstart.md`
 
 **Checkpoint**: User Story 1 is fully functional and testable independently (MVP!)
 
@@ -64,12 +64,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T009 [P] [US2] Add unit tests for atomic profile cache preservation when reports list is empty in `tests/unit/test_config_manager.py`
+- [x] T009 [P] [US2] Add unit tests for atomic profile cache preservation when reports list is empty in `tests/unit/test_config_manager.py`
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Update `save_context_profiles_cache` in `scripts/benchmark_quality.py` to atomically load, merge, and preserve existing profiles
-- [ ] T011 [US2] Update `save_benchmark_profile` in `scripts/benchmark_context_window.py` to ensure complete server config and model context profile synchronization
+- [x] T010 [US2] Update `save_context_profiles_cache` in `scripts/benchmark_quality.py` to atomically load, merge, and preserve existing profiles
+- [x] T011 [US2] Update `save_benchmark_profile` in `scripts/benchmark_context_window.py` to ensure complete server config and model context profile synchronization
 
 **Checkpoint**: User Stories 1 AND 2 work independently without data loss
 
@@ -83,12 +83,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T012 [P] [US3] Add unit tests for `binary_search_steps` step metadata output in `tests/unit/test_benchmark_context.py`
+- [x] T012 [P] [US3] Add unit tests for `binary_search_steps` step metadata output in `tests/unit/test_benchmark_context.py`
 
 ### Implementation for User Story 3
 
-- [ ] T013 [US3] Enhance step-by-step trial logging (`tested_n_ctx`, `real_vram_mb`, `status`, `reason`) in `scripts/benchmark_context_window.py` and `logs/benchmark.log`
-- [ ] T014 [US3] Add exception trapping for process termination by SIGKILL/Exit Code 137 in `scripts/benchmark_context_window.py`
+- [x] T013 [US3] Enhance step-by-step trial logging (`tested_n_ctx`, `real_vram_mb`, `status`, `reason`) in `scripts/benchmark_context_window.py` and `logs/benchmark.log`
+- [x] T014 [US3] Add exception trapping for process termination by SIGKILL/Exit Code 137 in `scripts/benchmark_context_window.py`
 
 **Checkpoint**: All user stories functional with full diagnostic observability
 
@@ -98,8 +98,8 @@
 
 **Purpose**: Full regression testing and end-to-end quickstart validation
 
-- [ ] T015 Run full Python test suite via `uv run pytest` to ensure 100% Green Pass
-- [ ] T016 Execute end-to-end `quickstart.md` validation scenarios and confirm contract compliance
+- [x] T015 Run full Python test suite via `uv run pytest` to ensure 100% Green Pass
+- [x] T016 Execute end-to-end `quickstart.md` validation scenarios and confirm contract compliance
 
 ---
 
@@ -117,3 +117,10 @@
 - T004, T005 [US1 tests] can run in parallel
 - T009 [US2 test] can run in parallel
 - T012 [US3 test] can run in parallel
+
+---
+
+## Phase 7: Convergence
+
+- [x] T017 Fix pytest asyncio test markers and coroutine decorators across full test suite to achieve 100% Green Pass for `uv run pytest` per SC-004 (partial)
+

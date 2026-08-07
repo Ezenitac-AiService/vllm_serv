@@ -10,8 +10,17 @@ def client():
 
 @patch('src.core.llama_manager.LlamaManager.unload_model')
 def test_inference_503(mock_unload, client):
+    from src.core.process_manager import ProcessStatusEnum
+    from src.core.llama_manager import llama_manager
+
+    def set_unloaded(*args, **kwargs):
+        llama_manager.state = ProcessStatusEnum.UNLOADED
+
+    mock_unload.side_effect = set_unloaded
+
     # Make sure we start in UNLOADED state
-    response = client.post("/dashboard/api/unload")
+    response = client.post("/dashboard/api/unload", headers={"X-Admin-Secret": "aiservice"})
+    llama_manager.state = ProcessStatusEnum.UNLOADED
     
     # Try to access /v1/chat/completions
     response = client.post("/v1/chat/completions", json={"prompt": "test"})

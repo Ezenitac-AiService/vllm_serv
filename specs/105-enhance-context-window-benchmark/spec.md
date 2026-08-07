@@ -78,10 +78,10 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST uncap the binary search context upper limit from `default_n_ctx` (4096) to `max_n_ctx` (default 16384) to allow discovering high-capacity context windows for supported models.
+- **FR-001**: System MUST uncap the binary search context upper limit from `default_n_ctx` (4096) to `max_n_ctx` (default 16384) to evaluate high-capacity context windows for supported models.
 - **FR-002**: System MUST scale `llama-server` health polling timeouts dynamically (up to 60 seconds) based on `n_ctx` allocation size and model size to prevent false-positive health check timeouts during server initialization.
 - **FR-003**: System MUST atomically load and merge context profile updates into `config/model_context_profiles.json` and MUST NOT overwrite existing valid profile entries with empty records when benchmark outputs are empty.
-- **FR-004**: System MUST perform up to 5 binary search steps (`range(5)`) per model with 512-token block alignment to achieve high precision context window optimization.
+- **FR-004**: System MUST execute an iterative binary search loop up to 5 steps (`range(5)`) per model with 512-token block alignment to achieve high precision context window optimization.
 - **FR-005**: System MUST log detailed step-by-step trial history (`binary_search_steps`), VRAM utilization, and specific failure reasons (OOM, Timeout, Exit Code) in both `logs/benchmark.log` and profile cache metadata.
 
 ### Key Entities

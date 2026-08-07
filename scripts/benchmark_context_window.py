@@ -228,8 +228,8 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         spawn_state = await pm.spawn_process(model_name, mid)
         if spawn_state.status != ProcessStatusEnum.ERROR:
             from src.core.process_manager import poll_server_health
-            # Dynamic polling timeout (15s ~ 30s)
-            is_ready = await poll_server_health(port=8081, file_size_mb=file_size_mb)
+            # Dynamic polling timeout scaled by n_ctx and file_size_mb (up to 60s)
+            is_ready = await poll_server_health(port=8081, file_size_mb=file_size_mb, n_ctx=mid)
             if is_ready:
                 pm.state = ProcessState(status=ProcessStatusEnum.READY, model_id=model_name, port=8081, pid=spawn_state.pid)
                 is_success = True
@@ -238,8 +238,12 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
                 print(f"[Binary Search GPU Load] ⚠️ llama-server /health polling timed out (n_ctx={mid})", file=sys.stderr)
                 is_success = False
         else:
-            last_failure_reason = spawn_state.error_message or "PROCESS_SPAWN_ERROR"
-            print(f"[Binary Search GPU Load] ⚠️ spawn_process error: {spawn_state.error_message}", file=sys.stderr)
+            err_msg = spawn_state.error_message or "PROCESS_SPAWN_ERROR"
+            if "137" in err_msg or "SIGKILL" in err_msg or "Killed" in err_msg or "139" in err_msg:
+                last_failure_reason = "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
+            else:
+                last_failure_reason = err_msg
+            print(f"[Binary Search GPU Load] ⚠️ spawn_process error (n_ctx={mid}): {last_failure_reason}", file=sys.stderr)
             is_success = False
 
         ctx_vram_mb = 0
@@ -290,11 +294,12 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
 
     await pm.stop_process()
 
-    is_supported = len([s for s in binary_steps if s["status"] == "PASS"]) > 0 or best_n_ctx > 2048
-    if is_supported:
+    has_pass = len([s for s in binary_steps if s["status"] == "PASS"]) > 0
+    if has_pass:
         recommended_ctx = best_n_ctx
         tps_val = 45.0
         reason_str = "SUCCESS"
+        is_supported = True
     else:
         best_n_ctx = 2048
         recommended_ctx = 2048

@@ -15,10 +15,17 @@ def pytest_addoption(parser):
         help="Run tests in Real Network & OS Firewall Verification Mode (physical host IP)"
     )
 
+@pytest.fixture(autouse=True, scope="session")
+def setup_mock_llama_server_default(request):
+    is_real = request.config.getoption("--real") or os.environ.get("TEST_MODE") == "real"
+    if not is_real and "MOCK_LLAMA_SERVER" not in os.environ:
+        os.environ["MOCK_LLAMA_SERVER"] = "1"
+
 @pytest.fixture
 def test_mode(request):
     is_real = request.config.getoption("--real") or os.environ.get("TEST_MODE") == "real"
     return "real" if is_real else "mock"
+
 
 @pytest.fixture
 def is_real_network(request):

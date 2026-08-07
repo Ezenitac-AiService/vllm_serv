@@ -789,14 +789,9 @@ def save_context_profiles_cache(reports: List[ComprehensiveQualityReportMetric],
             "last_tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
 
-    hardware = gpu_metadata if gpu_metadata else existing_data.get("system_hardware", {})
-    payload = {
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "system_hardware": hardware,
-        "profiles": existing_profiles
-    }
-    with open(cache_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+    from src.core.config_manager import ConfigManager
+    config_mgr = ConfigManager()
+    config_mgr.merge_and_save_model_context_profiles(new_profiles=existing_profiles, system_hardware=gpu_metadata)
     print(f"✓ Context window profile cache saved to {cache_path}")
     return cache_path
 

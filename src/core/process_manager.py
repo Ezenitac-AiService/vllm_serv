@@ -46,14 +46,24 @@ def register_process_cleanup_hooks() -> None:
         except (ValueError, OSError):
             pass
 
-async def poll_server_health(port: int = 8081, timeout: float = 10.0, interval: float = 0.2, file_size_mb: Optional[float] = None) -> bool:
-    """FR-002 & FR-003: Poll /health endpoint up to timeout (max 30s dynamic) with 0.2s interval until HTTP 200 OK."""
+async def poll_server_health(
+    port: int = 8081,
+    timeout: float = 10.0,
+    interval: float = 0.2,
+    file_size_mb: Optional[float] = None,
+    n_ctx: Optional[int] = None
+) -> bool:
+    """FR-002 & FR-003: Poll /health endpoint up to timeout (max 60s dynamic) with 0.2s interval until HTTP 200 OK."""
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
         return True
 
-    if file_size_mb is not None:
-        calc = 10.0 + (file_size_mb / 500.0)
-        timeout = min(30.0, max(15.0, calc))
+    if file_size_mb is not None or n_ctx is not None:
+        calc = 15.0
+        if file_size_mb is not None:
+            calc += (file_size_mb / 500.0) * 5.0
+        if n_ctx is not None:
+            calc += (n_ctx / 4096.0) * 10.0
+        timeout = min(60.0, max(15.0, calc))
 
     url = f"http://127.0.0.1:{port}/health"
     start_time = time.perf_counter()
