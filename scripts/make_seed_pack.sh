@@ -26,6 +26,7 @@ show_help() {
     echo "옵션:"
     echo "  -o, --output PATH       생성할 아카이브 저장 경로 지정 (기본값: dist/vllm_serv_seed.tar.gz)"
     echo "      --zip               기본 .tar.gz 대신 .zip 포맷으로 아카이브 생성"
+    echo "      --include-profiles  기존 컨텍스트 프로필(config/model_context_profiles.json) 아카이브에 번들링"
     echo "      --build-legacy      i7-930 전용 사전 컴파일 휠(wheels/legacy_i7_930/*.whl) 번들링 (기본 활성)"
     echo "      --skip-legacy-build i7-930 전용 휠 사전 컴파일 과정 스킵"
     echo "  -h, --help              도움말 메시지 출력 후 종료"
@@ -45,6 +46,7 @@ cd "$BASE_DIR"
 
 OUTPUT_PATH=""
 USE_ZIP=0
+INCLUDE_PROFILES=0
 BUILD_LEGACY=1
 CUSTOM_WHEEL_PATH=""
 
@@ -56,6 +58,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --zip)
             USE_ZIP=1
+            shift
+            ;;
+        --include-profiles)
+            INCLUDE_PROFILES=1
             shift
             ;;
         --build-legacy)
@@ -118,6 +124,9 @@ mkdir -p "$OUTPUT_DIR"
 
 log_info "저장 목표 경로: $OUTPUT_PATH"
 log_info "제외 항목: models/, .venv/, .bin/, logs/, build/, dist/, __pycache__/, .git/"
+if [ "$INCLUDE_PROFILES" -eq 1 ]; then
+    log_info "프로필 번들링: config/model_context_profiles.json 수록 활성화됨"
+fi
 
 # 1.5 i7-930 (Nehalem) 사전 빌드 휠 검증 및 컴파일
 if [ -n "$CUSTOM_WHEEL_PATH" ] && [ -f "$CUSTOM_WHEEL_PATH" ]; then
@@ -172,14 +181,16 @@ fi
 # 2. 아카이브 생성
 if [ "$USE_ZIP" -eq 1 ]; then
     rm -f "$ABS_OUTPUT_PATH"
-    zip -r -q "$ABS_OUTPUT_PATH" . \
-        -x "models/*" ".venv/*" ".bin/*" "logs/*" "build/*" "dist/*" ".legacy/*" \
-        ".agents/*" ".specify/*" "config/model_context_profiles.json" "benchmark_results.json" "*.jsonl" \
+    ZIP_EXCLUDES=("models/*" ".venv/*" ".bin/*" "logs/*" "build/*" "dist/*" ".legacy/*" \
+        ".agents/*" ".specify/*" "benchmark_results.json" "*.jsonl" \
         "__pycache__/*" "*.pyc" "*.pyo" ".git/*" ".github/*" ".pytest_cache/*" \
-        "*.tar.gz" "*.zip" "*.pid" ".coverage" "htmlcov/*"
+        "*.tar.gz" "*.zip" "*.pid" ".coverage" "htmlcov/*")
+    if [ "$INCLUDE_PROFILES" -eq 0 ]; then
+        ZIP_EXCLUDES+=("config/model_context_profiles.json")
+    fi
+    zip -r -q "$ABS_OUTPUT_PATH" . -x "${ZIP_EXCLUDES[@]}"
 else
-    tar -czf "$ABS_OUTPUT_PATH" \
-        --warning=no-file-changed \
+    TAR_EXCLUDES=(--warning=no-file-changed \
         --exclude="models" \
         --exclude=".venv" \
         --exclude=".bin" \
@@ -189,7 +200,6 @@ else
         --exclude=".legacy" \
         --exclude=".agents" \
         --exclude=".specify" \
-        --exclude="config/model_context_profiles.json" \
         --exclude="benchmark_results.json" \
         --exclude="*.jsonl" \
         --exclude="__pycache__" \
@@ -202,8 +212,11 @@ else
         --exclude="*.zip" \
         --exclude="vllm_serv.pid" \
         --exclude=".coverage" \
-        --exclude="htmlcov" \
-        .
+        --exclude="htmlcov")
+    if [ "$INCLUDE_PROFILES" -eq 0 ]; then
+        TAR_EXCLUDES+=(--exclude="config/model_context_profiles.json")
+    fi
+    tar -czf "$ABS_OUTPUT_PATH" "${TAR_EXCLUDES[@]}" .
 fi
 
 if [ ! -f "$ABS_OUTPUT_PATH" ]; then
@@ -214,56 +227,39 @@ fi
 SIZE_BYTES=$(stat -c%s "$ABS_OUTPUT_PATH" 2>/dev/null || stat -f%z "$ABS_OUTPUT_PATH" 2>/dev/null || echo "0")
 SIZE_KB=$((SIZE_BYTES / 1024))
 
-# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json & wheels/legacy_i7_930 & samples/ & specs/)
+# 3. 필수 설정 파일 수록 검증 (config/platform_profiles.json, gpu_detector.py, model_catalog.json, etc.)
 if [ "$USE_ZIP" -eq 1 ]; then
     ARCHIVE_FILES=$(unzip -l "$ABS_OUTPUT_PATH" 2>/dev/null || true)
 else
     ARCHIVE_FILES=$(tar -tzf "$ABS_OUTPUT_PATH" 2>/dev/null || true)
 fi
 
-if ! echo "$ARCHIVE_FILES" | grep "platform_profiles.json" > /dev/null; then
-    log_err "아카이브 검증 실패: config/platform_profiles.json 파일이 수록되지 않았습니다."
-    exit 1
-fi
-log_info "✓ 멀티 플랫폼 설정(config/platform_profiles.json) 아카이브 수록 검증 완료"
+verify_archive_entry() {
+    local entry="$1"
+    local label="$2"
+    if ! echo "$ARCHIVE_FILES" | grep "$entry" > /dev/null; then
+        log_err "아카이브 검증 실패: $entry ($label) 파일이 수록되지 않았습니다."
+        exit 1
+    fi
+    log_info "✓ $label($entry) 아카이브 수록 검증 완료"
+}
 
-if ! echo "$ARCHIVE_FILES" | grep "sample/common.py" > /dev/null; then
-    log_err "아카이브 검증 실패: sample/common.py 파일이 수록되지 않았습니다."
-    exit 1
-fi
-log_info "✓ API 예제 코드(sample/common.py) 아카이브 수록 검증 완료"
+verify_archive_entry "platform_profiles.json" "멀티 플랫폼 설정"
+verify_archive_entry "gpu_detector.py" "GQA GPU 감지기 모듈"
+verify_archive_entry "model_catalog.json" "모델 아키텍처 카탈로그"
+verify_archive_entry "sample/common.py" "API 예제 코드"
+verify_archive_entry "specs/" "기능 명세서 디렉터리"
+verify_archive_entry "start_server.sh" "데몬 제어 스크립트"
+verify_archive_entry "ensure_models.py" "모델 다운로드 헬퍼"
+verify_archive_entry "auxiliary_manager.py" "보조 매니저"
 
-if ! echo "$ARCHIVE_FILES" | grep "specs/" > /dev/null; then
-    log_err "아카이브 검증 실패: specs/ 기능 명세 디렉터리가 수록되지 않았습니다."
-    exit 1
-fi
-log_info "✓ 기능 명세서(specs/) 아카이브 수록 검증 완료"
-
-if echo "$ARCHIVE_FILES" | grep "start_server.sh" > /dev/null; then
-    log_info "✓ 데몬 제어 스크립트(scripts/start_server.sh, status_server.sh) 아카이브 수록 검증 완료"
-else
-    log_err "아카이브 검증 실패: scripts/start_server.sh 파일이 수록되지 않았습니다."
-    exit 1
-fi
-
-if echo "$ARCHIVE_FILES" | grep "ensure_models.py" > /dev/null; then
-    log_info "✓ 모델 자동 다운로드 헬퍼(scripts/ensure_models.py) 아카이브 수록 검증 완료"
-else
-    log_err "아카이브 검증 실패: scripts/ensure_models.py 파일이 수록되지 않았습니다."
-    exit 1
-fi
-
-if echo "$ARCHIVE_FILES" | grep "auxiliary_manager.py" > /dev/null; then
-    log_info "✓ 보조 매니저(src/core/auxiliary_manager.py) 아카이브 수록 검증 완료"
-else
-    log_err "아카이브 검증 실패: src/core/auxiliary_manager.py 파일이 수록되지 않았습니다."
-    exit 1
+if [ "$INCLUDE_PROFILES" -eq 1 ]; then
+    verify_archive_entry "model_context_profiles.json" "컨텍스트 벤치마크 프로필"
 fi
 
 if echo "$ARCHIVE_FILES" | grep "wheels/legacy_i7_930" > /dev/null; then
     log_info "✓ i7-930 사전 빌드 휠 디렉터리(wheels/legacy_i7_930) 아카이브 수록 검증 완료"
 fi
-
 
 log_info "\n[타 시스템 멀티 플랫폼 마이그레이션 안내]"
 log_info "  1. 타겟 서버(예: Xeon E3 / 레거시 서버 또는 개발 머신)로 $OUTPUT_PATH 파일 이관"
@@ -274,3 +270,4 @@ else
 fi
 log_info "  3. ./setup.sh 실행 (하드웨어 자동 감지 & platform_profiles.json 기반 동적 CMAKE_ARGS 강제 재설치)"
 log_info "  4. ./start_server.sh 실행 (사전 하드웨어 가속 점검 & 백그라운드 서빙 구동)\n"
+

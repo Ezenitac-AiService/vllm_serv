@@ -180,4 +180,25 @@ def test_dual_pid_cleanup_in_stop_server():
     assert "llama-server" in content, "stop_server.sh must search for llama-server"
 
 
+def test_seed_pack_includes_gpu_detector_and_catalog():
+    """T003 [US1]: Verifies make_seed_pack.sh asserts gpu_detector.py and model_catalog.json presence."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "make_seed_pack.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert 'verify_archive_entry "gpu_detector.py"' in content, "make_seed_pack.sh must verify gpu_detector.py inclusion"
+    assert 'verify_archive_entry "model_catalog.json"' in content, "make_seed_pack.sh must verify model_catalog.json inclusion"
+
+
+def test_seed_pack_include_profiles_flag():
+    """T006 [US2]: Verifies make_seed_pack.sh supports --include-profiles option and un-excludes model_context_profiles.json."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "make_seed_pack.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "--include-profiles" in content, "make_seed_pack.sh must support --include-profiles option"
+    assert 'model_context_profiles.json' in content, "make_seed_pack.sh must handle model_context_profiles.json inclusion"
+
+
+
 

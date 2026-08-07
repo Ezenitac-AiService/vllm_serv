@@ -16,7 +16,7 @@
 
 **Purpose**: Environment verification and shell script setup
 
-- [ ] T001 Verify `scripts/make_seed_pack.sh` executable status and CLI option parser structure
+- [x] T001 Verify `scripts/make_seed_pack.sh` executable status and CLI option parser structure
 
 ---
 
@@ -24,7 +24,7 @@
 
 **Purpose**: Core verification helpers for archive inspection
 
-- [ ] T002 Add helper function `verify_archive_entry` to `scripts/make_seed_pack.sh` to validate mandatory files inside generated tarball/zip archive
+- [x] T002 Add helper function `verify_archive_entry` to `scripts/make_seed_pack.sh` to validate mandatory files inside generated tarball/zip archive
 
 ---
 
@@ -36,12 +36,12 @@
 
 ### Tests for User Story 1 (MANDATORY) ⚠️
 
-- [ ] T003 [P] [US1] Create unit test for GQA GPU detector module & catalog inclusion (`test_seed_pack_includes_gpu_detector_and_catalog`) in `tests/unit/test_shell_scripts.py`
+- [x] T003 [P] [US1] Create unit test for GQA GPU detector module & catalog inclusion (`test_seed_pack_includes_gpu_detector_and_catalog`) in `tests/unit/test_shell_scripts.py`
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Update content verification section in `scripts/make_seed_pack.sh` to assert `src/core/gpu_detector.py` presence and log verification status
-- [ ] T005 [US1] Update content verification section in `scripts/make_seed_pack.sh` to assert `config/model_catalog.json` presence and log verification status
+- [x] T004 [US1] Update content verification section in `scripts/make_seed_pack.sh` to assert `src/core/gpu_detector.py` presence and log verification status
+- [x] T005 [US1] Update content verification section in `scripts/make_seed_pack.sh` to assert `config/model_catalog.json` presence and log verification status
 
 **Checkpoint**: User Story 1 is fully functional and testable independently (`./make_seed_pack.sh`).
 
@@ -55,13 +55,13 @@
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
-- [ ] T006 [P] [US2] Create unit test verifying `--include-profiles` CLI flag (`test_seed_pack_include_profiles_flag`) in `tests/unit/test_shell_scripts.py`
+- [x] T006 [P] [US2] Create unit test verifying `--include-profiles` CLI flag (`test_seed_pack_include_profiles_flag`) in `tests/unit/test_shell_scripts.py`
 
 ### Implementation for User Story 2
 
-- [ ] T007 [US2] Add `--include-profiles` flag handling to CLI option parser in `scripts/make_seed_pack.sh`
-- [ ] T008 [US2] Update exclude rules in `scripts/make_seed_pack.sh` to dynamically include `config/model_context_profiles.json` when `INCLUDE_PROFILES=1`
-- [ ] T009 [US2] Update help text and user migration guidelines in `scripts/make_seed_pack.sh` to document `--include-profiles`
+- [x] T007 [US2] Add `--include-profiles` flag handling to CLI option parser in `scripts/make_seed_pack.sh`
+- [x] T008 [US2] Update exclude rules in `scripts/make_seed_pack.sh` to dynamically include `config/model_context_profiles.json` when `INCLUDE_PROFILES=1`
+- [x] T009 [US2] Update help text and user migration guidelines in `scripts/make_seed_pack.sh` to document `--include-profiles`
 
 **Checkpoint**: User Stories 1 AND 2 are both independently functional.
 
@@ -71,9 +71,9 @@
 
 **Purpose**: Quickstart validation and full test suite verification
 
-- [ ] T010 Run quickstart validation scenarios from `specs/109-seed-pack-script-enhancement/quickstart.md`
-- [ ] T011 Run complete test suite (`uv run pytest tests/unit/`) across all unit tests
-- [ ] T012 Verify Constitution Principle II & DoD compliance
+- [x] T010 Run quickstart validation scenarios from `specs/109-seed-pack-script-enhancement/quickstart.md`
+- [x] T011 Run complete test suite (`uv run pytest tests/unit/`) across all unit tests
+- [x] T012 Verify Constitution Principle II & DoD compliance
 
 ---
 
