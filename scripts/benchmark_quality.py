@@ -758,7 +758,21 @@ def save_context_profiles_cache(reports: List[ComprehensiveQualityReportMetric],
     """Saves generated context scaling metrics to config/model_context_profiles.json cache."""
     cache_path = os.path.join("config", "model_context_profiles.json")
     os.makedirs("config", exist_ok=True)
-    profiles = {}
+
+    if not reports:
+        print(f"[BENCHMARK INFO] ⏩ Empty reports list; preserving existing context profiles cache ({cache_path}).")
+        return cache_path
+
+    existing_data = {}
+    existing_profiles = {}
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                existing_data = json.load(f)
+                existing_profiles = existing_data.get("profiles", {})
+        except Exception:
+            existing_profiles = {}
+
     for rep in reports:
         m_id = rep.model_id
         max_ctx = 4096
@@ -766,7 +780,7 @@ def save_context_profiles_cache(reports: List[ComprehensiveQualityReportMetric],
             valid_ctxs = [c.n_ctx for c in rep.context_scaling_metrics if not c.is_oom]
             if valid_ctxs:
                 max_ctx = max(valid_ctxs)
-        profiles[m_id] = {
+        existing_profiles[m_id] = {
             "max_context_length": max_ctx,
             "recommended_context_length": max(2048, max_ctx // 2),
             "peak_vram_mb": rep.peak_vram_mb,
@@ -774,10 +788,12 @@ def save_context_profiles_cache(reports: List[ComprehensiveQualityReportMetric],
             "scaling_tested": True,
             "last_tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
+
+    hardware = gpu_metadata if gpu_metadata else existing_data.get("system_hardware", {})
     payload = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "system_hardware": gpu_metadata,
-        "profiles": profiles
+        "system_hardware": hardware,
+        "profiles": existing_profiles
     }
     with open(cache_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)

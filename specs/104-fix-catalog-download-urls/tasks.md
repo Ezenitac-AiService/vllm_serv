@@ -69,3 +69,11 @@
 
 - [X] T010 [P] Run full unit test suite `uv run pytest tests/unit/` to verify zero regression across all modules
 - [X] T011 Run quickstart validation scenarios in `specs/104-fix-catalog-download-urls/quickstart.md` to confirm end-to-end catalog download readiness
+
+---
+
+## Phase 6: Convergence
+
+**Purpose**: Close remaining gaps identified by convergence assessment against spec, plan, and constitution.
+
+- [X] T012 [US2] Tighten `quant_type` assertion in `test_model_catalog_instruct_and_text_only_specs` (`tests/unit/test_model_downloader.py:280`) to accept only `("q4_k_m", "q8_0")` per FR-003 (partial)

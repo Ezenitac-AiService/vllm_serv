@@ -203,7 +203,7 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
         low = 4096
         high = 16384
 
-    model_max_rope = model_cfg.get("default_n_ctx", 16384)
+    model_max_rope = model_cfg.get("max_n_ctx", 16384)
     high = min(high, model_max_rope)
 
     binary_steps = []
@@ -213,7 +213,7 @@ async def _execute_single_binary_search_inner(model_name: str) -> Dict[str, Any]
 
     print(f"[Binary Search GPU Load] 🚀 실측 GPU 프로세스 스폰 이진 탐색 개시 (모델={model_name}, Base VRAM={base_vram}MB, 구간=[{low}, {high}])...", file=sys.stderr)
 
-    for step in range(3):
+    for step in range(5):
         if high - low <= 512:
             break
         mid = ((low + high) // 2 // 512) * 512

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T13:00:40Z",
+  "generated_at": "2026-08-07T06:45:29Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -15,7 +15,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T12:58:44Z"
+      "last_tested_at": "2026-08-07T06:37:37Z"
     },
     "gemma4-e4b": {
       "max_context_length": 4096,
@@ -26,7 +26,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T12:58:44Z"
+      "last_tested_at": "2026-08-07T06:37:38Z"
     },
     "gemma4-12b": {
       "max_context_length": 2048,
@@ -52,18 +52,47 @@
       "scaling_tested": true,
       "is_supported": false,
       "failure_reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)",
-      "last_tested_at": "2026-08-06T12:59:38Z"
+      "last_tested_at": "2026-08-07T06:38:32Z"
     },
     "qwen3.5-2b": {
       "max_context_length": 4096,
       "recommended_context_length": 4096,
-      "binary_search_steps": [],
+      "binary_search_steps": [
+        {
+          "step": 1,
+          "tested_n_ctx": 10240,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
+        },
+        {
+          "step": 2,
+          "tested_n_ctx": 7168,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
+        },
+        {
+          "step": 3,
+          "tested_n_ctx": 5632,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
+        },
+        {
+          "step": 4,
+          "tested_n_ctx": 4608,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)"
+        }
+      ],
       "peak_vram_mb": 1404,
       "tpot_tok_per_sec": 45.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T12:59:38Z"
+      "last_tested_at": "2026-08-07T06:45:29Z"
     },
     "qwen3.5-4b": {
       "max_context_length": 4096,
@@ -74,7 +103,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T13:00:40Z"
+      "last_tested_at": "2026-08-07T06:38:32Z"
     },
     "qwen3.5-9b": {
       "max_context_length": 4096,
@@ -85,7 +114,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T12:59:39Z"
+      "last_tested_at": "2026-08-07T06:38:32Z"
     },
     "gemma4-26b-a4b": {
       "max_context_length": 2048,
@@ -96,7 +125,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (18800MB) exceeds Usable VRAM (10764MB)",
-      "last_tested_at": "2026-08-06T13:00:32Z"
+      "last_tested_at": "2026-08-07T06:39:26Z"
     },
     "qwen3.6-27b": {
       "max_context_length": 2048,
@@ -107,7 +136,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (19500MB) exceeds Usable VRAM (10764MB)",
-      "last_tested_at": "2026-08-06T13:00:32Z"
+      "last_tested_at": "2026-08-07T06:39:26Z"
     },
     "qwen3.6-35b-a3b": {
       "max_context_length": 2048,
@@ -118,7 +147,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (24500MB) exceeds Usable VRAM (10764MB)",
-      "last_tested_at": "2026-08-06T13:00:32Z"
+      "last_tested_at": "2026-08-07T06:39:27Z"
     },
     "gemma4-2b-text": {
       "max_context_length": 4096,
@@ -129,7 +158,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T12:59:39Z"
+      "last_tested_at": "2026-08-07T06:38:33Z"
     },
     "gemma4-4b-text": {
       "max_context_length": 4096,
@@ -140,7 +169,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-06T12:59:39Z"
+      "last_tested_at": "2026-08-07T06:38:33Z"
     },
     "gemma4-12b-text": {
       "max_context_length": 2048,
@@ -166,7 +195,7 @@
       "scaling_tested": true,
       "is_supported": false,
       "failure_reason": "HEALTH_CHECK_TIMEOUT (Server initialization timed out)",
-      "last_tested_at": "2026-08-06T13:00:32Z"
+      "last_tested_at": "2026-08-07T06:39:26Z"
     }
   }
 }

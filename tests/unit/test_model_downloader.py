@@ -277,7 +277,7 @@ def test_model_catalog_instruct_and_text_only_specs():
     # All 14 models must be quantized GGUFs (q4_k_m or q8_0)
     for model_id, entry in MODEL_DOWNLOAD_CATALOG.items():
         assert entry["filename"].endswith(".gguf"), f"{model_id}: filename must end with .gguf"
-        assert entry.get("quant_type") in ("q4_k_m", "q8_0", "q4_0"), f"{model_id}: invalid quant_type"
+        assert entry.get("quant_type") in ("q4_k_m", "q8_0"), f"{model_id}: invalid quant_type"
 
 
 def test_model_catalog_hf_urls_valid():
