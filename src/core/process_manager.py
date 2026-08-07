@@ -894,19 +894,24 @@ class ProcessManager:
         return self.state
 
     async def _wait_for_port_free(self, max_retries: int = 10, interval: float = 0.5) -> bool:
-        """T010 / U1: 포트 소켓 해제 대기 (SO_REUSEADDR 제어 및 외부 잔여 프로세스 자율 정리)."""
+        """T015 / US2: TCP Port Readiness Polling with continuous non-zero verification."""
         import socket
         import subprocess
         import signal
         if os.environ.get("MOCK_LLAMA_SERVER") == "1" or "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("MOCK_CPU_ONLY") == "1":
             return True
 
+        consecutive_free_count = 0
         for i in range(max_retries):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 result = sock.connect_ex(('127.0.0.1', self.port))
-                if result != 0:  # 포트가 자유로움
-                    return True
+                if result != 0:  # Port is free
+                    consecutive_free_count += 1
+                    if consecutive_free_count >= 2:
+                        return True
+                else:
+                    consecutive_free_count = 0
 
             # Q1 / FR-001: 3회 이상 포트 점유 지속 시 외부/잔여 프로세스 자율 복구 (SIGTERM -> SIGKILL)
             if i >= 2:
@@ -932,11 +937,26 @@ class ProcessManager:
             return sock.connect_ex(('127.0.0.1', self.port)) != 0
 
     @staticmethod
-    def force_kill_zombie_llama_servers(target_port: int = 8081) -> None:
-        """T015 / US3: Pinpoint kills zombie llama-server processes targeting only benchmark port (default 8081). Avoids broad pkill wildcards that kill production backend servers on 8089/8090/8091."""
+    def force_kill_zombie_llama_servers(target_ports: tuple = (8081, 8089, 8090, 8091)) -> None:
+        """T014 / US2: Pinpoint kills zombie llama-server and llama_cpp.server processes and fuser cleans backend ports."""
         import subprocess
+        for port in target_ports:
+            try:
+                subprocess.run(["fuser", "-k", "-9", f"{port}/tcp"], capture_output=True, check=False)
+            except Exception:
+                pass
+        
+        # Kill orphan python3 -m llama_cpp.server processes if present
         try:
-            subprocess.run(["fuser", "-k", "-9", f"{target_port}/tcp"], capture_output=True, check=False)
+            out = subprocess.check_output(["pgrep", "-f", "llama_cpp.server"], text=True, timeout=2)
+            for pid_str in out.strip().split():
+                if pid_str.isdigit():
+                    pid = int(pid_str)
+                    if pid != os.getpid():
+                        try:
+                            os.kill(pid, signal.SIGKILL)
+                        except OSError:
+                            pass
         except Exception:
             pass
 

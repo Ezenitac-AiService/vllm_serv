@@ -337,3 +337,30 @@ def test_get_realtime_usable_vram():
         usable = get_realtime_usable_vram(safety_margin_mb=500)
         assert usable == 7500
 
+        # Dynamic safety margin for n_ctx=16384 -> 500 + int(16384 * 0.05) = 500 + 819 = 1319 MB
+        usable_dynamic = get_realtime_usable_vram(n_ctx=16384)
+        assert usable_dynamic == 8000 - 1319
+
+
+def test_wait_for_nvml_vram_settled():
+    """T005: wait_for_nvml_vram_settled converges when delta < threshold."""
+    from src.core.gpu_detector import wait_for_nvml_vram_settled
+    info1 = GpuDeviceInfo(device_id=0, name="GPU", total_vram_mb=11264, free_vram_mb=8000, is_cuda_available=True)
+    info2 = GpuDeviceInfo(device_id=0, name="GPU", total_vram_mb=11264, free_vram_mb=8005, is_cuda_available=True)
+
+    with patch("src.core.gpu_detector.get_nvml_vram_info") as mock_info:
+        mock_info.side_effect = [info1, info2]
+        settled = wait_for_nvml_vram_settled(poll_interval=0.01, max_attempts=3, delta_threshold_mb=10)
+        assert settled.free_vram_mb == 8005
+
+
+def test_calculate_max_allocatable_n_ctx():
+    """T008: calculate_max_allocatable_n_ctx correctly reverses KV cache budget."""
+    from src.core.gpu_detector import calculate_max_allocatable_n_ctx
+    # For budget 3000 MB:
+    # 2 * 36 * 32 * 128 * 2 = 589,824 bytes per ctx token
+    # 3000 * 1024 * 1024 / 589824 = 5333.3 -> aligned to 512 = 5120
+    n_ctx = calculate_max_allocatable_n_ctx(usable_kv_budget_mb=3000, n_layers=36, n_heads=32, head_dim=128)
+    assert n_ctx == 5120
+
+

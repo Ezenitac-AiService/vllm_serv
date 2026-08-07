@@ -180,14 +180,32 @@ def get_nvml_vram_info(device_index: int = 0) -> GpuDeviceInfo:
         return check_gpu_availability()
 
 
-def get_realtime_usable_vram(safety_margin_mb: int = 500) -> int:
-    """T003 / FR-001: Returns real-time usable VRAM in MB calculated from NVML free VRAM minus safety margin."""
+def get_realtime_usable_vram(safety_margin_mb: Optional[int] = None, n_ctx: int = 4096) -> int:
+    """T003 / FR-001: Returns real-time usable VRAM in MB calculated from NVML free VRAM minus dynamic safety margin (500 + n_ctx * 0.05)."""
     try:
+        if safety_margin_mb is None:
+            safety_margin_mb = 500 + int(n_ctx * 0.05)
         gpu_info = get_nvml_vram_info()
         return max(0, gpu_info.free_vram_mb - safety_margin_mb)
     except Exception:
         return 0
 
+
+def wait_for_nvml_vram_settled(
+    poll_interval: float = 0.2,
+    max_attempts: int = 5,
+    delta_threshold_mb: int = 10
+) -> GpuDeviceInfo:
+    """T004 / DoD-004: Polls NVML Free VRAM until consecutive reads differ by < delta_threshold_mb."""
+    import time
+    prev_info = get_nvml_vram_info()
+    for _ in range(max_attempts - 1):
+        time.sleep(poll_interval)
+        curr_info = get_nvml_vram_info()
+        if abs(curr_info.free_vram_mb - prev_info.free_vram_mb) < delta_threshold_mb:
+            return curr_info
+        prev_info = curr_info
+    return prev_info
 
 
 def estimate_kv_cache_vram(
@@ -201,6 +219,28 @@ def estimate_kv_cache_vram(
     # 2 for Key and Value matrices
     total_bytes = 2 * n_layers * n_heads * head_dim * n_ctx * bytes_per_element
     return max(1, int(total_bytes / (1024 * 1024)))
+
+
+def calculate_max_allocatable_n_ctx(
+    usable_kv_budget_mb: int,
+    n_layers: int = 36,
+    n_heads: int = 32,
+    head_dim: int = 128,
+    bytes_per_element: int = 2,
+    step: int = 512,
+    max_cap: int = 131072
+) -> int:
+    """T008 / FR-002: Calculates the maximum allocatable n_ctx (aligned to step) fitting within usable_kv_budget_mb."""
+    if usable_kv_budget_mb <= 0:
+        return 2048
+
+    bytes_per_ctx_token = 2 * n_layers * n_heads * head_dim * bytes_per_element
+    max_bytes = usable_kv_budget_mb * 1024 * 1024
+    raw_n_ctx = int(max_bytes / bytes_per_ctx_token) if bytes_per_ctx_token > 0 else 2048
+
+    aligned_n_ctx = (raw_n_ctx // step) * step
+    aligned_n_ctx = min(max_cap, max(2048, aligned_n_ctx))
+    return aligned_n_ctx
 
 
 def validate_cuda_build_environment() -> bool:

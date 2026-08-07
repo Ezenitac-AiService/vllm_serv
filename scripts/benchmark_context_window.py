@@ -77,7 +77,7 @@ def benchmark_context_window(
 
     if mock_tps is not None or mock_vram is not None or mock_ctx is not None:
         rec_ctx = int(mock_ctx) if mock_ctx else 8192
-        tps_val = float(mock_tps) if mock_tps else 45.0
+        tps_val = float(mock_tps) if mock_tps else 30.0
         vram_val = int(mock_vram) if mock_vram else 4200
         return {
             "recommended_model": model_name,
@@ -107,22 +107,24 @@ def benchmark_context_window(
     abs_model_path = config_mgr.get_absolute_path(rel_path) or str(REPO_ROOT / rel_path)
     base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path)
 
-    usable_vram = max(0, total_vram - 500)
-    remaining_kv_budget = usable_vram - base_vram
+    from src.core.gpu_detector import calculate_max_allocatable_n_ctx
+    n_layers = model_cfg.get("n_layers", 36)
+    n_heads = model_cfg.get("n_heads", 32)
+    head_dim = model_cfg.get("head_dim", 128)
+    model_max_rope = model_cfg.get("max_n_ctx", 131072)
 
-    if remaining_kv_budget < 1000:
-        rec_ctx = 2048
-    elif remaining_kv_budget < 3000:
-        rec_ctx = 4096
-    elif remaining_kv_budget < 6000:
-        rec_ctx = 8192
-    else:
-        rec_ctx = 16384
+    rec_ctx = calculate_max_allocatable_n_ctx(
+        usable_kv_budget_mb=remaining_kv_budget,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        head_dim=head_dim,
+        max_cap=model_max_rope
+    )
 
     model_default_ctx = model_cfg.get("default_n_ctx", 16384)
     rec_ctx = min(rec_ctx, model_default_ctx)
     vram_val = base_vram + max(0, int((rec_ctx - 2048) * 0.5))
-    tps_val = 45.0
+    tps_val = 30.0
 
     return {
         "recommended_model": model_name,
@@ -153,7 +155,7 @@ def save_benchmark_profile(benchmark_result: Dict[str, Any]) -> bool:
         server_cfg["auto_benchmark_profile"] = {
             "recommended_model": rec_model,
             "recommended_context_window": rec_ctx,
-            "benchmark_tps": benchmark_result.get("benchmark_tps", 45.0),
+            "benchmark_tps": benchmark_result.get("benchmark_tps", 30.0),
             "vram_used_mb": benchmark_result.get("vram_used_mb", 4200),
             "benchmark_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
@@ -188,12 +190,12 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
     file_size_bytes = 0
     if os.path.exists(abs_model_path):
         file_size_bytes = os.path.getsize(abs_model_path)
-    file_size_mb = file_size_bytes / (1024 * 1024) if file_size_bytes else 3000.0
+    file_size_mb = (file_size_bytes / (1024 * 1024)) if file_size_bytes else (model_cfg.get("size_gb", 3.0) * 1024)
 
     # Base VRAM calculation (file size * 1.15)
     base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path, file_size_bytes=file_size_bytes)
     
-    # Dynamic usable VRAM from NVML free VRAM minus 500MB safety cushion
+    # Dynamic usable VRAM from NVML free VRAM minus safety cushion
     remaining_kv_budget = usable_vram - base_vram
 
     if remaining_kv_budget < 0:
@@ -201,21 +203,27 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
         print(f"[Binary Search GPU Load] ⚠️ {reason}", file=sys.stderr)
         return _record_unsupported_fallback_profile(model_name, reason=reason, force_overwrite=force_overwrite)
 
+    # T008/T009: 100% Dynamic binary search bounds calculation without magic numbers
+    from src.core.gpu_detector import calculate_max_allocatable_n_ctx
+    n_layers = model_cfg.get("n_layers", 36)
+    n_heads = model_cfg.get("n_heads", 32)
+    head_dim = model_cfg.get("head_dim", 128)
+    model_max_rope = model_cfg.get("max_n_ctx", 131072)
 
-    # Set initial search range based on remaining KV budget
-    if remaining_kv_budget < 3000:
-        low = 2048
-        high = 4096
-    else:
-        low = 4096
-        high = 16384
-
-    model_max_rope = model_cfg.get("max_n_ctx", 16384)
-    high = min(high, model_max_rope)
+    max_allocatable_ctx = calculate_max_allocatable_n_ctx(
+        usable_kv_budget_mb=remaining_kv_budget,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        head_dim=head_dim,
+        max_cap=model_max_rope
+    )
+    high = min(model_max_rope, max_allocatable_ctx)
+    low = min(2048, high)
 
     binary_steps = []
     best_n_ctx = low
     peak_vram_mb = 0
+    measured_tps_val = 0.0
     last_failure_reason = "UNKNOWN_ERROR"
 
     print(f"[Binary Search GPU Load] 🚀 실측 GPU 프로세스 스폰 이진 탐색 개시 (모델={model_name}, Base VRAM={base_vram}MB, 구간=[{low}, {high}])...", file=sys.stderr)
@@ -258,15 +266,26 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
         if is_success:
             if os.environ.get("MOCK_LLAMA_SERVER") == "1":
                 ctx_vram_mb = base_vram + max(0, int((mid - 2048) * 0.5))
+                measured_tps_val = float(os.environ.get("MOCK_BENCHMARK_TPS", "30.0"))
             else:
                 try:
                     import httpx
+                    t0 = time.time()
                     async with httpx.AsyncClient(timeout=10.0) as client:
                         resp = await client.post("http://127.0.0.1:8081/v1/chat/completions", json={
                             "messages": [{"role": "user", "content": "Warmup inference for KV cache allocation"}],
                             "max_tokens": 10
                         })
-                        if resp.status_code != 200:
+                        t1 = time.time()
+                        if resp.status_code == 200:
+                            elapsed = max(0.001, t1 - t0)
+                            try:
+                                resp_json = resp.json()
+                                comp_toks = resp_json.get("usage", {}).get("completion_tokens", 10)
+                            except Exception:
+                                comp_toks = 10
+                            measured_tps_val = comp_toks / elapsed
+                        else:
                             is_success = False
                             last_failure_reason = f"WARMUP_HTTP_STATUS_{resp.status_code}"
                 except Exception as e:
@@ -304,7 +323,7 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
     has_pass = len([s for s in binary_steps if s["status"] == "PASS"]) > 0
     if has_pass:
         recommended_ctx = best_n_ctx
-        tps_val = 45.0
+        tps_val = measured_tps_val if measured_tps_val > 0 else 30.0
         reason_str = "SUCCESS"
         is_supported = True
     else:
@@ -373,7 +392,7 @@ def _record_unsupported_fallback_profile(model_name: str, reason: str = "OOM or 
                 "recommended_model": model_name,
                 "max_context_length": existing_item.get("max_context_length", 2048),
                 "recommended_context_length": existing_item.get("recommended_context_length", 2048),
-                "benchmark_tps": existing_item.get("tpot_tok_per_sec", 45.0),
+                "benchmark_tps": existing_item.get("tpot_tok_per_sec", 30.0),
                 "vram_used_mb": existing_item.get("peak_vram_mb", 0),
                 "is_supported": True,
                 "failure_reason": existing_item.get("failure_reason", "PRESERVED_EXISTING_VALID_PROFILE"),
@@ -551,7 +570,7 @@ def evaluate_all_catalog_models(force: bool = True, force_overwrite: bool = Fals
             res = benchmark_context_window(model_name=model_name)
 
         results[model_name] = res
-        tps = res.get("benchmark_tps", 45.0 if res.get("is_supported") else 0.0)
+        tps = res.get("benchmark_tps", 30.0 if res.get("is_supported") else 0.0)
         vram = res.get("vram_used_mb", 4200)
         is_sup = res.get("is_supported", True)
         print(f"    └─ TPS: {tps:.1f}, VRAM 점유: {vram}MB, Supported: {is_sup}")
