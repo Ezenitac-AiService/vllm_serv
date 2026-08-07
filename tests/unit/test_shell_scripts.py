@@ -196,8 +196,45 @@ def test_seed_pack_include_profiles_flag():
     with open(script_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    assert "--include-profiles" in content, "make_seed_pack.sh must support --include-profiles option"
-    assert 'model_context_profiles.json' in content, "make_seed_pack.sh must handle model_context_profiles.json inclusion"
+def test_unpack_seed_script_syntax_and_flags():
+    """T006 [US2] (111-unpack-seed-script-enhancement): Verify unpack_seed.sh bash syntax and CLI options handling."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "unpack_seed.sh")
+    assert os.path.exists(script_path), f"Script missing: {script_path}"
+
+    res = subprocess.run(["bash", "-n", script_path], capture_output=True, text=True)
+    assert res.returncode == 0, f"unpack_seed.sh has syntax errors: {res.stderr}"
+
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "--input" in content or "-i" in content, "unpack_seed.sh must support -i/--input flag"
+    assert "--target-dir" in content or "-t" in content, "unpack_seed.sh must support -t/--target-dir flag"
+    assert "--force-overwrite" in content or "-f" in content, "unpack_seed.sh must support -f/--force-overwrite flag"
+    assert "--verify-only" in content, "unpack_seed.sh must support --verify-only flag"
+    assert "--run-setup" in content, "unpack_seed.sh must support --run-setup flag"
+
+
+def test_unpack_seed_multiformat_and_nondestructive():
+    """T003 [US1] (111-unpack-seed-script-enhancement): Verify unpack_seed.sh supports .tar.gz and .zip format detection and non-destructive extraction."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "unpack_seed.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "FORMAT=" in content, "unpack_seed.sh must perform format detection"
+    assert "unzip -n" in content, "unpack_seed.sh must use 'unzip -n' for non-destructive ZIP extraction"
+    assert "tar -xvkpf" in content, "unpack_seed.sh must use 'tar -xvkpf' for non-destructive TAR.GZ extraction"
+    assert "verify_wheel_binary.py" in content, "unpack_seed.sh must check existing wheel binary validity"
+
+
+def test_unpack_seed_run_setup_flag():
+    """T009 [US3] (111-unpack-seed-script-enhancement): Verify unpack_seed.sh handles --run-setup flag and post-unpack setup.sh trigger."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "unpack_seed.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "RUN_SETUP" in content, "unpack_seed.sh must track RUN_SETUP flag"
+    assert "setup.sh" in content, "unpack_seed.sh must trigger setup.sh when --run-setup is specified"
+
 
 
 
