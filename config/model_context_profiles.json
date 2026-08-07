@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T15:49:27Z",
+  "generated_at": "2026-08-07T15:50:00Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -323,8 +323,8 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": false,
       "is_supported": false,
-      "failure_reason": "CUDA OOM Risk: Base VRAM (18800MB) exceeds Real-time Usable VRAM (10173MB)",
-      "last_tested_at": "2026-08-07T15:39:34Z"
+      "failure_reason": "CUDA OOM Risk: Base VRAM (18800MB) exceeds Real-time Usable VRAM (10651MB)",
+      "last_tested_at": "2026-08-07T15:50:00Z"
     },
     "qwen3.6-27b": {
       "max_context_length": 2048,
@@ -334,8 +334,8 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": false,
       "is_supported": false,
-      "failure_reason": "CUDA OOM Risk: Base VRAM (19500MB) exceeds Real-time Usable VRAM (10173MB)",
-      "last_tested_at": "2026-08-07T15:39:34Z"
+      "failure_reason": "CUDA OOM Risk: Base VRAM (19500MB) exceeds Real-time Usable VRAM (10651MB)",
+      "last_tested_at": "2026-08-07T15:50:00Z"
     },
     "qwen3.6-35b-a3b": {
       "max_context_length": 2048,
@@ -345,8 +345,8 @@
       "tpot_tok_per_sec": 0.0,
       "scaling_tested": false,
       "is_supported": false,
-      "failure_reason": "CUDA OOM Risk: Base VRAM (24500MB) exceeds Real-time Usable VRAM (10173MB)",
-      "last_tested_at": "2026-08-07T15:39:34Z"
+      "failure_reason": "CUDA OOM Risk: Base VRAM (24500MB) exceeds Real-time Usable VRAM (10651MB)",
+      "last_tested_at": "2026-08-07T15:50:00Z"
     },
     "gemma4-2b-text": {
       "max_context_length": 17408,
@@ -468,7 +468,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-07T15:39:33Z"
+      "last_tested_at": "2026-08-07T15:49:59Z"
     },
     "gemma4-12b-text": {
       "max_context_length": 2048,
@@ -479,7 +479,7 @@
       "scaling_tested": true,
       "is_supported": false,
       "failure_reason": "UNKNOWN_ERROR",
-      "last_tested_at": "2026-08-07T15:39:34Z"
+      "last_tested_at": "2026-08-07T15:50:00Z"
     },
     "test-dummy-model": {
       "max_context_length": 4096,
