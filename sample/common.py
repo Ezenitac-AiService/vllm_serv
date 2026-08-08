@@ -306,7 +306,7 @@ def get_httpx_client(timeout: float = 120.0) -> httpx.Client:
 
 
 def check_server_health(host: str = None, port: int = 8081, service_name: str = "vllm_serv 메인 API") -> bool:
-    """지정된 서버 포트로 헬스체크(/health 또는 /v1/models)를 보내 정상 구동 여부를 미리 검사합니다."""
+    """지정된 서버 포트로 헬스체크(/health/readiness 또는 /v1/models)를 보내 정상 구동 여부를 미리 검사합니다."""
     if host is None:
         host = get_server_host()
     else:
@@ -314,20 +314,23 @@ def check_server_health(host: str = None, port: int = 8081, service_name: str = 
 
     target_base = f"{host}:{port}"
 
-    for endpoint in ["/health", "/v1/models"]:
+    for endpoint in ["/health/readiness", "/health", "/v1/models"]:
         url = f"{target_base}{endpoint}"
         try:
             resp = httpx.get(url, timeout=3.0, headers={"Connection": "close"})
             if resp.status_code == 200:
                 return True
             if resp.status_code == 503:
-                print(f"⚠️ [{service_name}] 서버 백엔드 모델 로딩 중... (잠시 후 다시 시도해 주세요)")
+                print(f"⚠️ [{service_name}] 서버 백엔드 모델이 로딩 중이거나 중지(UNLOADED) 상태입니다.")
+                print(f"👉 해결 방법: ./start_server.sh 스크립트로 백엔드 서버 데몬을 구동 후 다시 시도해 주세요.")
                 return False
         except (httpx.ConnectError, httpx.TimeoutException):
             continue
 
     print(f"❌ [{service_name}] 서버 연결 실패 (대상 주소: {target_base})")
+    print(f"👉 해결 방법: ./start_server.sh 스크립트로 백엔드 서버 데몬을 구동해 주세요.")
     return False
+
 
 
 def print_section_header(title: str) -> None:
