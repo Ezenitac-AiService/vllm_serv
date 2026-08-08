@@ -305,10 +305,6 @@ def check_server_health(host: str = None, port: int = None, service_name: str = 
             resp = httpx.get(url, timeout=3.0, headers={"Connection": "close"})
             if resp.status_code == 200:
                 return True
-            if resp.status_code == 503:
-                print(f"⚠️ [{service_name}] 서버 백엔드 모델이 로딩 중이거나 중지(UNLOADED) 상태입니다.")
-                print(f"👉 해결 방법: ./start_server.sh 스크립트로 백엔드 서버 데몬을 구동 후 다시 시도해 주세요.")
-                return False
         except (httpx.ConnectError, httpx.TimeoutException):
             continue
 

@@ -45,13 +45,13 @@
         "strict_json_schema": true
     },
     "model": "gemma4-e4b",
-    "context_window": 12800,
+    "context_window": 28672,
     "auto_benchmark_profile": {
         "recommended_model": "gemma4-e4b",
-        "recommended_context_window": 12800,
-        "recommended_context_length": 12800,
-        "benchmark_tps": 28.302257538624314,
-        "vram_used_mb": 4699,
-        "benchmark_timestamp": "2026-08-08T05:37:26Z"
+        "recommended_context_window": 28672,
+        "recommended_context_length": 28672,
+        "benchmark_tps": 30.0,
+        "vram_used_mb": 19163,
+        "benchmark_timestamp": "2026-08-08T06:04:48Z"
     }
 }

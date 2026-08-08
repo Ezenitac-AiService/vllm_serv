@@ -96,11 +96,17 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 
 ### 💡 `setup.sh` 주요 CLI 옵션
 
+- **`./setup.sh`**: (기본값) 필수 3종 모델 자동 다운로드, GPU 가속 환경 검증, 미측정 모델 대상 자동 이진 탐색 벤치마크 및 서빙 설정 원자적 반영
+- **`./setup.sh --force-benchmark`**: 기존 카탈로그 전체 모델에 대해 벤치마크 재측정을 강제 수행합니다.
+- **`./setup.sh --skip-benchmark`**: VRAM 및 컨텍스트 윈도우 벤치마크 측정을 건너뛰고 빠른 셋업을 완료합니다.
 - **`./setup.sh --force-build`**: 기존 uv 캐시를 무효화(`--no-cache-dir`)하고 CUDA C++ 소스를 원스톱 강제 재컴파일합니다.
 - **`./setup.sh --wheel-path <PATH>`**: 지정한 커스텀 휠 패키지(`.whl`)를 `--force-reinstall`하여 재설치합니다.
 - **`./setup.sh --skip-build`**: 기존 C++ 빌드가 준비된 경우 빌드 단계를 건너뛰고 빠른 설정을 완료합니다.
-- **`./setup.sh --skip-benchmark`**: VRAM 및 컨텍스트 윈도우 벤치마크 측정을 건너뛰고 15초 이내에 셋업을 완료합니다.
-- **`./setup.sh --force-benchmark`**: 기존 카탈로그 전체 모델에 대해 벤치마크 재측정을 강제 수행합니다.
+
+> ℹ️ **`setup.sh` 벤치마크 실행 및 모델 다운로드 관련 참고 사항**
+> 1. **필수 모델 자동 다운로드 정책**: `./setup.sh` 실행 시 초기 설정 시간을 최적화하기 위해 즉시 서비스에 필요한 **기본 3개 필수 모델**(`qwen3.5-4b`, `bge-m3`, `bge-reranker-v2-m3`)만 우선 자동 다운로드합니다.
+> 2. **카탈로그 미다운로드 모델 처리**: 로컬에 다운로드되지 않은 모델은 벤치마크 시 안전하게 스킵(`is_supported: false`)되며, 실제 준비된 로컬 모델 중에서만 최적의 서빙 모델을 선별합니다.
+> 3. **벤치마크 중 한계 부하 로그 (`ArrayMemoryError` 등)**: 이진 탐색 중 극단적인 컨텍스트 크기(`n_ctx=56,320` 등)를 검증할 때 호스트 RAM 용량 한계로 `ArrayMemoryError`나 타임아웃 로그가 발생할 수 있습니다.이는 **GPU/RAM 한계값을 찾아내기 위한 정상적인 한계 테스트**이며, 시스템이 자동으로 예외를 포착하여 VRAM을 해제하고 안정적인 최적 컨텍스트 크기를 구하므로 안심하셔도 됩니다.
 
 ---
 
@@ -110,11 +116,16 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 
 | 스크립트 파일 | 구동 명령어 예시 | 역할 및 주요 기능 |
 |---------------|------------------|-------------------|
-| **`benchmark_context_window.py`** | `uv run python scripts/benchmark_context_window.py` | GPU VRAM 용량 기반 dynamic log-scaled step size 이진 탐색을 구동하여 모델별 최적 안전 컨텍스트 크기(`n_ctx`) 측정 후 `config/model_context_profiles.json` 저장 |
-| **`benchmark_quality.py`** | `uv run python scripts/benchmark_quality.py --real` | 응답 품질(정밀도) 및 생성 속도(TTFT, TPOT tok/s), VRAM 점유율을 3D 평가하여 종합 분석 마크다운 리포트 생성 |
+| **`ensure_models.py`** | `uv run python scripts/ensure_models.py` | 기본 필수 3종 모델(`qwen3.5-4b`, `bge-m3`, `bge-reranker-v2-m3`) 점검 및 자동 다운로드 |
+| | `uv run python scripts/ensure_models.py --all` | 카탈로그 전체 14개 모델 가중치 및 CLIP 비전 프로젝터 일괄 다운로드 |
+| | `uv run python scripts/ensure_models.py --model gemma4-12b` | 특정 모델 ID(또는 쉼표로 구분된 복수 모델) 지정 다운로드 |
+| **`benchmark_context_window.py`** | `uv run python scripts/benchmark_context_window.py` | GPU VRAM 용량 기반 이진 탐색을 구동하여 모델별 최적 안전 컨텍스트 크기(`n_ctx`) 측정 후 `config/model_context_profiles.json` 저장 |
+| | `uv run python scripts/benchmark_context_window.py --force-benchmark` | 카탈로그 전체 LLM 후보 모델 대상 실측 벤치마크 평가 및 최적 서빙 모델 자동 선택 |
+| | `uv run python scripts/benchmark_context_window.py --all` | 카탈로그 전체 LLM 후보 모델 대상 순차 이진 탐색 전수 평가 구동 |
+| | `uv run python scripts/benchmark_context_window.py --fine-grained --model qwen3.5-4b` | 특정 모델에 대해 512/1024 블록 얼라인먼트 정밀 이진 탐색 프로파일링 구동 |
+| **`benchmark_quality.py`** | `uv run python scripts/benchmark_quality.py --real` | 응답 품질(정밀도) 및 생성 속도(TTFT, TPOT tok/s), VRAM 점유율을 종합 평가하여 분석 마크다운 리포트 생성 |
 | **`verify_wheel_binary.py`** | `uv run python scripts/verify_wheel_binary.py --check-live` | 설치된 `llama-cpp-python` 패키지의 CUDA GPU 가속 지원 여부(`llama_supports_gpu_offload()`) 실측 검증 |
-| **`ensure_models.py`** | `uv run python scripts/ensure_models.py --all` | `config/model_catalog.json`에 수록된 모델 가중치(GGUF) 및 CLIP 프로젝터 파일 자동 다운로드 |
-| **`configure_firewall.sh`** | `sudo ./scripts/configure_firewall.sh` | OS 방화벽(`ufw`, `firewalld`, `nftables`, `iptables`) 포트(`8000/tcp`, `8081/tcp`) 자동 개방 헬퍼 |
+| **`configure_firewall.sh`** | `sudo ./scripts/configure_firewall.sh` | OS 방화벽(`ufw`, `firewalld`, `nftables`, `iptables`) 포트(`8081/tcp`, `8082/tcp`) 자동 개방 헬퍼 |
 | **`common.sh`** | `source scripts/common.sh` | 쉘 스크립트 전용 공통 로깅 포맷터, 색상 출력 및 환경변수 헬퍼 모듈 |
 
 ---
