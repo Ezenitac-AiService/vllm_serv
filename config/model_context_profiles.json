@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T06:04:48Z",
+  "generated_at": "2026-08-08T06:33:43Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -74,52 +74,52 @@
         {
           "step": 1,
           "tested_n_ctx": 15360,
-          "real_vram_mb": 12507,
+          "real_vram_mb": 4899,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
           "tested_n_ctx": 22016,
-          "real_vram_mb": 15835,
+          "real_vram_mb": 5419,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
           "tested_n_ctx": 25600,
-          "real_vram_mb": 17627,
+          "real_vram_mb": 5699,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
           "tested_n_ctx": 27136,
-          "real_vram_mb": 18395,
+          "real_vram_mb": 5819,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
           "tested_n_ctx": 28160,
-          "real_vram_mb": 18907,
+          "real_vram_mb": 5899,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
           "tested_n_ctx": 28672,
-          "real_vram_mb": 19163,
+          "real_vram_mb": 5939,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 19163,
-      "tpot_tok_per_sec": 30.0,
+      "peak_vram_mb": 5939,
+      "tpot_tok_per_sec": 29.594143691238468,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:01:42Z"
+      "last_tested_at": "2026-08-08T06:25:45Z"
     },
     "gemma4-12b": {
       "max_context_length": 2048,
@@ -127,10 +127,10 @@
       "binary_search_steps": [],
       "peak_vram_mb": 0,
       "tpot_tok_per_sec": 0.0,
-      "scaling_tested": false,
+      "scaling_tested": true,
       "is_supported": false,
-      "failure_reason": "CUDA OOM Risk: Base VRAM (9500MB) exceeds Real-time Usable VRAM (4851MB)",
-      "last_tested_at": "2026-08-08T06:01:42Z"
+      "failure_reason": "UNKNOWN_ERROR",
+      "last_tested_at": "2026-08-08T06:25:47Z"
     },
     "qwen3.5-2b": {
       "max_context_length": 194560,
@@ -261,59 +261,59 @@
         {
           "step": 1,
           "tested_n_ctx": 18432,
-          "real_vram_mb": 14421,
+          "real_vram_mb": 6425,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
           "tested_n_ctx": 26624,
-          "real_vram_mb": 18517,
+          "real_vram_mb": 6953,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
           "tested_n_ctx": 30720,
-          "real_vram_mb": 20565,
+          "real_vram_mb": 7217,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
           "tested_n_ctx": 32768,
-          "real_vram_mb": 21589,
+          "real_vram_mb": 7349,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
           "tested_n_ctx": 33792,
-          "real_vram_mb": 22101,
+          "real_vram_mb": 7415,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
           "tested_n_ctx": 34304,
-          "real_vram_mb": 22357,
+          "real_vram_mb": 7447,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 7,
           "tested_n_ctx": 34816,
-          "real_vram_mb": 22613,
+          "real_vram_mb": 7481,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 22613,
-      "tpot_tok_per_sec": 30.0,
+      "peak_vram_mb": 7481,
+      "tpot_tok_per_sec": 23.362860645679493,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:03:28Z"
+      "last_tested_at": "2026-08-08T06:30:47Z"
     },
     "gemma4-26b-a4b": {
       "max_context_length": 2048,
@@ -324,7 +324,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (18800MB) exceeds Real-time Usable VRAM (10651MB)",
-      "last_tested_at": "2026-08-08T06:04:48Z"
+      "last_tested_at": "2026-08-08T06:33:43Z"
     },
     "qwen3.6-27b": {
       "max_context_length": 2048,
@@ -335,7 +335,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (19500MB) exceeds Real-time Usable VRAM (10651MB)",
-      "last_tested_at": "2026-08-08T06:04:48Z"
+      "last_tested_at": "2026-08-08T06:33:43Z"
     },
     "qwen3.6-35b-a3b": {
       "max_context_length": 2048,
@@ -346,7 +346,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (24500MB) exceeds Real-time Usable VRAM (10651MB)",
-      "last_tested_at": "2026-08-08T06:04:48Z"
+      "last_tested_at": "2026-08-08T06:33:43Z"
     },
     "gemma4-2b-text": {
       "max_context_length": 104448,
@@ -416,52 +416,52 @@
         {
           "step": 1,
           "tested_n_ctx": 16384,
-          "real_vram_mb": 12626,
+          "real_vram_mb": 4993,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
           "tested_n_ctx": 23552,
-          "real_vram_mb": 16210,
+          "real_vram_mb": 5553,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
           "tested_n_ctx": 27136,
-          "real_vram_mb": 18002,
+          "real_vram_mb": 5833,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
           "tested_n_ctx": 29184,
-          "real_vram_mb": 19026,
+          "real_vram_mb": 5959,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
           "tested_n_ctx": 30208,
-          "real_vram_mb": 19538,
+          "real_vram_mb": 6073,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
           "tested_n_ctx": 30720,
-          "real_vram_mb": 19794,
+          "real_vram_mb": 6113,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 19794,
-      "tpot_tok_per_sec": 30.0,
+      "peak_vram_mb": 6113,
+      "tpot_tok_per_sec": 30.47337841284003,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:04:47Z"
+      "last_tested_at": "2026-08-08T06:33:42Z"
     },
     "gemma4-12b-text": {
       "max_context_length": 2048,
@@ -472,7 +472,7 @@
       "scaling_tested": true,
       "is_supported": false,
       "failure_reason": "UNKNOWN_ERROR",
-      "last_tested_at": "2026-08-08T06:04:48Z"
+      "last_tested_at": "2026-08-08T06:33:43Z"
     },
     "test-dummy-model": {
       "max_context_length": 4096,

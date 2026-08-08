@@ -208,6 +208,22 @@ for chunk in stream:
 
 ---
 
+```
+   # 1단계: Seed Pack 압축 해제 및 파일 무결성 검증
+    ./unpack_seed.sh
+  
+    # 2단계: 셋업 기초 가동 (.venv 가상환경 수립, CUDA GPU 가속 검증, 
+  DB 및 방화벽 설정)
+    ./setup.sh
+  
+    # 3단계: 카탈로그 전체 14개 모델 가중치 일괄 다운로드             
+    uv run python scripts/ensure_models.py --all
+  
+    # 4단계: 전체 14개 모델 대상 GPU 실측 벤치마킹 및 최적 서빙 프로필
+  최종 산출
+    ./setup.sh --force-benchmark
+```
+
 ## 📜 라이선스 (License)
 
 Apache 2.0 License
