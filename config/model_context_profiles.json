@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-08T13:02:51Z",
+  "generated_at": "2026-08-08T13:14:24Z",
   "system_hardware": {
-    "gpu_name": "NVIDIA GeForce GPU",
-    "total_vram_mb": 8192,
+    "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
+    "total_vram_mb": 11264,
     "is_cuda_available": true
   },
   "profiles": {
@@ -630,6 +630,67 @@
       "tpot_tok_per_sec": 9.23,
       "scaling_tested": true,
       "last_tested_at": "2026-08-07T16:23:06Z"
+    },
+    "qwen3.5-9b-vision": {
+      "max_context_length": 34816,
+      "recommended_context_length": 34816,
+      "binary_search_steps": [
+        {
+          "step": 1,
+          "tested_n_ctx": 18432,
+          "real_vram_mb": 6425,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 2,
+          "tested_n_ctx": 26624,
+          "real_vram_mb": 6953,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 3,
+          "tested_n_ctx": 30720,
+          "real_vram_mb": 7217,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 4,
+          "tested_n_ctx": 32768,
+          "real_vram_mb": 7349,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 5,
+          "tested_n_ctx": 33792,
+          "real_vram_mb": 7415,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 6,
+          "tested_n_ctx": 34304,
+          "real_vram_mb": 7447,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        },
+        {
+          "step": 7,
+          "tested_n_ctx": 34816,
+          "real_vram_mb": 7481,
+          "status": "PASS",
+          "reason": "SUCCESS"
+        }
+      ],
+      "peak_vram_mb": 7481,
+      "tpot_tok_per_sec": 25.317541901599526,
+      "scaling_tested": true,
+      "is_supported": true,
+      "failure_reason": "SUCCESS",
+      "last_tested_at": "2026-08-08T13:14:24Z"
     }
   }
 }

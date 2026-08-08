@@ -20,7 +20,7 @@
 
 **Purpose**: Verify multimodal model catalog configuration structure and 32GB RAM / 11GB VRAM hardware tier settings
 
-- [ ] T001 Inspect `config/model_catalog.json` and verify `requires_mmproj` and `clip_path` for `gemma4-e2b`, `gemma4-e4b`, `gemma4-12b`, and `qwen3.5-9b-vision`
+- [x] T001 Inspect `config/model_catalog.json` and verify `requires_mmproj` and `clip_path` for `gemma4-e2b`, `gemma4-e4b`, `gemma4-12b`, and `qwen3.5-9b-vision`
 
 ---
 
@@ -28,8 +28,8 @@
 
 **Purpose**: Core test infrastructure for multimodal CLI binding and API proxy validation that MUST be complete before user story implementation
 
-- [ ] T002 [P] Create unit test suite for multimodal CLI binding in `tests/unit/test_process_manager_multimodal.py`
-- [ ] T003 [P] Create integration test suite for OpenAI image payload proxy in `tests/integration/test_multimodal_image_payload_proxy.py`
+- [x] T002 [P] Create unit test suite for multimodal CLI binding in `tests/unit/test_process_manager_multimodal.py`
+- [x] T003 [P] Create integration test suite for OpenAI image payload proxy in `tests/integration/test_multimodal_image_payload_proxy.py`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -43,13 +43,13 @@
 
 ### Tests for User Story 1 (MANDATORY) ⚠️
 
-- [ ] T004 [P] [US1] Write test cases asserting `--mmproj` CLI argument injection for `gemma4-e2b`, `gemma4-e4b`, `gemma4-12b`, and `qwen3.5-9b-vision` in `tests/unit/test_process_manager_multimodal.py`
-- [ ] T005 [P] [US1] Write test cases asserting missing `clip_path` error handling and 11GB VRAM estimation checks for multimodal models in `tests/unit/test_process_manager_multimodal.py`
+- [x] T004 [P] [US1] Write test cases asserting `--mmproj` CLI argument injection for `gemma4-e2b`, `gemma4-e4b`, `gemma4-12b`, and `qwen3.5-9b-vision` in `tests/unit/test_process_manager_multimodal.py`
+- [x] T005 [P] [US1] Write test cases asserting missing `clip_path` error handling and 11GB VRAM estimation checks for multimodal models in `tests/unit/test_process_manager_multimodal.py`
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Update and verify `src/core/process_manager.py` to ensure `--mmproj` CLI parameter is correctly built for all 4 multimodal models
-- [ ] T007 [US1] Run unit tests in `tests/unit/test_process_manager_multimodal.py` to confirm CLI binding integrity and pass green
+- [x] T006 [US1] Update and verify `src/core/process_manager.py` to ensure `--mmproj` CLI parameter is correctly built for all 4 multimodal models
+- [x] T007 [US1] Run unit tests in `tests/unit/test_process_manager_multimodal.py` to confirm CLI binding integrity and pass green
 
 **Checkpoint**: At this point, User Story 1 (MVP) is fully functional and independently verified.
 
@@ -63,14 +63,14 @@
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
-- [ ] T008 [P] [US2] Write integration test for Data URL Base64 image payload routing in `tests/integration/test_multimodal_image_payload_proxy.py`
-- [ ] T009 [P] [US2] Write integration test for HTTP image URL payload routing in `tests/integration/test_multimodal_image_payload_proxy.py`
-- [ ] T010 [P] [US2] Write integration test for 25MB HTTP payload body size limit enforcement (HTTP 413 Payload Too Large) in `tests/integration/test_multimodal_image_payload_proxy.py`
+- [x] T008 [P] [US2] Write integration test for Data URL Base64 image payload routing in `tests/integration/test_multimodal_image_payload_proxy.py`
+- [x] T009 [P] [US2] Write integration test for HTTP image URL payload routing in `tests/integration/test_multimodal_image_payload_proxy.py`
+- [x] T010 [P] [US2] Write integration test for 25MB HTTP payload body size limit enforcement (HTTP 413 Payload Too Large) in `tests/integration/test_multimodal_image_payload_proxy.py`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Verify reverse proxy payload forwarding and 25MB body limit validation logic in `src/api/routes/inference_api.py` for multimodal chat completion requests
-- [ ] T012 [US2] Run integration tests in `tests/integration/test_multimodal_image_payload_proxy.py` and pass green
+- [x] T011 [US2] Verify reverse proxy payload forwarding and 25MB body limit validation logic in `src/api/routes/inference_api.py` for multimodal chat completion requests
+- [x] T012 [US2] Run integration tests in `tests/integration/test_multimodal_image_payload_proxy.py` and pass green
 
 **Checkpoint**: Both User Story 1 and User Story 2 are independently functional and integrated.
 
@@ -80,9 +80,9 @@
 
 **Purpose**: Full regression testing and documentation updates
 
-- [ ] T013 [P] Update documentation in `README.md` to reference multimodal image payload support and 25MB request size limit
-- [ ] T014 Run quickstart validation script from `specs/120-verify-multimodal-image-serving/quickstart.md`
-- [ ] T015 Execute full regression test suite with `uv run pytest`
+- [x] T013 [P] Update documentation in `README.md` to reference multimodal image payload support and 25MB request size limit
+- [x] T014 Run quickstart validation script from `specs/120-verify-multimodal-image-serving/quickstart.md`
+- [x] T015 Execute full regression test suite with `uv run pytest`
 
 ---
 

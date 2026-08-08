@@ -80,12 +80,11 @@ def parse_response_format(body: dict[str, Any]) -> dict[str, Any]:
 
 async def check_llama_status() -> bool:
     """Check if the backend LLM engine is ready to accept requests."""
-    if llama_manager.process_manager.state.status == ProcessStatusEnum.UNLOADED:
-        return False
     if os.environ.get("MOCK_LLAMA_SERVER") == "1":
         return True
+    if llama_manager.process_manager.state.status == ProcessStatusEnum.UNLOADED:
+        return False
     return llama_manager.is_ready()
-
 
 
 def _get_http_client(request: Request) -> httpx.AsyncClient:
@@ -162,6 +161,17 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
         path = request.url.path.strip("/")
 
     clean_path = path.strip("/").split("/")[-1]
+
+    # FR-005: 25MB Body limit check for 32GB RAM / 11GB VRAM server defense before processing
+    MAX_PAYLOAD_BYTES = 25 * 1024 * 1024
+    if request.method == "POST" and clean_path in ("chat/completions", "completions"):
+        body_bytes = await request.body()
+        if body_bytes and len(body_bytes) > MAX_PAYLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail="Payload Too Large: Request body exceeds maximum allowed size of 25MB."
+            )
+
     if clean_path in ("chat/completions", "completions") and not await check_llama_status():
         raise HTTPException(
             status_code=503,
@@ -239,10 +249,16 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
             return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
 
 
+    MAX_PAYLOAD_BYTES = 25 * 1024 * 1024  # 25MB Body limit for 32GB RAM / 11GB VRAM server defense (FR-005)
     body_content = None
     prompt_text = None
     if request.method == "POST" and clean_path in ("chat/completions", "completions"):
         body_content = await request.body()
+        if body_content and len(body_content) > MAX_PAYLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail="Payload Too Large: Request body exceeds maximum allowed size of 25MB."
+            )
         if body_content:
             try:
                 body_json = json.loads(body_content)

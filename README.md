@@ -168,6 +168,8 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 | **`qwen3.5-9b`** | Qwen 3.5 9B (Text-Only) | `q4_k_m` | 5.8 GB | ~7,120 MB | ❌ 미지원 |
 | **`qwen3.5-9b-vision`** | Qwen 3.5 9B Vision | `q4_k_m` | 5.8 GB | ~9,800 MB | ✅ 지원 (`mmproj`) |
 
+> **멀티모달 이미지 서빙 (VLM Support)**: `gemma4-e2b`, `gemma4-e4b`, `gemma4-12b`, `qwen3.5-9b-vision` 모델은 OpenAI 표준 규격의 `image_url` 객체 (Data URL Base64 및 HTTP URL)를 통한 이미지 프롬프트 입력을 원자적으로 지원하며, 32GB RAM / 11GB VRAM 서버 방어를 위해 HTTP 요청 페이로드 최대 크기는 **25MB**로 제한됩니다.
+
 ---
 
 ## 💻 API 연동 코드 예시 (Code Examples)

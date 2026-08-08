@@ -812,6 +812,15 @@ class ProcessManager:
             elif os.path.exists(clip_rel):
                 clip_file = clip_rel
 
+        if target_preset.get("requires_mmproj") and not clip_file:
+            self.state = ProcessState(
+                status=ProcessStatusEnum.ERROR,
+                model_id=model_id,
+                port=self.port,
+                error_message=f"Vision Projector (mmproj) file not found: {clip_rel}"
+            )
+            return self.state
+
         # Force 100% GPU VRAM Offloading environment variables
         env = dict(os.environ)
         env["CUDA_VISIBLE_DEVICES"] = "0"

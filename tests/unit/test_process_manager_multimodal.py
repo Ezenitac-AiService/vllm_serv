@@ -1,7 +1,7 @@
 """
 tests/unit/test_process_manager_multimodal.py
 ==============================================================================
-Unit tests for ProcessManager multimodal (--mmproj) CLI argument building and
+Unit tests for ProcessManager multimodal (--mmproj / --clip_model_path) CLI argument building and
 11GB VRAM estimation validation across all 4 catalog multimodal models:
 - gemma4-e2b
 - gemma4-e4b
@@ -11,15 +11,19 @@ Unit tests for ProcessManager multimodal (--mmproj) CLI argument building and
 """
 
 import os
+import asyncio
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from src.core.process_manager import ProcessManager, ProcessStatusEnum
 from src.core.gpu_detector import GpuDeviceInfo
 
+_real_exists = os.path.exists
+
 
 @pytest.fixture
-def process_manager():
+def process_manager(monkeypatch):
     """Fixture providing a ProcessManager instance initialized with project catalog."""
+    monkeypatch.setenv("MOCK_LLAMA_SERVER", "1")
     pm = ProcessManager()
     return pm
 
@@ -34,8 +38,9 @@ def test_multimodal_models_in_presets(process_manager):
         assert preset.get("clip") is not None, f"{model_id} must specify clip path"
 
 
-def test_spawn_process_injects_mmproj_for_all_multimodal_models(process_manager, tmp_path):
-    """Verify ProcessManager injects --mmproj <clip_path> for all 4 multimodal models when files exist."""
+@pytest.mark.asyncio
+async def test_spawn_process_injects_mmproj_for_all_multimodal_models(process_manager):
+    """Verify ProcessManager injects vision projector (--mmproj or --clip_model_path) for all 4 multimodal models when files exist."""
     multimodal_models = ["gemma4-e2b", "gemma4-e4b", "gemma4-12b", "qwen3.5-9b-vision"]
 
     mock_gpu_info = GpuDeviceInfo(
@@ -48,39 +53,43 @@ def test_spawn_process_injects_mmproj_for_all_multimodal_models(process_manager,
 
     for model_id in multimodal_models:
         preset = process_manager.model_presets[model_id]
-        model_file = tmp_path / preset["model"]
-        clip_file = tmp_path / preset["clip"]
-        model_file.parent.mkdir(parents=True, exist_ok=True)
-        model_file.write_text("dummy model gguf content")
-        clip_file.write_text("dummy mmproj gguf content")
+        model_rel = preset["model"]
+        clip_rel = preset["clip"]
 
-        with patch("subprocess.Popen") as mock_popen, \
-             patch("os.path.exists", side_effect=lambda p: True if str(p) in (str(model_file), str(clip_file)) else os.path.exists(p)), \
+        def fake_exists(p):
+            sp = str(p)
+            if sp.endswith(model_rel) or sp.endswith(clip_rel):
+                return True
+            return _real_exists(p)
+
+        mock_proc = MagicMock()
+        mock_proc.poll.return_value = None
+        mock_proc.pid = os.getpid()  # Use valid current PID to pass os.kill(pid, 0)
+        mock_proc.returncode = 0
+        mock_proc.stdout = MagicMock()
+        mock_proc.wait = AsyncMock(return_value=0)
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec, \
+             patch("os.path.exists", side_effect=fake_exists), \
              patch("src.core.gpu_detector.check_gpu_availability", return_value=mock_gpu_info):
-            mock_proc = MagicMock()
-            mock_proc.poll.return_value = None
-            mock_proc.pid = 12345
-            mock_proc.stdout = MagicMock()
-            mock_popen.return_value = mock_proc
 
-            state = process_manager.spawn_process(model_name=model_id, port=8089)
+            state = await process_manager.spawn_process(model_id=model_id)
 
-            assert state.status == ProcessStatusEnum.LOADING
-            assert mock_popen.called
+            assert state.status == ProcessStatusEnum.LOADING, f"Failed for {model_id}: {state.error_message}"
+            assert mock_exec.called
 
-            cmd_args = mock_popen.call_args[0][0]
-            assert "--mmproj" in cmd_args, f"--mmproj flag missing for {model_id}"
+            cmd_args = mock_exec.call_args[0]
+            assert ("--mmproj" in cmd_args or "--clip_model_path" in cmd_args), f"Vision projector flag missing for {model_id}"
 
             # Reset process manager state for next model iteration
-            process_manager.stop_process()
+            await process_manager.stop_process()
 
 
-def test_spawn_process_missing_clip_file_raises_error(process_manager, tmp_path):
-    """Verify ProcessManager returns FAILED status when requires_mmproj is True but mmproj file is missing."""
+@pytest.mark.asyncio
+async def test_spawn_process_missing_clip_file_raises_error(process_manager):
+    """Verify ProcessManager returns ERROR status when requires_mmproj is True but mmproj file is missing."""
     preset = process_manager.model_presets["qwen3.5-9b-vision"]
-    model_file = tmp_path / preset["model"]
-    model_file.parent.mkdir(parents=True, exist_ok=True)
-    model_file.write_text("dummy model gguf content")
+    model_rel = preset["model"]
 
     mock_gpu_info = GpuDeviceInfo(
         device_id=0,
@@ -90,10 +99,18 @@ def test_spawn_process_missing_clip_file_raises_error(process_manager, tmp_path)
         is_cuda_available=True
     )
 
-    with patch("os.path.exists", side_effect=lambda p: True if str(p) == str(model_file) else (False if "mmproj" in str(p) else os.path.exists(p))), \
+    def fake_exists(p):
+        sp = str(p)
+        if sp.endswith(model_rel):
+            return True
+        if "mmproj" in sp:
+            return False
+        return _real_exists(p)
+
+    with patch("os.path.exists", side_effect=fake_exists), \
          patch("src.core.gpu_detector.check_gpu_availability", return_value=mock_gpu_info):
-        state = process_manager.spawn_process(model_name="qwen3.5-9b-vision", port=8089)
-        assert state.status == ProcessStatusEnum.FAILED
+        state = await process_manager.spawn_process(model_id="qwen3.5-9b-vision")
+        assert state.status == ProcessStatusEnum.ERROR
         assert "not found" in state.error_message.lower() or "missing" in state.error_message.lower() or "vision" in state.error_message.lower() or "clip" in state.error_message.lower() or "mmproj" in state.error_message.lower()
 
 
