@@ -268,12 +268,21 @@ if echo "$ARCHIVE_FILES" | grep "wheels/legacy_i7_930" > /dev/null; then
     log_info "✓ i7-930 사전 빌드 휠 디렉터리(wheels/legacy_i7_930) 아카이브 수록 검증 완료"
 fi
 
+# 3.5 아카이브 해제 헬퍼 스크립트(unpack_seed.sh)를 아웃풋 디렉터리에도 번들링 복사
+UNPACK_TARGET="$OUTPUT_DIR/unpack_seed.sh"
+if [ -f "$BASE_DIR/scripts/unpack_seed.sh" ]; then
+    cp -f "$BASE_DIR/scripts/unpack_seed.sh" "$UNPACK_TARGET"
+    chmod +x "$UNPACK_TARGET"
+    log_info "✓ 해제 헬퍼 스크립트 아웃풋 디렉터리 번들링 완료: $UNPACK_TARGET"
+fi
+
 log_info "\n[타 시스템 멀티 플랫폼 마이그레이션 안내]"
-log_info "  1. 타겟 서버(예: Xeon E3 / 레거시 서버 또는 개발 머신)로 $OUTPUT_PATH 파일 이관"
+log_info "  1. 타겟 서버(예: Xeon E3 / 레거시 서버 또는 개발 머신)로 $(basename "$OUTPUT_PATH") 및 unpack_seed.sh 이관"
+log_info "  2. ./unpack_seed.sh -i $(basename "$OUTPUT_PATH") -t vllm_serv && cd vllm_serv"
 if [ "$USE_ZIP" -eq 1 ]; then
-    log_info "  2. unzip $OUTPUT_PATH -d vllm_serv && cd vllm_serv"
+    log_info "     (또는 일반 해제: unzip $(basename "$OUTPUT_PATH") -d vllm_serv && cd vllm_serv)"
 else
-    log_info "  2. mkdir -p vllm_serv && tar -xzf $(basename "$OUTPUT_PATH") -C vllm_serv && cd vllm_serv"
+    log_info "     (또는 일반 해제: mkdir -p vllm_serv && tar -xzf $(basename "$OUTPUT_PATH") -C vllm_serv && cd vllm_serv)"
 fi
 log_info "  3. ./setup.sh 실행 (하드웨어 자동 감지 & platform_profiles.json 기반 동적 CMAKE_ARGS 강제 재설치)"
 log_info "  4. ./start_server.sh 실행 (사전 하드웨어 가속 점검 & 백그라운드 서빙 구동)\n"
