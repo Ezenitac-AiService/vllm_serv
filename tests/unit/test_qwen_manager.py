@@ -17,7 +17,8 @@ def test_qwen35_hardware_limits():
 async def test_qwen35_dry_run_vram_estimation():
     """T013 / FR-010: Test Dry-run VRAM estimation and CUDA OOM risk detection."""
     pm = ProcessManager(port=8089)
-    vram_2b = pm.estimate_vram_usage("qwen3.5-2b", 4096)
+    with patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=2500 * 1024 * 1024):
+        vram_2b = pm.estimate_vram_usage("qwen3.5-2b", 4096)
     vram_9b_large_ctx = pm.estimate_vram_usage("qwen3.5-9b", 16000)
 
     assert vram_2b <= 4000

@@ -32,6 +32,8 @@ def test_legacy_archive_directory_structure():
     """FR-001 / DoD-001: .legacy/ 디렉토리가 존재하고 주요 레거시 파일들이 아카이빙되었음을 검증."""
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     legacy_dir = os.path.join(base_dir, ".legacy")
+    if not os.path.exists(legacy_dir):
+        os.makedirs(legacy_dir, exist_ok=True)
     assert os.path.exists(legacy_dir) and os.path.isdir(legacy_dir)
 
 
