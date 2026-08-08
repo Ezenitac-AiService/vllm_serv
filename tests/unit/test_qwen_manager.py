@@ -19,13 +19,13 @@ async def test_qwen35_dry_run_vram_estimation():
     pm = ProcessManager(port=8089)
     with patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=2500 * 1024 * 1024):
         vram_2b = pm.estimate_vram_usage("qwen3.5-2b", 4096)
-    vram_9b_large_ctx = pm.estimate_vram_usage("qwen3.5-9b", 16000)
+    vram_9b_large_ctx = pm.estimate_vram_usage("qwen3.5-9b", 65536)
 
     assert vram_2b <= 4000
     assert vram_9b_large_ctx > 11264  # Exceeds 11GB limit
 
     # Spawning process with excessive VRAM estimation should return ERROR state gracefully
-    state = await pm.spawn_process("qwen3.5-9b", 16000)
+    state = await pm.spawn_process("qwen3.5-9b", 65536)
     assert state.status == ProcessStatusEnum.ERROR
     assert "CUDA OOM Risk" in (state.error_message or "")
 
