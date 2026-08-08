@@ -263,4 +263,18 @@ class TestDynamicRangeAndZeroMagicNumbers:
         assert calculate_dynamic_log_step_size(1048576) == 16384
 
 
+class TestBenchmarkContextWindowSafety:
+    """T002 / US2: benchmark_context_window remaining_kv_budget 및 파이프라인 안전성 테스트."""
+
+    def test_benchmark_context_window_no_nameerror(self, monkeypatch):
+        """benchmark_context_window() 호출 시 NameError 예외가 발생하지 않는지 검증."""
+        from scripts.benchmark_context_window import benchmark_context_window
+
+        monkeypatch.setenv("MOCK_LLAMA_SERVER", "1")
+        res = benchmark_context_window("qwen3.5-2b")
+        assert res["recommended_model"] == "qwen3.5-2b"
+        assert "recommended_context_window" in res
+        assert res["recommended_context_window"] > 0
+
+
 

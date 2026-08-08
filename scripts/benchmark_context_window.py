@@ -258,6 +258,9 @@ def benchmark_context_window(
     base_vram = _safe_calculate_base_vram_mb(ProcessManager, abs_model_path)
 
     from src.core.gpu_detector import calculate_max_allocatable_n_ctx
+    usable_vram = max(0, total_vram - 1024)
+    remaining_kv_budget = max(0, usable_vram - base_vram)
+
     n_layers = model_cfg.get("n_layers", 36)
     n_heads = model_cfg.get("n_heads", 32)
     head_dim = model_cfg.get("head_dim", 128)

@@ -328,6 +328,27 @@ def test_setup_sh_expanded_required_files():
         assert req in content, f"setup.sh Step 1 REQUIRED_FILES must include {req}"
 
 
+def test_setup_sh_force_build_cli_option():
+    """T003 [US1]: Verifies setup.sh contains --force-build CLI option and help description."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "--force-build)" in content
+    assert "FORCE_BUILD=1" in content
+    assert "[--force-build]" in content
+
+
+def test_setup_sh_force_build_fasttrack_bypass():
+    """T003 [US1]: Verifies setup.sh Tier 2 and Tier 3 fast-track checks inspect FORCE_BUILD and WHEEL_PATH."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert 'if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ] && [ "$FORCE_BUILD" -eq 0 ] && [ -z "$WHEEL_PATH" ]; then' in content
+    assert 'if [ "$FORCE_BUILD" -eq 1 ]; then' in content
+
+
 
 
 

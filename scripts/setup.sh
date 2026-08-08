@@ -39,6 +39,7 @@ WHEEL_PATH=""
 SKIP_BUILD=0
 SKIP_BENCHMARK=0
 FORCE_BENCHMARK=0
+FORCE_BUILD=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -58,8 +59,12 @@ while [[ $# -gt 0 ]]; do
             FORCE_BENCHMARK=1
             shift
             ;;
+        --force-build)
+            FORCE_BUILD=1
+            shift
+            ;;
         --help|-h)
-            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build] [--skip-benchmark] [--force-benchmark]"
+            echo "Usage: ./setup.sh [--wheel-path <PATH>] [--skip-build] [--skip-benchmark] [--force-benchmark] [--force-build]"
             exit 0
             ;;
         *)
@@ -283,7 +288,7 @@ if not fn():
 fi
 
 # Tier 2: 현지 파이썬 가상환경 (.venv) 기존 휠 3중 정합성 검증 (0.05s 고속 리턴)
-if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
+if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ] && [ "$FORCE_BUILD" -eq 0 ] && [ -z "$WHEEL_PATH" ]; then
     log_info "기존 파이썬 가상환경(.venv) 내 llama-cpp-python CUDA 가속 지원 여부 사전 검증 중..."
     PRECHECK_GPU=$("$VENV_PYTHON" -c "
 import llama_cpp
@@ -298,7 +303,7 @@ print('True' if fn and fn() else 'False')
 fi
 
 # Tier 3: Seed Pack 수록 사전 빌드 휠 Fast-Track (wheels/${MATCHED_PROFILE}/*.whl)
-if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
+if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ] && [ "$FORCE_BUILD" -eq 0 ]; then
     LEGACY_WHEEL=""
     PROFILE_WHEEL_DIR="wheels/${MATCHED_PROFILE}"
     if [ -d "$PROFILE_WHEEL_DIR" ]; then
@@ -361,21 +366,15 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
         exit 1
     fi
 
-    log_info "1단계: uv 휠 캐시 정상 여부 실측 검증 중..."
-    CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python 2>/dev/null || true
-
-    if "$VENV_PYTHON" "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live 2>/dev/null; then
-        log_info "✓ [UV CACHE REUSED] 캐시 휠의 CUDA 가속 검증을 통과했습니다. 고속 재사용을 진행합니다."
-    else
-        log_warn "⚠️ [UV CACHE INVALID] uv 캐시 휠이 CPU 전용으로 감지되었습니다. 캐시 무효화(--no-cache-dir) 및 C++ 소스 재컴파일을 수행합니다..."
-        log_info "기존 결함 패키지 정리 중 (uv pip uninstall llama-cpp-python)..."
-        uv pip uninstall llama-cpp-python 2>/dev/null || true
+    if [ "$FORCE_BUILD" -eq 1 ]; then
+        log_info "🔥 --force-build 플래그 감지: uv 휠 캐시 무효화(--no-cache-dir) 및 C++ 소스 강제 재컴파일을 수행합니다..."
+        log_info "기존 패키지 정리 중 (uv pip uninstall llama-cpp-python)..."
+        uv pip uninstall -y llama-cpp-python 2>/dev/null || true
 
         trap 'log_err "❌ C++ 컴파일 중단 감지. 결함 가상환경을 원자적으로 cleanup(uninstall)합니다."; uv pip uninstall -y llama-cpp-python 2>/dev/null || true' ERR INT TERM
 
-        log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python C++ 소스 재컴파일 구동 중 (--no-cache-dir)..."
-        log_info "이 과정은 C++ 소스 재컴파일이므로 수 분이 소요될 수 있습니다..."
-        CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install --no-cache-dir "llama-cpp-python[server]" --no-binary llama-cpp-python
+        log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python C++ 소스 강제 재컴파일 구동 중 (--no-cache-dir)..."
+        CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install --no-cache-dir --force-reinstall "llama-cpp-python[server]" --no-binary llama-cpp-python
         BUILD_STATUS=$?
 
         trap - ERR INT TERM
@@ -385,7 +384,34 @@ if [ "$INSTALLED_VIA_FAST_TRACK" -eq 0 ]; then
             uv pip uninstall -y llama-cpp-python 2>/dev/null || true
             exit 1
         fi
-        log_info "✓ llama-cpp-python C++ 소스 동적 재컴파일 및 설치 완료"
+        log_info "✓ llama-cpp-python C++ 소스 동적 강제 재컴파일 및 설치 완료"
+    else
+        log_info "1단계: uv 휠 캐시 정상 여부 실측 검증 중..."
+        CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install "llama-cpp-python[server]" --no-binary llama-cpp-python 2>/dev/null || true
+
+        if "$VENV_PYTHON" "$BASE_DIR/scripts/verify_wheel_binary.py" --check-live 2>/dev/null; then
+            log_info "✓ [UV CACHE REUSED] 캐시 휠의 CUDA 가속 검증을 통과했습니다. 고속 재사용을 진행합니다."
+        else
+            log_warn "⚠️ [UV CACHE INVALID] uv 캐시 휠이 CPU 전용으로 감지되었습니다. 캐시 무효화(--no-cache-dir) 및 C++ 소스 재컴파일을 수행합니다..."
+            log_info "기존 결함 패키지 정리 중 (uv pip uninstall llama-cpp-python)..."
+            uv pip uninstall llama-cpp-python 2>/dev/null || true
+
+            trap 'log_err "❌ C++ 컴파일 중단 감지. 결함 가상환경을 원자적으로 cleanup(uninstall)합니다."; uv pip uninstall -y llama-cpp-python 2>/dev/null || true' ERR INT TERM
+
+            log_info "CUDA 및 CPU 최적화 적용 llama-cpp-python C++ 소스 재컴파일 구동 중 (--no-cache-dir)..."
+            log_info "이 과정은 C++ 소스 재컴파일이므로 수 분이 소요될 수 있습니다..."
+            CMAKE_ARGS="$DETECTED_CMAKE_ARGS" uv pip install --no-cache-dir "llama-cpp-python[server]" --no-binary llama-cpp-python
+            BUILD_STATUS=$?
+
+            trap - ERR INT TERM
+
+            if [ "$BUILD_STATUS" -ne 0 ]; then
+                log_err "llama-cpp-python CUDA 재컴파일에 실패했습니다."
+                uv pip uninstall -y llama-cpp-python 2>/dev/null || true
+                exit 1
+            fi
+            log_info "✓ llama-cpp-python C++ 소스 동적 재컴파일 및 설치 완료"
+        fi
     fi
 
     log_info "CUDA GPU 가속 지원 최종 검증 중 (llama_supports_gpu_offload())..."
