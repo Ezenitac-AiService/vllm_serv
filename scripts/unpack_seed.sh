@@ -178,6 +178,12 @@ REQUIRED_ENTRIES=(
     "start_server.sh"
     "ensure_models.py"
     "auxiliary_manager.py"
+    "process_manager.py"
+    "model_downloader.py"
+    "benchmark_quality.py"
+    "benchmark_context_window.py"
+    "setup.sh"
+    "make_seed_pack.sh"
 )
 
 MISSING_ENTRIES=()

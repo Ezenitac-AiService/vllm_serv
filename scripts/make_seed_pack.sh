@@ -252,6 +252,13 @@ verify_archive_entry "specs/" "기능 명세서 디렉터리"
 verify_archive_entry "start_server.sh" "데몬 제어 스크립트"
 verify_archive_entry "ensure_models.py" "모델 다운로드 헬퍼"
 verify_archive_entry "auxiliary_manager.py" "보조 매니저"
+verify_archive_entry "process_manager.py" "프로세스 매니저 모듈"
+verify_archive_entry "model_downloader.py" "모델 다운로더 모듈"
+verify_archive_entry "benchmark_quality.py" "품질 벤치마크 스크립트"
+verify_archive_entry "benchmark_context_window.py" "컨텍스트 윈도우 벤치마크 스크립트"
+verify_archive_entry "setup.sh" "환경 설정 스크립트"
+verify_archive_entry "unpack_seed.sh" "시드 팩 해제 스크립트"
+verify_archive_entry "make_seed_pack.sh" "시드 팩 생성 스크립트"
 
 if [ "$INCLUDE_PROFILES" -eq 1 ]; then
     verify_archive_entry "model_context_profiles.json" "컨텍스트 벤치마크 프로필"

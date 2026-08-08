@@ -327,6 +327,34 @@ def test_setup_venv_python_runner_isolation():
     )
 
 
+def test_make_seed_pack_and_unpack_expanded_manifest_verification():
+    """T003/T010: Verify expanded list of script manifest entries in make_seed_pack.sh and unpack_seed.sh."""
+    repo_root = get_repo_root()
+    make_seed_path = os.path.join(repo_root, "scripts", "make_seed_pack.sh")
+    unpack_path = os.path.join(repo_root, "scripts", "unpack_seed.sh")
+
+    with open(make_seed_path, "r", encoding="utf-8") as f:
+        make_content = f.read()
+
+    with open(unpack_path, "r", encoding="utf-8") as f:
+        unpack_content = f.read()
+
+    # Core required script files
+    required_core_files = [
+        "process_manager.py",
+        "model_downloader.py",
+        "benchmark_quality.py",
+        "benchmark_context_window.py",
+        "setup.sh",
+        "make_seed_pack.sh",
+        "unpack_seed.sh",
+    ]
+
+    for req_file in required_core_files:
+        assert req_file in make_content, f"make_seed_pack.sh must verify archive entry for {req_file}"
+        assert req_file in unpack_content, f"unpack_seed.sh must list {req_file} in REQUIRED_ENTRIES"
+
+
 
 
 

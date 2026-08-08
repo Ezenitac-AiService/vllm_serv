@@ -252,6 +252,12 @@ def test_unpack_seed_benchmark_execution_speed_and_metrics():
         "start_server.sh",
         "ensure_models.py",
         "auxiliary_manager.py",
+        "process_manager.py",
+        "model_downloader.py",
+        "benchmark_quality.py",
+        "benchmark_context_window.py",
+        "setup.sh",
+        "make_seed_pack.sh",
     ]
 
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -304,6 +310,22 @@ def test_unpack_seed_benchmark_execution_speed_and_metrics():
         assert res_zip.returncode == 0, f"zip unpack failed: {res_zip.stderr}"
         assert elapsed_zip < 10.0, f"zip unpack benchmark failed: {elapsed_zip:.2f}s >= 10s"
         assert "복원 완결 메트릭" in res_zip.stdout, f"zip output missing metrics: {res_zip.stdout}"
+
+
+def test_setup_sh_expanded_required_files():
+    """T004/T011: Verifies setup.sh Step 1 REQUIRED_FILES includes model_downloader.py, benchmark_context_window.py, and unpack_seed.sh."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "setup.sh")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    expanded_files = [
+        "src/core/model_downloader.py",
+        "scripts/benchmark_context_window.py",
+        "scripts/unpack_seed.sh",
+    ]
+
+    for req in expanded_files:
+        assert req in content, f"setup.sh Step 1 REQUIRED_FILES must include {req}"
 
 
 

@@ -679,7 +679,8 @@ async def run_real_benchmark_loop(
 
                 for ctx_idx, target_n_ctx in enumerate(n_ctx_list, 1):
                     # FR-003: Pre-flight VRAM OOM 세이프티 가드
-                    est_vram = pm.estimate_vram_usage(model_id, target_n_ctx)
+                    est_fn = getattr(pm, "estimate_vram_usage", None)
+                    est_vram = est_fn(model_id, target_n_ctx) if callable(est_fn) else 6000
                     if est_vram > pm.vram_max_capacity_mb + 2000:
                         print(f"[Step 5.1] [{ctx_idx}/{len(n_ctx_list)}] n_ctx={target_n_ctx}: ⚠️ OOM 위험 (추정 {est_vram}MB > {pm.vram_max_capacity_mb}MB) → 건너뛰기")
                         context_scales.append(ContextScalingMetric(

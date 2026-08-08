@@ -30,6 +30,34 @@ from src.core.config_manager import ConfigManager
 from src.core.process_manager import ProcessManager, ProcessStatusEnum, ProcessState
 
 
+def _safe_calculate_base_vram_mb(target_obj: Any, model_path: str, file_size_bytes: Optional[int] = None) -> int:
+    """FR-003 / 113: Defensive helper to compute base VRAM requirement safely across all ProcessManager versions."""
+    try:
+        fn = getattr(target_obj, "calculate_base_vram_mb", None) or getattr(ProcessManager, "calculate_base_vram_mb", None)
+        if callable(fn):
+            return int(fn(model_path, file_size_bytes=file_size_bytes))
+    except Exception:
+        pass
+    try:
+        if file_size_bytes is None and model_path and os.path.exists(model_path):
+            file_size_bytes = os.path.getsize(model_path)
+        if file_size_bytes:
+            return int((file_size_bytes / (1024 * 1024)) * 1.15)
+    except Exception:
+        pass
+    return 6000
+
+
+def _safe_kill_zombie_llama_servers(target_obj: Any = None) -> None:
+    """FR-003 / 113: Defensive helper to safely kill zombie server processes across all ProcessManager versions."""
+    try:
+        fn = getattr(target_obj, "force_kill_zombie_llama_servers", None) or getattr(ProcessManager, "force_kill_zombie_llama_servers", None)
+        if callable(fn):
+            fn()
+    except Exception:
+        pass
+
+
 def verify_model_integrity(model_path: str) -> bool:
     """Stage 2: GGUF 모델 파일 무결성 및 헤더 시그니처 검증"""
     if not os.path.exists(model_path):
@@ -227,7 +255,7 @@ def benchmark_context_window(
     model_cfg = catalog.get(model_name, {})
     rel_path = model_cfg.get("model_path", f"models/{model_name}/{model_name}.gguf")
     abs_model_path = config_mgr.get_absolute_path(rel_path) or str(REPO_ROOT / rel_path)
-    base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path)
+    base_vram = _safe_calculate_base_vram_mb(ProcessManager, abs_model_path)
 
     from src.core.gpu_detector import calculate_max_allocatable_n_ctx
     n_layers = model_cfg.get("n_layers", 36)
@@ -316,7 +344,7 @@ async def _execute_single_binary_search_inner(model_name: str, force_overwrite: 
     file_size_mb = (file_size_bytes / (1024 * 1024)) if file_size_bytes else (model_cfg.get("size_gb", 3.0) * 1024)
 
     # Base VRAM calculation (file size * 1.15)
-    base_vram = ProcessManager.calculate_base_vram_mb(abs_model_path, file_size_bytes=file_size_bytes)
+    base_vram = _safe_calculate_base_vram_mb(ProcessManager, abs_model_path, file_size_bytes=file_size_bytes)
     
     # Dynamic usable VRAM from NVML free VRAM minus safety cushion
     remaining_kv_budget = usable_vram - base_vram
@@ -589,7 +617,7 @@ async def async_run_fine_grained_binary_search(model_name: str = "qwen3.5-4b", f
     except Exception as e:
         print(f"[BENCHMARK WARN] Model {model_name} search failed or timed out (120s): {e}", file=sys.stderr)
         await pm.stop_process()
-        pm.force_kill_zombie_llama_servers()
+        _safe_kill_zombie_llama_servers(pm)
         return _record_unsupported_fallback_profile(model_name, reason=str(e), force_overwrite=force_overwrite)
 
 

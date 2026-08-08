@@ -1,1 +1,3 @@
-{"feature_directory": "specs/112-benchmark-vram-precheck"}
+{
+  "feature_directory": "specs/113-fix-seed-pack-migration-scripts"
+}

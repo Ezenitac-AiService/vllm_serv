@@ -147,10 +147,13 @@ REQUIRED_FILES=(
     "config/server_config.json"
     "src/api/server.py"
     "src/core/process_manager.py"
+    "src/core/model_downloader.py"
     "src/core/llama_manager.py"
     "src/core/auxiliary_manager.py"
     "scripts/benchmark_quality.py"
+    "scripts/benchmark_context_window.py"
     "scripts/make_seed_pack.sh"
+    "scripts/unpack_seed.sh"
 )
 
 MISSING_COUNT=0

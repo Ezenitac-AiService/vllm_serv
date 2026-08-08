@@ -406,12 +406,16 @@ class ProcessManager:
                     )
 
     @staticmethod
-    def calculate_base_vram_mb(model_path: str, file_size_bytes: Optional[int] = None) -> int:
-        """FR-004 / FR-008: Dynamic Base VRAM calculation (file size * 1.15)."""
+    def calculate_base_vram_mb(model_path: Any, file_size_bytes: Optional[int] = None) -> int:
+        """FR-004 / FR-008 / 113: Dynamic Base VRAM calculation (file size * 1.15)."""
         try:
+            if isinstance(model_path, ProcessManager):
+                # Handle accidental instance argument pass
+                model_path = file_size_bytes
+                file_size_bytes = None
             if file_size_bytes is None:
-                if model_path and os.path.exists(model_path):
-                    file_size_bytes = os.path.getsize(model_path)
+                if model_path and isinstance(model_path, (str, Path)) and os.path.exists(str(model_path)):
+                    file_size_bytes = os.path.getsize(str(model_path))
                 else:
                     return 6000
             mb = (file_size_bytes / (1024 * 1024)) * 1.15
@@ -433,13 +437,18 @@ class ProcessManager:
         return os.path.join(logs_dir, "benchmark.log"), os.path.join(logs_dir, "error.log")
 
     def estimate_vram_usage(self, model_id: str, n_ctx: int) -> int:
-        """FR-010: Dry-run VRAM calculation based on model base VRAM and context scaling."""
-        resolved_id = self._config_manager.resolve_model_id(model_id)
-        preset = self.model_presets.get(resolved_id)
-        model_path = preset.get("model", "") if preset else ""
-        base_vram = self.calculate_base_vram_mb(model_path)
-        extra_ctx_vram = max(0, int((n_ctx - 4096) * 0.5))
-        return base_vram + extra_ctx_vram
+        """FR-010 / 113: Dry-run VRAM calculation based on model base VRAM and context scaling."""
+        try:
+            config_mgr = getattr(self, "_config_manager", None)
+            resolved_id = config_mgr.resolve_model_id(model_id) if config_mgr else model_id
+            presets = getattr(self, "model_presets", {})
+            preset = presets.get(resolved_id) if presets else None
+            model_path = preset.get("model", "") if preset else ""
+            base_vram = self.calculate_base_vram_mb(model_path)
+            extra_ctx_vram = max(0, int((n_ctx - 4096) * 0.5))
+            return base_vram + extra_ctx_vram
+        except Exception:
+            return 6000 + max(0, int((n_ctx - 4096) * 0.5))
 
     def is_ready(self) -> bool:
         return self.state.status == ProcessStatusEnum.READY
@@ -937,9 +946,11 @@ class ProcessManager:
             return sock.connect_ex(('127.0.0.1', self.port)) != 0
 
     @staticmethod
-    def force_kill_zombie_llama_servers(target_ports: tuple = (8081, 8089, 8090, 8091)) -> None:
-        """T014 / US2: Pinpoint kills zombie llama-server and llama_cpp.server processes and fuser cleans backend ports."""
+    def force_kill_zombie_llama_servers(target_ports: Any = (8081, 8089, 8090, 8091)) -> None:
+        """T014 / US2 / 113: Pinpoint kills zombie llama-server and llama_cpp.server processes and fuser cleans backend ports."""
         import subprocess
+        if not isinstance(target_ports, (list, tuple, set)):
+            target_ports = (8081, 8089, 8090, 8091)
         for port in target_ports:
             try:
                 subprocess.run(["fuser", "-k", "-9", f"{port}/tcp"], capture_output=True, check=False)

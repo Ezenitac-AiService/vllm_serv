@@ -134,3 +134,30 @@ async def test_poll_server_health_dynamic_timeout_scaling():
 
         res = await poll_server_health(port=8081, file_size_mb=3000.0, n_ctx=10240)
         assert res is True
+
+
+def test_process_manager_dual_compatibility_calculate_base_vram():
+    """T002/T005: Verify calculate_base_vram_mb works on class and instance calls, handling invalid inputs gracefully."""
+    pm = ProcessManager()
+
+    # 1. Class static call
+    res_class = ProcessManager.calculate_base_vram_mb("invalid/path/nonexistent.gguf")
+    assert res_class == 6000
+
+    # 2. Instance call
+    res_inst = pm.calculate_base_vram_mb("invalid/path/nonexistent.gguf")
+    assert res_inst == 6000
+
+    # 3. Positional instance object pass protection
+    res_accidental = ProcessManager.calculate_base_vram_mb(pm, "invalid/path/nonexistent.gguf")
+    assert res_accidental == 6000
+
+
+def test_process_manager_dual_compatibility_force_kill_zombie_llama_servers():
+    """T002/T005: Verify force_kill_zombie_llama_servers works on class and instance calls."""
+    pm = ProcessManager()
+
+    # Should not raise AttributeError or TypeError
+    ProcessManager.force_kill_zombie_llama_servers()
+    pm.force_kill_zombie_llama_servers()
+    pm.force_kill_zombie_llama_servers((8081, 8089))
