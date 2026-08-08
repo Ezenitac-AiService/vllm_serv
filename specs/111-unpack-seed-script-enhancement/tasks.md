@@ -114,3 +114,11 @@
 3. **Increment 3**: Add Phase 5 (User Story 3 - Post-unpack verification & `--run-setup` integration).
 4. **Final Polish**: Run `quickstart.md` scenarios and full `uv run pytest tests/unit/` test suite.
 
+---
+
+## Phase 7: Convergence
+
+- [ ] T014 Implement file count and restored volume metrics calculation and output in `scripts/unpack_seed.sh` per FR-005 (partial)
+- [ ] T015 Add extraction benchmark test case measuring .tar.gz and .zip unpack performance (<10s) in `tests/unit/test_shell_scripts.py` per DoD-003, SC-001 (missing)
+
+

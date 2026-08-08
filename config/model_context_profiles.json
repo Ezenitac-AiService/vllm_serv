@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T16:29:32Z",
+  "generated_at": "2026-08-08T01:22:13Z",
   "system_hardware": {
     "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
     "total_vram_mb": 11264,
@@ -27,7 +27,7 @@
         {
           "step": 3,
           "tested_n_ctx": 14336,
-          "real_vram_mb": 2631,
+          "real_vram_mb": 9903,
           "status": "PASS",
           "reason": "SUCCESS"
         },
@@ -48,31 +48,31 @@
         {
           "step": 6,
           "tested_n_ctx": 15872,
-          "real_vram_mb": 2675,
+          "real_vram_mb": 10671,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 7,
           "tested_n_ctx": 16384,
-          "real_vram_mb": 2687,
+          "real_vram_mb": 10927,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 8,
           "tested_n_ctx": 16896,
-          "real_vram_mb": 2703,
+          "real_vram_mb": 11183,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 2703,
-      "tpot_tok_per_sec": 37.135480672179625,
+      "peak_vram_mb": 11183,
+      "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-07T16:24:38Z"
+      "last_tested_at": "2026-08-08T01:22:13Z"
     },
     "gemma4-e4b": {
       "max_context_length": 12800,
@@ -154,72 +154,72 @@
       "last_tested_at": "2026-08-07T16:25:40Z"
     },
     "qwen3.5-2b": {
-      "max_context_length": 20480,
-      "recommended_context_length": 20480,
+      "max_context_length": 2048,
+      "recommended_context_length": 2048,
       "binary_search_steps": [
         {
           "step": 1,
-          "tested_n_ctx": 98304,
+          "tested_n_ctx": 92160,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 56700MB (KV Cache: 55296MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 2,
-          "tested_n_ctx": 50176,
+          "tested_n_ctx": 47104,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 29628MB (KV Cache: 28224MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 3,
-          "tested_n_ctx": 26112,
+          "tested_n_ctx": 24576,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 16092MB (KV Cache: 14688MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 4,
-          "tested_n_ctx": 13824,
-          "real_vram_mb": 2165,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "tested_n_ctx": 13312,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 5,
-          "tested_n_ctx": 19968,
-          "real_vram_mb": 2237,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "tested_n_ctx": 7680,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 6,
-          "tested_n_ctx": 23040,
+          "tested_n_ctx": 4608,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 14364MB (KV Cache: 12960MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 7,
-          "tested_n_ctx": 21504,
+          "tested_n_ctx": 3072,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 13500MB (KV Cache: 12096MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 8,
-          "tested_n_ctx": 20480,
-          "real_vram_mb": 2243,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "tested_n_ctx": 2560,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         }
       ],
-      "peak_vram_mb": 2243,
-      "tpot_tok_per_sec": 39.15058534937078,
+      "peak_vram_mb": 0,
+      "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-07T16:26:16Z"
+      "is_supported": false,
+      "failure_reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)",
+      "last_tested_at": "2026-08-08T01:13:57Z"
     },
     "qwen3.5-4b": {
       "max_context_length": 17920,
@@ -235,7 +235,7 @@
         {
           "step": 2,
           "tested_n_ctx": 16384,
-          "real_vram_mb": 4029,
+          "real_vram_mb": 10174,
           "status": "PASS",
           "reason": "SUCCESS"
         },
@@ -256,7 +256,7 @@
         {
           "step": 5,
           "tested_n_ctx": 17920,
-          "real_vram_mb": 4127,
+          "real_vram_mb": 10942,
           "status": "PASS",
           "reason": "SUCCESS"
         },
@@ -275,12 +275,12 @@
           "reason": "CUDA OOM Risk: Estimated VRAM 13374MB (KV Cache: 10368MB) exceeds GPU capacity limit 11264MB"
         }
       ],
-      "peak_vram_mb": 4127,
-      "tpot_tok_per_sec": 31.418478179448382,
+      "peak_vram_mb": 10942,
+      "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-07T16:26:53Z"
+      "last_tested_at": "2026-08-08T01:21:39Z"
     },
     "qwen3.5-9b": {
       "max_context_length": 12288,
