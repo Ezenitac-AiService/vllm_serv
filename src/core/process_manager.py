@@ -287,16 +287,24 @@ class ProcessManager:
                 has_clip_offload=True
             )
 
-        vram_match = re.search(r"model buffer size =\s*([\d.]+)\s*MiB", line)
+        vram_match = re.search(r"(model|compute)\s*buffer size =\s*([\d.]+)\s*MiB", line, re.IGNORECASE)
         if vram_match:
-            vram_mb = int(float(vram_match.group(1)))
+            vram_mb = int(float(vram_match.group(2)))
             return VramOffloadStatus(
                 model_id=model_id,
                 is_fully_offloaded=True,
                 offloaded_vram_mb=vram_mb
             )
 
+        ready_server_match = re.search(r"(server is listening|Application startup complete|HTTP server listening)", line, re.IGNORECASE)
+        if ready_server_match:
+            return VramOffloadStatus(
+                model_id=model_id,
+                is_fully_offloaded=True
+            )
+
         return None
+
 
     def verify_vram_offload(self, model_id: str, status: VramOffloadStatus) -> None:
         if not status.is_fully_offloaded:
