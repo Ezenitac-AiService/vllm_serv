@@ -36,8 +36,23 @@ class DownloadStatusEnum(str, Enum):
     SKIPPED = "SKIPPED"
 
 
+class VRAMPrecheckResult(BaseModel):
+    """VRAM 사전 검증 결과 엔티티."""
+    model_config = ConfigDict(frozen=False)
+
+    model_id: str = Field(..., description="모델 식별자")
+    file_size_bytes: int = Field(default=0, description="GGUF 가중치 용량 (바이트)")
+    estimated_vram_mb: float = Field(default=0.0, description="추정 VRAM 요구량 (MB)")
+    available_vram_mb: float = Field(default=0.0, description="물리 GPU VRAM 용량 (MB)")
+    kv_cache_vram_mb: float = Field(default=0.0, description="추정 KV Cache VRAM 용량 (MB)")
+    is_feasible: bool = Field(default=True, description="VRAM 수용 가능 여부")
+    status_code: str = Field(default="PASS", description="상태 코드 (PASS, SKIP_OOM_RISK, BYPASS_WARNING)")
+    message: str = Field(default="", description="사용자 안내 메시지")
+
+
 class ModelDownloadTask(BaseModel):
     """단일 모델 다운로드 작업 상태 추적 엔티티."""
+
     model_config = ConfigDict(frozen=False)
 
     model_id: str = Field(..., description="모델 식별자 (예: 'qwen3.5-2b')")
@@ -84,8 +99,12 @@ class ModelDownloader:
                 "filename": entry.get("filename", ""),
                 "clip_filename": entry.get("clip_filename"),
                 "target_dir": entry.get("target_dir", f"models/{model_id}"),
+                "size_gb": entry.get("size_gb", 0.0),
+                "vram_est_mb": entry.get("vram_est_mb", 6000),
+                "exact_bytes": entry.get("exact_bytes", 0),
             }
         return res
+
 
     def get_task(self, model_id: str) -> Optional[ModelDownloadTask]:
         """특정 모델의 다운로드 상태 조회."""
@@ -208,11 +227,93 @@ class ModelDownloader:
 
         return None
 
+    def check_vram_feasibility(
+        self,
+        model_id: str,
+        n_ctx: int = 4096,
+        ignore_vram_check: bool = False
+    ) -> VRAMPrecheckResult:
+        """FR-001, FR-002, FR-005: 대상 모델의 VRAM 요구량을 사전 산출하여 physical GPU VRAM 수용 여부를 판정합니다."""
+        model_id = self.config_manager.resolve_model_id(model_id)
+        catalog_entry = self.catalog.get(model_id, {})
+
+        # 1. Determine file size bytes
+        file_size_bytes = 0
+        local_path = self.get_model_path(model_id)
+        if local_path and os.path.isfile(local_path):
+            file_size_bytes = os.path.getsize(local_path)
+        else:
+            file_size_bytes = catalog_entry.get("exact_bytes", 0)
+            if not file_size_bytes:
+                size_gb = catalog_entry.get("size_gb", 0)
+                if size_gb:
+                    file_size_bytes = int(size_gb * 1024 * 1024 * 1024)
+                else:
+                    vram_est = catalog_entry.get("vram_est_mb", 6000)
+                    file_size_bytes = int((vram_est / 1.15) * 1024 * 1024)
+
+        # 2. Calculate Base VRAM (file size * 1.15)
+        base_vram_mb = (file_size_bytes / (1024 * 1024)) * 1.15 if file_size_bytes > 0 else 6000.0
+
+        # 3. Calculate KV Cache VRAM
+        try:
+            from src.core.gpu_detector import estimate_kv_cache_vram
+            kv_cache_vram_mb = float(estimate_kv_cache_vram(n_ctx=n_ctx))
+        except Exception:
+            kv_cache_vram_mb = 1152.0
+
+        estimated_vram_mb = base_vram_mb + kv_cache_vram_mb
+
+        # 4. Determine GPU physical VRAM capacity
+        try:
+            from src.core.gpu_detector import get_nvml_vram_info
+            gpu_info = get_nvml_vram_info()
+            available_vram_mb = float(gpu_info.total_vram_mb) if gpu_info.total_vram_mb > 0 else 11264.0
+        except Exception:
+            available_vram_mb = 11264.0
+
+        # 5. Evaluate Feasibility
+        if ignore_vram_check:
+            return VRAMPrecheckResult(
+                model_id=model_id,
+                file_size_bytes=file_size_bytes,
+                estimated_vram_mb=estimated_vram_mb,
+                available_vram_mb=available_vram_mb,
+                kv_cache_vram_mb=kv_cache_vram_mb,
+                is_feasible=True,
+                status_code="BYPASS_WARNING",
+                message=f"[BYPASS VRAM Check] --ignore-vram-check 활성화: 추정 VRAM({int(estimated_vram_mb)}MB)이 VRAM({int(available_vram_mb)}MB)을 초과하나 실행 강제 부여됨"
+            )
+
+        if estimated_vram_mb > available_vram_mb:
+            return VRAMPrecheckResult(
+                model_id=model_id,
+                file_size_bytes=file_size_bytes,
+                estimated_vram_mb=estimated_vram_mb,
+                available_vram_mb=available_vram_mb,
+                kv_cache_vram_mb=kv_cache_vram_mb,
+                is_feasible=False,
+                status_code="SKIP_OOM_RISK",
+                message=f"예상 VRAM 사용량({int(estimated_vram_mb)}MB)이 물리 GPU VRAM({int(available_vram_mb)}MB)을 초과하여 사전 스킵"
+            )
+
+        return VRAMPrecheckResult(
+            model_id=model_id,
+            file_size_bytes=file_size_bytes,
+            estimated_vram_mb=estimated_vram_mb,
+            available_vram_mb=available_vram_mb,
+            kv_cache_vram_mb=kv_cache_vram_mb,
+            is_feasible=True,
+            status_code="PASS",
+            message=f"VRAM 사전 검증 통과 ({int(estimated_vram_mb)}MB / {int(available_vram_mb)}MB)"
+        )
+
     def download_model(
         self,
         model_id: str,
         progress_callback: Optional[Callable[[str, float], None]] = None,
         force: bool = False,
+        ignore_vram_check: bool = False,
     ) -> ModelDownloadTask:
         """단일 모델의 GGUF 가중치(및 CLIP mmproj)를 HuggingFace Hub에서 다운로드."""
         model_id = self.config_manager.resolve_model_id(model_id)
@@ -253,6 +354,15 @@ class ModelDownloader:
             if progress_callback:
                 progress_callback(model_id, 100.0)
             return task
+
+        # FR-001 / FR-002: Pre-download VRAM feasibility check
+        feasibility = self.check_vram_feasibility(model_id, ignore_vram_check=ignore_vram_check)
+        if not feasibility.is_feasible:
+            task.status = DownloadStatusEnum.SKIPPED
+            task.error_message = f"[SKIP VRAM OOM Risk] {feasibility.message}"
+            print(f"[ModelDownloader] {model_id}: ⚠️ [SKIP VRAM OOM Risk] 예상 VRAM 사용량({int(feasibility.estimated_vram_mb)}MB)이 물리 GPU VRAM({int(feasibility.available_vram_mb)}MB)을 초과하므로 다운로드를 사전 스킵합니다.")
+            return task
+
 
         os.makedirs(target_dir_abs, exist_ok=True)
 
@@ -321,6 +431,7 @@ class ModelDownloader:
         model_ids: Optional[List[str]] = None,
         progress_callback: Optional[Callable[[str, float], None]] = None,
         skip_existing: bool = True,
+        ignore_vram_check: bool = False,
     ) -> Dict[str, ModelDownloadTask]:
         targets = model_ids or list(self.catalog.keys())
         results: Dict[str, ModelDownloadTask] = {}
@@ -328,11 +439,12 @@ class ModelDownloader:
         for i, mid in enumerate(targets, 1):
             print(f"\n[ModelDownloader] === [{i}/{len(targets)}] {mid} ===")
             task = self.download_model(
-                mid, progress_callback=progress_callback, force=not skip_existing
+                mid, progress_callback=progress_callback, force=not skip_existing, ignore_vram_check=ignore_vram_check
             )
             results[mid] = task
 
         return results
+
 
     def ensure_model_available(
         self,

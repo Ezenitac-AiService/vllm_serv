@@ -130,3 +130,53 @@ def test_benchmark_result_schema_consistency():
     assert get_benchmark_metric(res2, "recommended_context_length") == 8192
     assert get_benchmark_metric(res2, "peak_vram_mb") == 3500
 
+
+def test_benchmark_vram_precheck_local_file_skip():
+    """T004 / US1: 로컬에 파일이 존재하는 경우에도 VRAM 초과 시 사전 스킵 검증."""
+    import tempfile
+    from src.core.model_downloader import ModelDownloader
+    from unittest.mock import patch
+    with tempfile.TemporaryDirectory() as tmpdir:
+        downloader = ModelDownloader(base_dir=tmpdir)
+        # Create fake local file for gemma4-26b-a4b
+        model_dir = os.path.join(tmpdir, "models", "gemma4-26b-a4b")
+        os.makedirs(model_dir, exist_ok=True)
+        fake_file = os.path.join(model_dir, "gemma-4-26B-A4B-it-UD-Q4_K_M.gguf")
+        # Write 17GB dummy size or mock os.path.getsize
+        with open(fake_file, "wb") as f:
+            f.write(b"FAKE_GGUF_HEADER")
+
+        with patch("os.path.getsize", return_value=16900 * 1024 * 1024), \
+             patch("src.core.gpu_detector.get_nvml_vram_info") as mock_gpu:
+            from src.core.gpu_detector import GpuDeviceInfo
+            mock_gpu.return_value = GpuDeviceInfo(
+                device_id=0, name="NVIDIA GTX 1080 Ti", total_vram_mb=11264, free_vram_mb=8000, is_cuda_available=True
+            )
+            # Local file exists, but pre-check should fail due to 11264 MB VRAM limit
+            res = downloader.check_vram_feasibility("gemma4-26b-a4b")
+            assert res.is_feasible is False
+            assert res.status_code == "SKIP_OOM_RISK"
+            assert res.estimated_vram_mb > 11264
+
+
+def test_benchmark_vram_summary_report():
+    """T007 / US2: 벤치마크전 전수 카탈로그 VRAM 적합성 요약표 생성 검증."""
+    import tempfile
+    from src.core.model_downloader import ModelDownloader
+    from scripts.benchmark_quality import print_vram_summary_report
+    from unittest.mock import patch
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        downloader = ModelDownloader(base_dir=tmpdir)
+        with patch("src.core.gpu_detector.get_nvml_vram_info") as mock_gpu:
+            from src.core.gpu_detector import GpuDeviceInfo
+            mock_gpu.return_value = GpuDeviceInfo(
+                device_id=0, name="NVIDIA GTX 1080 Ti", total_vram_mb=11264, free_vram_mb=8000, is_cuda_available=True
+            )
+            summary = print_vram_summary_report(downloader)
+            assert summary["total_models"] == 14
+            assert summary["passed_count"] > 0
+            assert summary["skipped_count"] > 0
+            assert "gemma4-26b-a4b" in summary["skipped_models"]
+
+

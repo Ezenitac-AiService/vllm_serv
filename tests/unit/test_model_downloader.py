@@ -298,3 +298,44 @@ def test_model_catalog_hf_urls_valid():
             failed_urls.append((model_id, url, str(e)))
 
     assert len(failed_urls) == 0, f"Failed HF Hub URLs: {failed_urls}"
+
+
+def test_model_downloader_vram_precheck_skip():
+    """T003 / US1: VRAMPrecheckResult 및 VRAM 초과 모델 사전 스킵 검증."""
+    from unittest.mock import patch
+    with tempfile.TemporaryDirectory() as tmpdir:
+        downloader = ModelDownloader(base_dir=tmpdir)
+        # Mock NVML returning 11264 MB VRAM
+        with patch("src.core.gpu_detector.get_nvml_vram_info") as mock_gpu:
+            from src.core.gpu_detector import GpuDeviceInfo
+            mock_gpu.return_value = GpuDeviceInfo(
+                device_id=0, name="NVIDIA GTX 1080 Ti", total_vram_mb=11264, free_vram_mb=8000, is_cuda_available=True
+            )
+            # gemma4-26b-a4b size ~16.9GB -> base VRAM ~19435MB + KV 1152MB = 20587MB > 11264MB
+            res = downloader.check_vram_feasibility("gemma4-26b-a4b")
+            assert res.is_feasible is False
+            assert res.status_code == "SKIP_OOM_RISK"
+            assert "물리 GPU VRAM" in res.message
+
+            # Small model qwen3.5-2b -> base VRAM ~2000MB + KV 1152MB = 3152MB <= 11264MB
+            res_pass = downloader.check_vram_feasibility("qwen3.5-2b")
+            assert res_pass.is_feasible is True
+            assert res_pass.status_code == "PASS"
+
+
+def test_ignore_vram_check_flag_bypass():
+    """T009 / US3: --ignore-vram-check 옵션 지정 시 VRAM 초과 모델 우회 검증."""
+    from unittest.mock import patch
+    with tempfile.TemporaryDirectory() as tmpdir:
+        downloader = ModelDownloader(base_dir=tmpdir)
+        with patch("src.core.gpu_detector.get_nvml_vram_info") as mock_gpu:
+            from src.core.gpu_detector import GpuDeviceInfo
+            mock_gpu.return_value = GpuDeviceInfo(
+                device_id=0, name="NVIDIA GTX 1080 Ti", total_vram_mb=11264, free_vram_mb=8000, is_cuda_available=True
+            )
+            # ignore_vram_check=True -> returns is_feasible=True, status_code="BYPASS_WARNING"
+            res = downloader.check_vram_feasibility("gemma4-26b-a4b", ignore_vram_check=True)
+            assert res.is_feasible is True
+            assert res.status_code == "BYPASS_WARNING"
+            assert "[BYPASS VRAM Check]" in res.message
+

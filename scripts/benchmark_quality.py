@@ -431,6 +431,55 @@ def generate_markdown_report(reports: List[ComprehensiveQualityReportMetric], ou
 
     print(f"[Quality Benchmark] Report successfully generated at: {output_path}")
 
+def print_vram_summary_report(downloader: ModelDownloader, ignore_vram_check: bool = False) -> Dict[str, Any]:
+    """FR-003 / US2: 벤치마크 평가 시작 전 전체 대상 모델의 VRAM 적합성 예비 판정 결과를 요약 출력합니다."""
+    gpu_name = "NVIDIA GPU"
+    total_vram_mb = 11264.0
+    try:
+        from src.core.gpu_detector import get_nvml_vram_info
+        gpu_info = get_nvml_vram_info()
+        gpu_name = gpu_info.name
+        total_vram_mb = float(gpu_info.total_vram_mb) if gpu_info.total_vram_mb > 0 else 11264.0
+    except Exception:
+        pass
+
+    evaluations = []
+    passed_models = []
+    skipped_models = []
+
+    print("\n" + "=" * 80)
+    print(f"📊 [VRAM SUMMARY] 벤치마크 전수 VRAM 수용 적합성 평가 요약 (GPU: {gpu_name} / {int(total_vram_mb)}MB)")
+    print("=" * 80)
+
+    for item in MODELS_CATALOG:
+        m_id = item["model_id"]
+        m_name = item["model_name"]
+        res = downloader.check_vram_feasibility(m_id, ignore_vram_check=ignore_vram_check)
+        evaluations.append(res)
+        if res.is_feasible:
+            passed_models.append(m_id)
+            status_str = "✅ PASS" if res.status_code == "PASS" else "⚠️ BYPASS (강제)"
+            print(f"  - {m_name} ({m_id}): {int(res.estimated_vram_mb)}MB / {int(res.available_vram_mb)}MB -> {status_str}")
+        else:
+            skipped_models.append(m_id)
+            print(f"  - {m_name} ({m_id}): {int(res.estimated_vram_mb)}MB / {int(res.available_vram_mb)}MB -> ❌ SKIP (VRAM 초과)")
+
+    print("-" * 80)
+    print(f"요약: 총 {len(MODELS_CATALOG)}개 모델 중 {len(passed_models)}개 PASS, {len(skipped_models)}개 SKIP 예정")
+    print("=" * 80 + "\n")
+
+    return {
+        "gpu_name": gpu_name,
+        "total_vram_mb": total_vram_mb,
+        "total_models": len(MODELS_CATALOG),
+        "passed_count": len(passed_models),
+        "skipped_count": len(skipped_models),
+        "passed_models": passed_models,
+        "skipped_models": skipped_models,
+        "evaluations": evaluations,
+    }
+
+
 def _run_async(coro):
     try:
         loop = asyncio.get_event_loop_policy().get_event_loop()
@@ -444,6 +493,7 @@ def _run_async(coro):
 
 async def run_real_benchmark_loop(
     auto_download: bool = False,
+    ignore_vram_check: bool = False,
 ) -> Tuple[List[ComprehensiveQualityReportMetric], Optional[Dict[str, Any]]]:
     """T008 / FR-005: 원스톱 자동 다운로드 + 실측 GPU 추론 벤치마크 루프.
 
@@ -460,6 +510,9 @@ async def run_real_benchmark_loop(
     downloader = ModelDownloader()
     pm = ProcessManager(port=SERVER_PORT)
     reports: List[ComprehensiveQualityReportMetric] = []
+
+    # FR-003: 벤치마크 평가 시작 전 전체 대상 모델 VRAM 적합성 요약표 출력
+    print_vram_summary_report(downloader, ignore_vram_check=ignore_vram_check)
 
     # FR-005: GPU 검증 결과 메타데이터 수집
     gpu_metadata = None
@@ -485,20 +538,40 @@ async def run_real_benchmark_loop(
             print(f"[{idx}/{len(MODELS_CATALOG)}] {model_name} ({model_id})")
             print(f"{'='*60}")
 
+            # FR-001, FR-002, FR-006: Pre-serve / Pre-download VRAM feasibility check
+            feasibility = downloader.check_vram_feasibility(model_id, ignore_vram_check=ignore_vram_check)
+            if not feasibility.is_feasible:
+                print(f"[Step 1] ⚠️ [SKIP VRAM OOM Risk] {model_name} ({model_id}): {feasibility.message}")
+                print(f"[Step 1] ⏭️ {model_name} 사전 스킵 (CUDA OOM 방지)")
+                reports.append(ComprehensiveQualityReportMetric(
+                    model_id=model_name,
+                    quant_type=item["quant_type"],
+                    is_oom=True,
+                    error_message=f"VRAM OOM Risk Skip: {feasibility.message}"
+                ))
+                continue
+
             # Step 1: 자동 다운로드 (--auto-download)
             if auto_download:
                 if not downloader.is_model_available(model_id):
                     print(f"[Step 1] 모델 미존재 → HuggingFace Hub 자동 다운로드 시작...")
-                    task = downloader.download_model(model_id)
-                    if task.status == DownloadStatusEnum.FAILED:
-                        print(f"[Step 1] ❌ 다운로드 실패: {task.error_message}")
+                    task = downloader.download_model(model_id, ignore_vram_check=ignore_vram_check)
+                    if task.status in (DownloadStatusEnum.FAILED, DownloadStatusEnum.SKIPPED) and "SKIP VRAM OOM Risk" in (task.error_message or ""):
+                        print(f"[Step 1] ❌ 다운로드 실패/스킵: {task.error_message}")
                         print(f"[Step 1] ⏭️ {model_name} 건너뛰기")
+                        reports.append(ComprehensiveQualityReportMetric(
+                            model_id=model_name,
+                            quant_type=item["quant_type"],
+                            is_oom=True,
+                            error_message=task.error_message or "Download Skipped"
+                        ))
                         continue
                 else:
                     print(f"[Step 1] ✅ 모델 이미 존재")
 
             # Step 2: llama-server 프로세스 개설
             print(f"[Step 2] llama-server 프로세스 개설 중...")
+
             model_port = item.get("default_port") or SERVER_PORT
             pm.port = model_port
             t_load_start = time.time()
@@ -841,13 +914,15 @@ if __name__ == "__main__":
     print(json.dumps(coload_results, indent=2))
     force_live = "--real" in sys.argv or "--real-inference" in sys.argv
     auto_download = "--auto-download" in sys.argv
+    ignore_vram_check = "--ignore-vram-check" in sys.argv
 
     if auto_download or force_live:
         # FR-005: 원스톱 자동 다운로드 + 실측 벤치마크 모드
-        report_list, gpu_metadata = asyncio.run(run_real_benchmark_loop(auto_download=auto_download))
+        report_list, gpu_metadata = asyncio.run(run_real_benchmark_loop(auto_download=auto_download, ignore_vram_check=ignore_vram_check))
     else:
         # 정적 프로파일링 모드 (CI/CD 빠른 검증)
         report_list, gpu_metadata = run_benchmark(force_real_inference=force_live)
+
 
     report_file_path = _get_active_feature_report_path()
     generate_markdown_report(report_list, report_file_path, gpu_metadata=gpu_metadata)
