@@ -165,7 +165,8 @@ curl -X POST http://127.0.0.1:8000/v1/chat/completions \
 | **`gemma4-12b`** | Gemma 4 12B | `qat_q4_0` | 7.4 GB | ~8,900 MB | ✅ 지원 (`mmproj`) |
 | **`qwen3.5-2b`** | Qwen 3.5 2B | `q4_k_m` | 1.6 GB | ~2,450 MB | ❌ 미지원 |
 | **`qwen3.5-4b`** *(Default)* | Qwen 3.5 4B | `q4_k_m` | 2.8 GB | ~3,950 MB | ❌ 미지원 |
-| **`qwen3.5-9b`** | Qwen 3.5 9B | `q4_k_m` | 5.8 GB | ~7,120 MB | ❌ 미지원 |
+| **`qwen3.5-9b`** | Qwen 3.5 9B (Text-Only) | `q4_k_m` | 5.8 GB | ~7,120 MB | ❌ 미지원 |
+| **`qwen3.5-9b-vision`** | Qwen 3.5 9B Vision | `q4_k_m` | 5.8 GB | ~9,800 MB | ✅ 지원 (`mmproj`) |
 
 ---
 

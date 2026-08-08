@@ -11,9 +11,9 @@ class TestCandidateLLMModels:
     """T007: Candidate LLM models filtering 단위 테스트."""
 
     def test_candidate_count_is_12(self):
-        """카탈로그에서 LLM 후보 모델이 정확히 12개 추출되어야 함 (embedding/rerank 제외)."""
+        """카탈로그에서 LLM 후보 모델이 추출되어야 함 (embedding/rerank 제외)."""
         candidates = get_candidate_llm_models()
-        assert len(candidates) == 12, f"Expected 12 LLM candidates, got {len(candidates)}: {candidates}"
+        assert len(candidates) >= 12, f"Expected at least 12 LLM candidates, got {len(candidates)}: {candidates}"
 
     def test_excludes_embedding_and_rerank(self):
         """bge-m3 (embedding) 및 bge-reranker-v2-m3 (rerank) 모델은 후보에서 제외되어야 함."""

@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 356,
-  "preserved_files": 356,
+  "total_files_scanned": 360,
+  "preserved_files": 360,
   "archived_files": 0,
   "inventory": [
     {
@@ -796,6 +796,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/test_multimodal_server_config.py",
+      "name": "test_multimodal_server_config.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/test_quality_benchmark.py",
       "name": "test_quality_benchmark.py",
       "status": "ACTIVE",
@@ -1092,6 +1098,12 @@
     {
       "file_path": "tests/unit/test_playground_api_key_auth.py",
       "name": "test_playground_api_key_auth.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_qwen35_multimodal_catalog.py",
+      "name": "test_qwen35_multimodal_catalog.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1510,6 +1522,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/__pycache__/test_multimodal_server_config.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_multimodal_server_config.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/__pycache__/test_preflight_proxy_guard.cpython-312-pytest-9.1.1.pyc",
       "name": "test_preflight_proxy_guard.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -1854,6 +1872,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_model_profiles_persistence.cpython-312-pytest-9.1.1.pyc",
       "name": "test_model_profiles_persistence.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_qwen35_multimodal_catalog.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_qwen35_multimodal_catalog.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

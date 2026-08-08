@@ -1,71 +1,71 @@
 {
-  "generated_at": "2026-08-08T06:33:43Z",
+  "generated_at": "2026-08-08T13:02:51Z",
   "system_hardware": {
-    "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
-    "total_vram_mb": 11264,
+    "gpu_name": "NVIDIA GeForce GPU",
+    "total_vram_mb": 8192,
     "is_cuda_available": true
   },
   "profiles": {
     "gemma4-e2b": {
-      "max_context_length": 99328,
-      "recommended_context_length": 99328,
+      "max_context_length": 56832,
+      "recommended_context_length": 56832,
       "binary_search_steps": [
         {
           "step": 1,
-          "tested_n_ctx": 51200,
-          "real_vram_mb": 28335,
+          "tested_n_ctx": 29696,
+          "real_vram_mb": 17583,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
-          "tested_n_ctx": 75776,
-          "real_vram_mb": 40623,
+          "tested_n_ctx": 43520,
+          "real_vram_mb": 24495,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
-          "tested_n_ctx": 88064,
-          "real_vram_mb": 46767,
+          "tested_n_ctx": 50176,
+          "real_vram_mb": 27823,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
-          "tested_n_ctx": 94208,
-          "real_vram_mb": 49839,
+          "tested_n_ctx": 53760,
+          "real_vram_mb": 29615,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
-          "tested_n_ctx": 97280,
-          "real_vram_mb": 51375,
+          "tested_n_ctx": 55296,
+          "real_vram_mb": 30383,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
-          "tested_n_ctx": 98304,
-          "real_vram_mb": 51887,
+          "tested_n_ctx": 56320,
+          "real_vram_mb": 30895,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 7,
-          "tested_n_ctx": 99328,
-          "real_vram_mb": 52399,
+          "tested_n_ctx": 56832,
+          "real_vram_mb": 31151,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 52399,
+      "peak_vram_mb": 31151,
       "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:00:52Z"
+      "last_tested_at": "2026-08-08T13:02:51Z"
     },
     "gemma4-e4b": {
       "max_context_length": 28672,
@@ -74,52 +74,52 @@
         {
           "step": 1,
           "tested_n_ctx": 15360,
-          "real_vram_mb": 4899,
+          "real_vram_mb": 12507,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
           "tested_n_ctx": 22016,
-          "real_vram_mb": 5419,
+          "real_vram_mb": 15835,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
           "tested_n_ctx": 25600,
-          "real_vram_mb": 5699,
+          "real_vram_mb": 17627,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
           "tested_n_ctx": 27136,
-          "real_vram_mb": 5819,
+          "real_vram_mb": 18395,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
           "tested_n_ctx": 28160,
-          "real_vram_mb": 5899,
+          "real_vram_mb": 18907,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
           "tested_n_ctx": 28672,
-          "real_vram_mb": 5939,
+          "real_vram_mb": 19163,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 5939,
-      "tpot_tok_per_sec": 29.594143691238468,
+      "peak_vram_mb": 19163,
+      "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:25:45Z"
+      "last_tested_at": "2026-08-08T12:59:51Z"
     },
     "gemma4-12b": {
       "max_context_length": 2048,
@@ -130,7 +130,7 @@
       "scaling_tested": true,
       "is_supported": false,
       "failure_reason": "UNKNOWN_ERROR",
-      "last_tested_at": "2026-08-08T06:25:47Z"
+      "last_tested_at": "2026-08-08T12:59:52Z"
     },
     "qwen3.5-2b": {
       "max_context_length": 194560,
@@ -191,7 +191,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:02:03Z"
+      "last_tested_at": "2026-08-08T13:00:15Z"
     },
     "qwen3.5-4b": {
       "max_context_length": 60416,
@@ -252,7 +252,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:02:31Z"
+      "last_tested_at": "2026-08-08T13:00:37Z"
     },
     "qwen3.5-9b": {
       "max_context_length": 34816,
@@ -261,59 +261,59 @@
         {
           "step": 1,
           "tested_n_ctx": 18432,
-          "real_vram_mb": 6425,
+          "real_vram_mb": 14421,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
           "tested_n_ctx": 26624,
-          "real_vram_mb": 6953,
+          "real_vram_mb": 18517,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
           "tested_n_ctx": 30720,
-          "real_vram_mb": 7217,
+          "real_vram_mb": 20565,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
           "tested_n_ctx": 32768,
-          "real_vram_mb": 7349,
+          "real_vram_mb": 21589,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
           "tested_n_ctx": 33792,
-          "real_vram_mb": 7415,
+          "real_vram_mb": 22101,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
           "tested_n_ctx": 34304,
-          "real_vram_mb": 7447,
+          "real_vram_mb": 22357,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 7,
           "tested_n_ctx": 34816,
-          "real_vram_mb": 7481,
+          "real_vram_mb": 22613,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 7481,
-      "tpot_tok_per_sec": 23.362860645679493,
+      "peak_vram_mb": 22613,
+      "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:30:47Z"
+      "last_tested_at": "2026-08-08T13:01:01Z"
     },
     "gemma4-26b-a4b": {
       "max_context_length": 2048,
@@ -324,7 +324,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (18800MB) exceeds Real-time Usable VRAM (10651MB)",
-      "last_tested_at": "2026-08-08T06:33:43Z"
+      "last_tested_at": "2026-08-08T13:01:48Z"
     },
     "qwen3.6-27b": {
       "max_context_length": 2048,
@@ -335,7 +335,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (19500MB) exceeds Real-time Usable VRAM (10651MB)",
-      "last_tested_at": "2026-08-08T06:33:43Z"
+      "last_tested_at": "2026-08-08T13:01:48Z"
     },
     "qwen3.6-35b-a3b": {
       "max_context_length": 2048,
@@ -346,7 +346,7 @@
       "scaling_tested": false,
       "is_supported": false,
       "failure_reason": "CUDA OOM Risk: Base VRAM (24500MB) exceeds Real-time Usable VRAM (10651MB)",
-      "last_tested_at": "2026-08-08T06:33:43Z"
+      "last_tested_at": "2026-08-08T13:01:48Z"
     },
     "gemma4-2b-text": {
       "max_context_length": 104448,
@@ -407,7 +407,7 @@
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:03:56Z"
+      "last_tested_at": "2026-08-08T13:01:25Z"
     },
     "gemma4-4b-text": {
       "max_context_length": 30720,
@@ -416,52 +416,52 @@
         {
           "step": 1,
           "tested_n_ctx": 16384,
-          "real_vram_mb": 4993,
+          "real_vram_mb": 12626,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 2,
           "tested_n_ctx": 23552,
-          "real_vram_mb": 5553,
+          "real_vram_mb": 16210,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 3,
           "tested_n_ctx": 27136,
-          "real_vram_mb": 5833,
+          "real_vram_mb": 18002,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 4,
           "tested_n_ctx": 29184,
-          "real_vram_mb": 5959,
+          "real_vram_mb": 19026,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
           "tested_n_ctx": 30208,
-          "real_vram_mb": 6073,
+          "real_vram_mb": 19538,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
           "tested_n_ctx": 30720,
-          "real_vram_mb": 6113,
+          "real_vram_mb": 19794,
           "status": "PASS",
           "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 6113,
-      "tpot_tok_per_sec": 30.47337841284003,
+      "peak_vram_mb": 19794,
+      "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T06:33:42Z"
+      "last_tested_at": "2026-08-08T13:01:47Z"
     },
     "gemma4-12b-text": {
       "max_context_length": 2048,
@@ -472,7 +472,7 @@
       "scaling_tested": true,
       "is_supported": false,
       "failure_reason": "UNKNOWN_ERROR",
-      "last_tested_at": "2026-08-08T06:33:43Z"
+      "last_tested_at": "2026-08-08T13:01:47Z"
     },
     "test-dummy-model": {
       "max_context_length": 4096,
