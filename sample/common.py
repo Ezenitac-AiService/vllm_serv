@@ -224,7 +224,8 @@ def load_sample_config() -> dict:
 
 
 def get_server_host() -> str:
-    """RTX 3060(192.168.0.175) 1순위 핑 후, 미응답 시 GTX 1070(192.168.0.80)으로 자동 감지합니다."""
+    """로컬 서버(127.0.0.1) 1순위 감지 후, 원격 RTX 3060(192.168.0.175), GTX 1070(192.168.0.80) 서버를 동적으로 감지합니다."""
+    local_host = "http://127.0.0.1"
     primary_host = "http://192.168.0.175"
     fallback_host = "http://192.168.0.80"
 
@@ -232,23 +233,26 @@ def get_server_host() -> str:
     if env_host:
         return _format_host_url(env_host)
 
-    # 1. RTX 3060 (192.168.0.175:8081) 헬스체크
-    try:
-        r = httpx.get(f"{primary_host}:8081/v1/models", timeout=1.5, headers={"Connection": "close"})
-        if r.status_code == 200:
-            return primary_host
-    except Exception:
-        pass
+    # 1. 로컬 개발/서비싱 서버 (127.0.0.1:8081) readiness 우선 검사
+    for host in [local_host, primary_host, fallback_host]:
+        try:
+            r = httpx.get(f"{host}:8081/health/readiness", timeout=1.0, headers={"Connection": "close"})
+            if r.status_code == 200:
+                return host
+        except Exception:
+            pass
 
-    # 2. GTX 1070 (192.168.0.80:8081) 폴백 헬스체크
-    try:
-        r = httpx.get(f"{fallback_host}:8081/v1/models", timeout=1.5, headers={"Connection": "close"})
-        if r.status_code == 200:
-            return fallback_host
-    except Exception:
-        pass
+    # 2. readiness 미준비 시 포트 응답 가능 서버 2차 검사
+    for host in [local_host, primary_host, fallback_host]:
+        try:
+            r = httpx.get(f"{host}:8081/v1/models", timeout=1.0, headers={"Connection": "close"})
+            if r.status_code == 200:
+                return host
+        except Exception:
+            pass
 
-    return primary_host
+    return local_host
+
 
 
 def get_available_llm_models() -> list:
