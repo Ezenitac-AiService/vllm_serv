@@ -118,7 +118,8 @@
 
 ## Phase 7: Convergence
 
-- [ ] T014 Implement file count and restored volume metrics calculation and output in `scripts/unpack_seed.sh` per FR-005 (partial)
-- [ ] T015 Add extraction benchmark test case measuring .tar.gz and .zip unpack performance (<10s) in `tests/unit/test_shell_scripts.py` per DoD-003, SC-001 (missing)
+- [x] T014 Implement file count and restored volume metrics calculation and output in `scripts/unpack_seed.sh` per FR-005 (partial)
+- [x] T015 Add extraction benchmark test case measuring .tar.gz and .zip unpack performance (<10s) in `tests/unit/test_shell_scripts.py` per DoD-003, SC-001 (missing)
+
 
 

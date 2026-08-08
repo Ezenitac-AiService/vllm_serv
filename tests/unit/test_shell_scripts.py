@@ -5,6 +5,10 @@ Validates execution, output formatting, pre-flight failure handling, and archive
 
 import os
 import subprocess
+import time
+import tempfile
+import tarfile
+import zipfile
 import pytest
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -234,6 +238,73 @@ def test_unpack_seed_run_setup_flag():
 
     assert "RUN_SETUP" in content, "unpack_seed.sh must track RUN_SETUP flag"
     assert "setup.sh" in content, "unpack_seed.sh must trigger setup.sh when --run-setup is specified"
+
+
+def test_unpack_seed_benchmark_execution_speed_and_metrics():
+    """T015 [DoD-003/SC-001] (111-unpack-seed-script-enhancement): Benchmark .tar.gz and .zip unpack performance (<10s) and verify metrics output (T014)."""
+    script_path = os.path.join(REPO_ROOT, "scripts", "unpack_seed.sh")
+    assert os.path.exists(script_path), f"Script missing: {script_path}"
+
+    required_files = [
+        "platform_profiles.json",
+        "model_catalog.json",
+        "gpu_detector.py",
+        "start_server.sh",
+        "ensure_models.py",
+        "auxiliary_manager.py",
+    ]
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        src_dir = os.path.join(tmp_dir, "src")
+        os.makedirs(src_dir, exist_ok=True)
+        for fname in required_files:
+            with open(os.path.join(src_dir, fname), "w") as f:
+                f.write(f"# Dummy content for {fname}\n")
+
+        # 1. Create .tar.gz archive
+        targz_path = os.path.join(tmp_dir, "test_seed.tar.gz")
+        with tarfile.open(targz_path, "w:gz") as tar:
+            for fname in required_files:
+                tar.add(os.path.join(src_dir, fname), arcname=fname)
+
+        # 2. Create .zip archive
+        zip_path = os.path.join(tmp_dir, "test_seed.zip")
+        with zipfile.ZipFile(zip_path, "w") as zipf:
+            for fname in required_files:
+                zipf.write(os.path.join(src_dir, fname), arcname=fname)
+
+        # 3. Benchmark .tar.gz unpack
+        dest_targz = os.path.join(tmp_dir, "dest_targz")
+        t0 = time.time()
+        res_tar = subprocess.run(
+            ["bash", script_path, "-i", targz_path, "-t", dest_targz],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            timeout=10,
+        )
+        elapsed_tar = time.time() - t0
+
+        assert res_tar.returncode == 0, f"tar.gz unpack failed: {res_tar.stderr}"
+        assert elapsed_tar < 10.0, f"tar.gz unpack benchmark failed: {elapsed_tar:.2f}s >= 10s"
+        assert "복원 완결 메트릭" in res_tar.stdout, f"tar.gz output missing metrics: {res_tar.stdout}"
+
+        # 4. Benchmark .zip unpack
+        dest_zip = os.path.join(tmp_dir, "dest_zip")
+        t0 = time.time()
+        res_zip = subprocess.run(
+            ["bash", script_path, "-i", zip_path, "-t", dest_zip],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            timeout=10,
+        )
+        elapsed_zip = time.time() - t0
+
+        assert res_zip.returncode == 0, f"zip unpack failed: {res_zip.stderr}"
+        assert elapsed_zip < 10.0, f"zip unpack benchmark failed: {elapsed_zip:.2f}s >= 10s"
+        assert "복원 완결 메트릭" in res_zip.stdout, f"zip output missing metrics: {res_zip.stdout}"
+
 
 
 

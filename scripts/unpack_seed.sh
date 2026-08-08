@@ -148,8 +148,8 @@ log_info "감지된 아카이브 포맷: $FORMAT"
 
 # 2. Required Tools Check
 if [ "$FORMAT" == "ZIP" ]; then
-    if ! command -v unzip &> /dev/null; then
-        log_err "'unzip' 명령어를 찾을 수 없습니다. zip 패키지를 설치하세요."
+    if ! command -v unzip &> /dev/null && ! command -v python3 &> /dev/null; then
+        log_err "'unzip' 또는 'python3' 명령어를 찾을 수 없습니다. zip 패키지를 설치하세요."
         exit 1
     fi
 else
@@ -162,7 +162,11 @@ fi
 # 3. Pre-Unpack Integrity Verification
 log_info "사전 무결성 검증 수행 중..."
 if [ "$FORMAT" == "ZIP" ]; then
-    ARCHIVE_LIST=$(unzip -l "$ABS_INPUT_PATH" 2>/dev/null || true)
+    if command -v unzip &> /dev/null; then
+        ARCHIVE_LIST=$(unzip -l "$ABS_INPUT_PATH" 2>/dev/null || true)
+    else
+        ARCHIVE_LIST=$(python3 -m zipfile -l "$ABS_INPUT_PATH" 2>/dev/null || true)
+    fi
 else
     ARCHIVE_LIST=$(tar -tzf "$ABS_INPUT_PATH" 2>/dev/null || true)
 fi
@@ -209,14 +213,30 @@ START_TIME=$(date +%s)
 UNPACK_ERR=0
 
 if [ "$FORMAT" == "ZIP" ]; then
-    if [ "$FORCE_OVERWRITE" -eq 1 ]; then
-        log_info "ZIP 강제 덮어쓰기 해제 중 (unzip -o -q)..."
-        unzip -o -q "$ABS_INPUT_PATH" -d "$ABS_TARGET_DIR" 2>/dev/null || UNPACK_ERR=$?
+    if command -v unzip &> /dev/null; then
+        if [ "$FORCE_OVERWRITE" -eq 1 ]; then
+            log_info "ZIP 강제 덮어쓰기 해제 중 (unzip -o -q)..."
+            unzip -o -q "$ABS_INPUT_PATH" -d "$ABS_TARGET_DIR" 2>/dev/null || UNPACK_ERR=$?
+        else
+            log_info "ZIP 비파괴 압축 해제 중 (unzip -n -q)..."
+            unzip -n -q "$ABS_INPUT_PATH" -d "$ABS_TARGET_DIR" 2>/dev/null || UNPACK_ERR=$?
+        fi
     else
-        log_info "ZIP 비파괴 압축 해제 중 (unzip -n -q)..."
-        unzip -n -q "$ABS_INPUT_PATH" -d "$ABS_TARGET_DIR" 2>/dev/null || UNPACK_ERR=$?
+        log_info "ZIP 비파괴 압축 해제 중 (python3 zipfile fallback)..."
+        python3 -c "
+import zipfile, os, sys
+archive = sys.argv[1]
+target = sys.argv[2]
+force = int(sys.argv[3])
+with zipfile.ZipFile(archive, 'r') as z:
+    for member in z.infolist():
+        out_path = os.path.join(target, member.filename)
+        if force or not os.path.exists(out_path):
+            z.extract(member, target)
+" "$ABS_INPUT_PATH" "$ABS_TARGET_DIR" "$FORCE_OVERWRITE" 2>/dev/null || UNPACK_ERR=$?
     fi
 else
+
     if [ "$FORCE_OVERWRITE" -eq 1 ]; then
         log_info "TAR.GZ 강제 덮어쓰기 해제 중 (tar -xvpf)..."
         tar -xvpf "$ABS_INPUT_PATH" -C "$ABS_TARGET_DIR" 2>/dev/null || UNPACK_ERR=$?
@@ -243,7 +263,12 @@ for entry in "${REQUIRED_ENTRIES[@]}"; do
     fi
 done
 
+FILE_COUNT=$(find "$ABS_TARGET_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+RESTORED_SIZE=$(du -sh "$ABS_TARGET_DIR" 2>/dev/null | cut -f1 | tr -d ' ')
+
+log_info "📊 [METRICS] 복원 완결 메트릭 -> 복원 파일: ${FILE_COUNT}개 | 총 용량: ${RESTORED_SIZE} | 소요 시간: ${ELAPSED}초"
 log_info "✓ Seed Pack 안전 압축 해제 완결! (소요 시간: ${ELAPSED}초)"
+
 
 # 7. Post-Action: --run-setup
 if [ "$RUN_SETUP" -eq 1 ]; then
