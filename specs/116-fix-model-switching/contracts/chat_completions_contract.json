@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ChatCompletionsDynamicModelSwitchingContract",
+  "type": "object",
+  "properties": {
+    "model": {
+      "type": "string",
+      "description": "Model ID to load dynamically (hot-swap) if different from current resident model"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string" },
+          "content": { "type": "string" }
+        },
+        "required": ["role", "content"]
+      }
+    },
+    "max_tokens": { "type": "integer" }
+  },
+  "required": ["model", "messages"]
+}

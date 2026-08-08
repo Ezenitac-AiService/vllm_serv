@@ -241,6 +241,18 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 if requested_n_ctx is not None:
                     llama_manager.validate_requested_context(model_id, int(requested_n_ctx))
 
+                # FR-001, FR-002, SC-001: Automatic Model Hot-Swap
+                current_model = llama_manager.process_manager.state.model_id
+                if model_id and current_model and model_id != current_model and os.environ.get("MOCK_LLAMA_SERVER") != "1":
+                    n_ctx = int(requested_n_ctx) if requested_n_ctx is not None else llama_manager.config_manager.get_config().get("current_n_ctx", 4096)
+                    state = await llama_manager.load_model_with_download(model_id, n_ctx=n_ctx)
+                    if state.status != ProcessStatusEnum.READY:
+                        raise HTTPException(
+                            status_code=503,
+                            detail=f"Failed to switch model to '{model_id}': {state.error_message or 'Model load timeout or VRAM limit exceeded.'}",
+                            headers={"Retry-After": "10"}
+                        )
+
                 if "messages" in body_json and isinstance(body_json["messages"], list):
                     user_msgs = [m.get("content", "") for m in body_json["messages"] if isinstance(m, dict) and m.get("role") == "user"]
                     prompt_text = user_msgs[-1] if user_msgs else json.dumps(body_json["messages"], ensure_ascii=False)
@@ -250,6 +262,7 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 raise
             except Exception:
                 pass
+
 
     target_port = _get_backend_target_port(path)
     
