@@ -27,7 +27,9 @@ MAIN_PORT = config["main_port"]
 TARGET_URL = f"{SERVER_HOST}:{MAIN_PORT}/v1/chat/completions"
 BENCHMARKS = config.get("model_benchmarks", {})
 TARGET_MODELS = get_available_llm_models()  # 서버에 실제 로드된 가용 LLM 모델 실시간 동적 탐색
-PROMPT = "인공지능의 정의를 1문장으로 작성해 주세요."
+PROMPT = config.get("sample_prompt", "인공지능의 정의를 1문장으로 작성해 주세요.")
+SYSTEM_PROMPT = config.get("sample_system_prompt", "당신은 IT 및 AI 기술 전문 어시스턴트입니다.")
+TIMEOUT_SEC = config.get("request_timeout_seconds", 180.0)
 
 
 def main():
@@ -51,7 +53,7 @@ def main():
         payload = {
             "model": m_id,
             "messages": [
-                {"role": "system", "content": "당신은 IT 및 AI 기술 전문 어시스턴트입니다."},
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": PROMPT}
             ],
             "max_tokens": config["benchmark_max_tokens"]  # 2K 벤치마크 한도 동적 로드
@@ -59,19 +61,29 @@ def main():
 
         t_start = time.time()
         try:
-            with get_httpx_client(timeout=180.0) as client:
+            with get_httpx_client(timeout=TIMEOUT_SEC) as client:
                 resp = client.post(TARGET_URL, json=payload, headers={"Connection": "close"})
                 resp.raise_for_status()
                 t_end = time.time()
 
                 res = resp.json()
+                responded_model = res.get("model")
                 raw_answer = res["choices"][0]["message"]["content"] or ""
                 # 모델별 사고 방식 비교를 위해 show_think=True 적용
                 clean_answer = clean_think_tags(raw_answer, show_think=True)
                 gen_tokens = res.get("usage", {}).get("completion_tokens", 0)
 
                 print(f"\n{clean_answer}")
-                print_performance_summary(f"httpx 모델 [{m_id}]", t_start, t_end, gen_tokens=gen_tokens)
+                summary = print_performance_summary(
+                    f"httpx 모델 [{m_id}]",
+                    t_start,
+                    t_end,
+                    gen_tokens=gen_tokens,
+                    requested_model=m_id,
+                    responded_model=responded_model
+                )
+                if not summary.get("is_model_matched"):
+                    print(f"❌ [모델 불일치 경고] 요청 모델({m_id})과 서버 응답 모델({responded_model})이 다릅니다.")
                 print("-" * 65)
 
         except Exception as err:
@@ -80,3 +92,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

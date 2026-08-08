@@ -1,11 +1,28 @@
 {
   "primary_server_host": "http://192.168.0.175",
+  "dev_server_host": "http://10.0.0.41",
   "fallback_server_host": "http://192.168.0.80",
   "server_host": "http://192.168.0.175",
+  "server_host_candidates": [
+    "http://127.0.0.1",
+    "http://10.0.0.41",
+    "http://192.168.0.175",
+    "http://192.168.0.80"
+  ],
   "main_port": 8081,
   "embedding_port": 8090,
   "rerank_port": 8091,
   "default_model": "qwen3.5-4b",
+  "default_all_llms": [
+    "qwen3.5-2b",
+    "qwen3.5-4b",
+    "qwen3.5-9b",
+    "gemma4-e2b",
+    "gemma4-e4b"
+  ],
+  "sample_prompt": "인공지능의 정의를 1문장으로 작성해 주세요.",
+  "sample_system_prompt": "당신은 IT 및 AI 기술 전문 어시스턴트입니다.",
+  "request_timeout_seconds": 180.0,
   "embedding_model": "bge-m3",
   "rerank_model": "bge-reranker-v2-m3",
   "default_temperature": 0.3,

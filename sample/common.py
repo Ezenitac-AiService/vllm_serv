@@ -173,42 +173,9 @@ class StreamThinkFilter:
 
 def load_sample_config() -> dict:
     """config.json 파일과 이중 서버 감지기에서 활성 주소 및 모델/토큰 토폴로지 설정을 읽어옵니다."""
-    active_host = get_server_host()
-    config = {
-        "server_host": active_host,
-        "primary_server_host": "http://192.168.0.175",
-        "fallback_server_host": "http://192.168.0.80",
-        "main_port": 8081,
-        "embedding_port": 8090,
-        "rerank_port": 8091,
-        "default_model": "qwen3.5-4b",
-        "embedding_model": "bge-m3",
-        "rerank_model": "bge-reranker-v2-m3",
-        "default_temperature": 0.3,
-        "default_max_tokens": 1024,
-        "benchmark_max_tokens": 2048,
-        "no_think_max_tokens": 512,
-        "gpu_info": {
-            "device_name": "NVIDIA GeForce RTX 3060 / GTX 1070 Auto Detect",
-            "total_vram_mb": 12288 if "175" in active_host else 8192,
-            "cuda_version": "13.2" if "175" in active_host else "12.1",
-            "reserved_vram_embedding_reranker_mb": 1211,
-            "available_llm_vram_mb": 11077
-        },
-        "model_benchmarks": {
-            "qwen3.5-4b": {"recommended_context_length": 4096, "max_context_length": 8192, "peak_vram_mb": 3950, "tpot_tok_per_sec": 49.00, "status": "ACTIVE_DEFAULT", "description": "메인 대화 모델 (4K 추천 / 8K 최대)"},
-            "qwen3.5-2b": {"recommended_context_length": 8192, "max_context_length": 16384, "peak_vram_mb": 2450, "tpot_tok_per_sec": 70.11, "status": "AVAILABLE", "description": "초경량 하이-스피드 모델 (8K 추천 / 16K 최대)"},
-            "qwen3.5-9b": {"recommended_context_length": 2048, "max_context_length": 4096, "peak_vram_mb": 7120, "tpot_tok_per_sec": 43.69, "status": "AVAILABLE", "description": "고성능 추론 대형 모델 (2K 추천 / 4K 최대)"},
-            "gemma4-e2b": {"recommended_context_length": 8192, "max_context_length": 16384, "peak_vram_mb": 2680, "tpot_tok_per_sec": 52.79, "status": "AVAILABLE", "description": "Gemma 소형 모델 (8K 추천 / 16K 최대)"},
-            "gemma4-e4b": {"recommended_context_length": 4096, "max_context_length": 8192, "peak_vram_mb": 4210, "tpot_tok_per_sec": 41.68, "status": "AVAILABLE", "description": "Gemma 중형 모델 (4K 추천 / 8K 최대)"},
-            "gemma4-12b": {"recommended_context_length": 2048, "max_context_length": 4096, "peak_vram_mb": 8900, "tpot_tok_per_sec": 30.52, "status": "AVAILABLE", "description": "[신규] Gemma 12B 대용량 모델 (RTX 3060 12GB)"},
-            "bge-m3": {"recommended_context_length": 2048, "max_context_length": 4096, "peak_vram_mb": 605, "tpot_tok_per_sec": 7.46, "status": "ACTIVE_EMBEDDING", "description": "임베딩 전용 (독립 포트 8090)"},
-            "bge-reranker-v2-m3": {"recommended_context_length": 2048, "max_context_length": 4096, "peak_vram_mb": 606, "tpot_tok_per_sec": 7.30, "status": "ACTIVE_RERANK", "description": "리랭킹 전용 (독립 포트 8091)"}
-        }
-    }
-
     samples_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     config_file = samples_dir / "config.json"
+    config = {}
     if config_file.exists():
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -219,50 +186,60 @@ def load_sample_config() -> dict:
         except Exception:
             pass
 
+    active_host = get_server_host()
     config["server_host"] = active_host
     return config
 
 
-def get_server_host() -> str:
-    """로컬 서버(127.0.0.1) 1순위 감지 후, 원격 RTX 3060(192.168.0.175), GTX 1070(192.168.0.80) 서버를 동적으로 감지합니다."""
-    local_host = "http://127.0.0.1"
-    primary_host = "http://192.168.0.175"
-    fallback_host = "http://192.168.0.80"
+def _read_config_json_raw() -> dict:
+    config_file = Path(os.path.dirname(os.path.abspath(__file__))) / "config.json"
+    if config_file.exists():
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
 
+
+def get_server_host() -> str:
+    """config.json의 호스트 후보 및 환경변수(SERVER_HOST)를 기반으로 동적 감지합니다."""
     env_host = os.getenv("SERVER_HOST") or os.getenv("OPENAI_BASE_URL")
     if env_host:
         return _format_host_url(env_host)
 
-    # 1. 로컬 개발/서비싱 서버 (127.0.0.1:8081) readiness 우선 검사
-    for host in [local_host, primary_host, fallback_host]:
-        try:
-            r = httpx.get(f"{host}:8081/health/readiness", timeout=1.0, headers={"Connection": "close"})
-            if r.status_code == 200:
-                return host
-        except Exception:
-            pass
+    cfg_data = _read_config_json_raw()
+    candidates = cfg_data.get("server_host_candidates") or [
+        cfg_data.get("server_host"),
+        cfg_data.get("dev_server_host"),
+        cfg_data.get("primary_server_host"),
+    ]
+    candidates = [c for c in candidates if c]
+    main_port = cfg_data.get("main_port", 8081)
 
-    # 2. readiness 미준비 시 포트 응답 가능 서버 2차 검사
-    for host in [local_host, primary_host, fallback_host]:
-        try:
-            r = httpx.get(f"{host}:8081/v1/models", timeout=1.0, headers={"Connection": "close"})
-            if r.status_code == 200:
-                return host
-        except Exception:
-            pass
+    for host in candidates:
+        formatted = _format_host_url(host)
+        for endpoint in ["/health/readiness", "/health", "/v1/models"]:
+            try:
+                r = httpx.get(f"{formatted}:{main_port}{endpoint}", timeout=1.0, headers={"Connection": "close"})
+                if r.status_code == 200:
+                    return formatted
+            except Exception:
+                pass
 
-    return local_host
+    return _format_host_url(candidates[0]) if candidates else _format_host_url(cfg_data.get("server_host"))
 
 
 
 def get_available_llm_models() -> list:
     """현재 활성화된 서버(/v1/models)에 실제 탑재된 LLM 대화 모델 목록만 동적으로 조회하여 반환합니다."""
     cfg = load_sample_config()
-    host = cfg["server_host"]
-    port = cfg["main_port"]
+    host = cfg.get("server_host")
+    port = cfg.get("main_port", 8081)
     url = f"{host}:{port}/v1/models"
 
-    default_all_llms = ["qwen3.5-2b", "qwen3.5-4b", "qwen3.5-9b", "gemma4-e2b", "gemma4-e4b"]
+    default_all_llms = cfg.get("default_all_llms", list(cfg.get("model_benchmarks", {}).keys()))
+    non_llm_models = [cfg.get("embedding_model", "bge-m3"), cfg.get("rerank_model", "bge-reranker-v2-m3")]
 
     try:
         r = httpx.get(url, timeout=3.0, headers={"Connection": "close"})
@@ -270,7 +247,7 @@ def get_available_llm_models() -> list:
             models_data = r.json().get("data", [])
             server_models = [m["id"] for m in models_data]
             # 임베딩/리랭커 모델 제외한 순수 LLM 대화 모델만 필터링
-            llm_models = [m for m in server_models if m not in ["bge-m3", "bge-reranker-v2-m3"]]
+            llm_models = [m for m in server_models if m not in non_llm_models]
             if llm_models:
                 return llm_models
     except Exception:
@@ -309,12 +286,16 @@ def get_httpx_client(timeout: float = 120.0) -> httpx.Client:
     return httpx.Client(timeout=timeout)
 
 
-def check_server_health(host: str = None, port: int = 8081, service_name: str = "vllm_serv 메인 API") -> bool:
+def check_server_health(host: str = None, port: int = None, service_name: str = "vllm_serv 메인 API") -> bool:
     """지정된 서버 포트로 헬스체크(/health/readiness 또는 /v1/models)를 보내 정상 구동 여부를 미리 검사합니다."""
+    cfg = load_sample_config()
     if host is None:
         host = get_server_host()
     else:
         host = _format_host_url(host)
+
+    if port is None:
+        port = cfg.get("main_port", 8081)
 
     target_base = f"{host}:{port}"
 
@@ -350,9 +331,11 @@ def print_performance_summary(
     t_end: float,
     t_first: float = None,
     gen_tokens: int = 0,
-    finish_reason: str = "stop"
+    finish_reason: str = "stop",
+    requested_model: str = None,
+    responded_model: str = None
 ) -> dict:
-    """요청 시각, 완료 시각, 첫 토큰 응답 지연(TTFT), 초당 생성 속도(TPS)를 측정하고 시각화합니다."""
+    """요청 시각, 완료 시각, 첫 토큰 응답 지연(TTFT), 초당 생성 속도(TPS) 및 모델 일치성 검증을 측정하고 시각화합니다."""
     start_str = datetime.datetime.fromtimestamp(t_start).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     end_str = datetime.datetime.fromtimestamp(t_end).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     total_elapsed = t_end - t_start
@@ -379,13 +362,25 @@ def print_performance_summary(
         print(f"   📊 생성 토큰 수     : {gen_tokens}토큰 | 평균 속도: {tps:.1f} tokens/s")
     print(f"   📊 응답 완결 사유   : {finish_reason}")
 
+    is_model_matched = True
+    if requested_model or responded_model:
+        if requested_model == responded_model:
+            tag = f"요청({requested_model}) == 응답({responded_model}) ✅"
+        else:
+            is_model_matched = False
+            tag = f"❌ [모델 불일치 오류]: 요청({requested_model}) != 응답({responded_model})"
+        print(f"   🔍 모델 일치 검증  : [모델 검증: {tag}]")
+
     return {
         "mode": mode_name,
         "total_elapsed": total_elapsed,
         "ttft": ttft,
         "gen_tokens": gen_tokens,
         "tps": tps,
-        "finish_reason": finish_reason
+        "finish_reason": finish_reason,
+        "requested_model": requested_model,
+        "responded_model": responded_model,
+        "is_model_matched": is_model_matched
     }
 
 

@@ -212,11 +212,21 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
             }
             return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
         elif clean_path in ("chat/completions", "completions"):
+            mock_model = "qwen3.5-4b"
+            try:
+                raw_body = await request.body()
+                if raw_body:
+                    b_json = json.loads(raw_body)
+                    if b_json.get("model"):
+                        mock_model = b_json.get("model")
+            except Exception:
+                pass
+
             mock_data = {
                 "id": "chatcmpl-mock123",
                 "object": "chat.completion",
                 "created": int(time.time()),
-                "model": "qwen3.5-4b",
+                "model": mock_model,
                 "choices": [
                     {
                         "index": 0,
@@ -227,6 +237,7 @@ async def reverse_proxy(request: Request, path: str = "") -> StreamingResponse:
                 "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20}
             }
             return StreamingResponse(content=iter([json.dumps(mock_data).encode("utf-8")]), media_type="application/json")
+
 
     body_content = None
     prompt_text = None
