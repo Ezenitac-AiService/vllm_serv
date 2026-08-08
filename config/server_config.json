@@ -52,6 +52,6 @@
         "recommended_context_length": 12800,
         "benchmark_tps": 30.0,
         "vram_used_mb": 11227,
-        "benchmark_timestamp": "2026-08-08T03:59:50Z"
+        "benchmark_timestamp": "2026-08-08T04:12:55Z"
     }
 }
