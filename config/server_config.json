@@ -44,14 +44,14 @@
         "enabled": true,
         "strict_json_schema": true
     },
-    "model": "qwen3.5-4b",
-    "context_window": 4096,
+    "model": "gemma4-e4b",
+    "context_window": 12800,
     "auto_benchmark_profile": {
-        "recommended_model": "qwen3.5-4b",
-        "recommended_context_window": 4096,
-        "recommended_context_length": 4096,
+        "recommended_model": "gemma4-e4b",
+        "recommended_context_window": 12800,
+        "recommended_context_length": 12800,
         "benchmark_tps": 30.0,
-        "vram_used_mb": 7024,
-        "benchmark_timestamp": "2026-08-08T03:49:01Z"
+        "vram_used_mb": 11227,
+        "benchmark_timestamp": "2026-08-08T03:59:50Z"
     }
 }
