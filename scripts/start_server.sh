@@ -77,15 +77,13 @@ if [ "$CURL_HOST" = "0.0.0.0" ]; then
     CURL_HOST="127.0.0.1"
 fi
 
-# 동시 Readiness 검증 대기 (최대 60초)
-echo -n "[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 60초)..."
+# 동시 Readiness 검증 대기 (최대 30초)
+echo -n "[SERVER] 8081 메인 서버 및 8082 대시보드 동시 READY 상태 대기 중 (최대 30초)..."
 READY=0
-for i in {1..60}; do
+for i in {1..30}; do
     P8081_OK=0
     P8082_OK=0
-    if curl -s "http://$CURL_HOST:$SERVER_PORT/health/readiness" | grep -q -i "ready" > /dev/null 2>&1; then
-        P8081_OK=1
-    elif curl -s "http://$CURL_HOST:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://$CURL_HOST:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
+    if curl -s "http://$CURL_HOST:$SERVER_PORT/health" > /dev/null 2>&1 || curl -s "http://$CURL_HOST:$SERVER_PORT/v1/models" > /dev/null 2>&1; then
         P8081_OK=1
     fi
     if curl -s "http://$CURL_HOST:8082/" > /dev/null 2>&1; then
@@ -99,7 +97,6 @@ for i in {1..60}; do
     echo -n "."
     sleep 1
 done
-
 
 if [ "$READY" -eq 1 ]; then
     echo -e "\n${COLOR_GREEN}✓ 8081 메인 인퍼런스 서버 및 8082 웹 대시보드 동시 가동 완료!${COLOR_NC}"

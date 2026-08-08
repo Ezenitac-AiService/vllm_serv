@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 352,
-  "preserved_files": 352,
+  "total_files_scanned": 356,
+  "preserved_files": 356,
   "archived_files": 0,
   "inventory": [
     {
@@ -1204,6 +1204,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_sample_model_switch.py",
+      "name": "test_sample_model_switch.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_openai_models.py",
       "name": "test_openai_models.py",
       "status": "ACTIVE",
@@ -1422,6 +1428,12 @@
     {
       "file_path": "tests/unit/test_reranker_contract.py",
       "name": "test_reranker_contract.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/test_dynamic_model_switch.py",
+      "name": "test_dynamic_model_switch.py",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1918,6 +1930,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/__pycache__/test_sample_model_switch.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_sample_model_switch.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/__pycache__/test_shell_scripts.cpython-312-pytest-9.1.1.pyc",
       "name": "test_shell_scripts.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
@@ -2016,6 +2034,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_think_tag_ui_markdown.cpython-312-pytest-9.1.1.pyc",
       "name": "test_think_tag_ui_markdown.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_dynamic_model_switch.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_dynamic_model_switch.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
