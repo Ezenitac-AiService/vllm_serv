@@ -780,6 +780,7 @@ def main():
     parser.add_argument("--skip-benchmark", action="store_true", help="3단계 실측 벤치마크를 스킵하고 기존 설정 보존")
     parser.add_argument("--force-benchmark", action="store_true", help="카탈로그 전체 LLM 후보 모델 대상 강제 실측 벤치마킹 구동")
     parser.add_argument("--fine-grained", action="store_true", help="2단계 이진 탐색(512/1024 블록 얼라인먼트) 정밀 프로파일링 구동")
+    parser.add_argument("--all", action="store_true", help="카탈로그 전체 LLM 후보 모델 대상 순차 이진 탐색 평가 구동")
     parser.add_argument("--force-overwrite-profiles", action="store_true", help="기존 검증된 프로파일 데이터 덮어쓰기 허용")
     parser.add_argument("--model", type=str, default="qwen3.5-4b", help="벤치마크 대상 모델명")
     parser.add_argument("--json", action="store_true", help="JSON 형태로 결과 출력")
@@ -789,6 +790,22 @@ def main():
         res = evaluate_all_catalog_models(force=True, force_overwrite=args.force_overwrite_profiles)
         if args.json:
             print(json.dumps(res, indent=2))
+        sys.exit(0)
+
+    if args.all:
+        candidate_models = get_candidate_llm_models()
+        print(f"\n[BENCHMARK INFO] 🚀 카탈로그 전체 LLM 후보 모델({len(candidate_models)}개) 전수 이진 탐색 평가 개시")
+        all_results = {}
+        for m_idx, m_id in enumerate(candidate_models, 1):
+            print(f"\n{'='*60}")
+            print(f"[{m_idx}/{len(candidate_models)}] {m_id} 이진 탐색 벤치마킹 중...")
+            print(f"{'='*60}")
+            res = run_fine_grained_binary_search(model_name=m_id, force_overwrite=args.force_overwrite_profiles)
+            all_results[m_id] = res
+        if args.json:
+            print(json.dumps(all_results, indent=2))
+        else:
+            print(f"\n[BENCHMARK INFO] 🏆 카탈로그 전체 {len(all_results)}개 모델 이진 탐색 전수 평가 완료!")
         sys.exit(0)
 
     if args.fine_grained:

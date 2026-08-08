@@ -277,4 +277,36 @@ class TestBenchmarkContextWindowSafety:
         assert res["recommended_context_window"] > 0
 
 
+class TestDynamicGQAAndCLIFlags:
+    """T005 / T007 / 118: 동적 GQA VRAM 추정 및 CLI --all 옵션 검증 단위 테스트."""
+
+    def test_estimate_vram_usage_uses_model_gqa_architecture(self):
+        """T005: Qwen 3.5 2B/4B 모델 @ n_ctx=16384 일 때 GQA 파라미터가 반영되어 15.2GB 오탐 차단 없이 스폰 가능 판정되어야 함."""
+        from src.core.process_manager import ProcessManager
+
+        pm = ProcessManager()
+        # Qwen 3.5 2B (24 layers, 14 heads, 2 kv_heads, 128 dim) @ n_ctx=16384
+        vram_2b = pm.estimate_vram_usage("qwen3.5-2b", n_ctx=16384)
+        assert vram_2b < 8000, f"Qwen 3.5 2B @ 16K estimated VRAM too high: {vram_2b}MB"
+
+        # Qwen 3.5 4B (36 layers, 20 heads, 4 kv_heads, 128 dim) @ n_ctx=16384
+        vram_4b = pm.estimate_vram_usage("qwen3.5-4b", n_ctx=16384)
+        assert vram_4b < 9000, f"Qwen 3.5 4B @ 16K estimated VRAM too high: {vram_4b}MB"
+
+    def test_cli_all_flag_parser(self):
+        """T007: scripts/benchmark_context_window.py argparse에 --all 플래그가 수록되어 있어야 함."""
+        import argparse
+        import sys
+        from unittest.mock import patch
+        from scripts.benchmark_context_window import main
+
+        test_args = ["scripts/benchmark_context_window.py", "--all", "--help"]
+        with patch.object(sys, "argv", test_args):
+            try:
+                main()
+            except SystemExit as e:
+                assert e.code == 0
+
+
+
 

@@ -445,19 +445,80 @@ class ProcessManager:
         os.makedirs(logs_dir, exist_ok=True)
         return os.path.join(logs_dir, "benchmark.log"), os.path.join(logs_dir, "error.log")
 
+    def _get_model_gqa_params(self, model_id: str, model_file: Optional[str] = None) -> dict:
+        """Extracts n_layers, n_heads, n_head_kv, head_dim from GGUF metadata or model catalog."""
+        params = {
+            "n_layers": 36,
+            "n_heads": 32,
+            "n_head_kv": 8,
+            "head_dim": 128,
+        }
+        try:
+            config_mgr = getattr(self, "_config_manager", None)
+            if config_mgr:
+                resolved_id = config_mgr.resolve_model_id(model_id)
+                catalog = config_mgr.get_model_catalog()
+                entry = catalog.get(resolved_id) or catalog.get(model_id) or {}
+                if entry.get("n_layers"):
+                    params["n_layers"] = entry["n_layers"]
+                if entry.get("n_heads"):
+                    params["n_heads"] = entry["n_heads"]
+                if entry.get("n_head_kv"):
+                    params["n_head_kv"] = entry["n_head_kv"]
+                if entry.get("head_dim"):
+                    params["head_dim"] = entry["head_dim"]
+        except Exception:
+            pass
+
+        if model_file and os.path.exists(model_file):
+            try:
+                from src.core.gpu_detector import read_gguf_metadata_architecture
+                gguf_meta = read_gguf_metadata_architecture(model_file)
+                if gguf_meta.get("n_layers"):
+                    params["n_layers"] = gguf_meta["n_layers"]
+                if gguf_meta.get("n_heads"):
+                    params["n_heads"] = gguf_meta["n_heads"]
+                if gguf_meta.get("n_head_kv"):
+                    params["n_head_kv"] = gguf_meta["n_head_kv"]
+                if gguf_meta.get("head_dim"):
+                    params["head_dim"] = gguf_meta["head_dim"]
+            except Exception:
+                pass
+
+        return params
+
     def estimate_vram_usage(self, model_id: str, n_ctx: int) -> int:
-        """FR-010 / 113: Dry-run VRAM calculation based on model base VRAM and context scaling."""
+        """FR-010 / 113 / 118: Dry-run VRAM calculation based on model base VRAM and dynamic GQA context scaling."""
         try:
             config_mgr = getattr(self, "_config_manager", None)
             resolved_id = config_mgr.resolve_model_id(model_id) if config_mgr else model_id
             presets = getattr(self, "model_presets", {})
             preset = presets.get(resolved_id) if presets else None
             model_path = preset.get("model", "") if preset else ""
-            base_vram = self.calculate_base_vram_mb(model_path)
-            extra_ctx_vram = max(0, int((n_ctx - 4096) * 0.5))
-            return base_vram + extra_ctx_vram
+            if not model_path and config_mgr:
+                catalog = config_mgr.get_model_catalog()
+                entry = catalog.get(resolved_id) or catalog.get(model_id) or {}
+                model_path = entry.get("model_path", "")
+            base_vram = self.calculate_base_vram_mb(model_path) if model_path else 4000
+            gqa = self._get_model_gqa_params(model_id, model_path)
+            kv_vram_mb = estimate_kv_cache_vram(
+                n_layers=gqa["n_layers"],
+                n_heads=gqa["n_heads"],
+                head_dim=gqa["head_dim"],
+                n_ctx=n_ctx,
+                n_head_kv=gqa["n_head_kv"]
+            )
+            return base_vram + kv_vram_mb
         except Exception:
-            return 6000 + max(0, int((n_ctx - 4096) * 0.5))
+            gqa = self._get_model_gqa_params(model_id)
+            kv_vram_mb = estimate_kv_cache_vram(
+                n_layers=gqa["n_layers"],
+                n_heads=gqa["n_heads"],
+                head_dim=gqa["head_dim"],
+                n_ctx=n_ctx,
+                n_head_kv=gqa["n_head_kv"]
+            )
+            return 4000 + kv_vram_mb
 
     def is_ready(self) -> bool:
         return self.state.status == ProcessStatusEnum.READY
@@ -695,8 +756,15 @@ class ProcessManager:
         target_dir = os.path.dirname(model_file)
         os.makedirs(target_dir, exist_ok=True)
 
-        # FR-012 / T002: Pre-flight GGUF + KV Cache VRAM estimator
-        kv_vram_mb = estimate_kv_cache_vram(n_ctx=n_ctx)
+        # FR-012 / T002 / 118: Pre-flight GGUF + Dynamic GQA KV Cache VRAM estimator
+        gqa = self._get_model_gqa_params(model_id, model_file)
+        kv_vram_mb = estimate_kv_cache_vram(
+            n_layers=gqa["n_layers"],
+            n_heads=gqa["n_heads"],
+            head_dim=gqa["head_dim"],
+            n_ctx=n_ctx,
+            n_head_kv=gqa["n_head_kv"]
+        )
         base_vram = self.calculate_base_vram_mb(model_file)
         vram_est = base_vram + kv_vram_mb
 
