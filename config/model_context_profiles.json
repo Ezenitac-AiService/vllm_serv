@@ -1,71 +1,71 @@
 {
-  "generated_at": "2026-08-08T04:12:54Z",
+  "generated_at": "2026-08-08T04:36:08Z",
   "system_hardware": {
-    "gpu_name": "NVIDIA GeForce GTX 1080 Ti",
-    "total_vram_mb": 11264,
+    "gpu_name": "NVIDIA GeForce GPU",
+    "total_vram_mb": 8192,
     "is_cuda_available": true
   },
   "profiles": {
     "gemma4-e2b": {
-      "max_context_length": 12800,
-      "recommended_context_length": 12800,
+      "max_context_length": 56832,
+      "recommended_context_length": 56832,
       "binary_search_steps": [
         {
           "step": 1,
-          "tested_n_ctx": 51200,
-          "real_vram_mb": 0,
-          "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 34800MB (KV Cache: 28800MB) exceeds GPU capacity limit 11264MB"
+          "tested_n_ctx": 29696,
+          "real_vram_mb": 17583,
+          "status": "PASS",
+          "reason": "SUCCESS"
         },
         {
           "step": 2,
-          "tested_n_ctx": 26624,
-          "real_vram_mb": 0,
-          "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 20976MB (KV Cache: 14976MB) exceeds GPU capacity limit 11264MB"
+          "tested_n_ctx": 43520,
+          "real_vram_mb": 24495,
+          "status": "PASS",
+          "reason": "SUCCESS"
         },
         {
           "step": 3,
-          "tested_n_ctx": 14336,
-          "real_vram_mb": 0,
-          "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 14064MB (KV Cache: 8064MB) exceeds GPU capacity limit 11264MB"
+          "tested_n_ctx": 50176,
+          "real_vram_mb": 27823,
+          "status": "PASS",
+          "reason": "SUCCESS"
         },
         {
           "step": 4,
-          "tested_n_ctx": 8192,
-          "real_vram_mb": 6831,
+          "tested_n_ctx": 53760,
+          "real_vram_mb": 29615,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 5,
-          "tested_n_ctx": 11264,
-          "real_vram_mb": 8367,
+          "tested_n_ctx": 55296,
+          "real_vram_mb": 30383,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 6,
-          "tested_n_ctx": 12800,
-          "real_vram_mb": 9135,
+          "tested_n_ctx": 56320,
+          "real_vram_mb": 30895,
           "status": "PASS",
           "reason": "SUCCESS"
         },
         {
           "step": 7,
-          "tested_n_ctx": 13312,
-          "real_vram_mb": 0,
-          "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 13488MB (KV Cache: 7488MB) exceeds GPU capacity limit 11264MB"
+          "tested_n_ctx": 56832,
+          "real_vram_mb": 31151,
+          "status": "PASS",
+          "reason": "SUCCESS"
         }
       ],
-      "peak_vram_mb": 9135,
+      "peak_vram_mb": 31151,
       "tpot_tok_per_sec": 30.0,
       "scaling_tested": true,
       "is_supported": true,
       "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T04:10:20Z"
+      "last_tested_at": "2026-08-08T04:35:43Z"
     },
     "gemma4-e4b": {
       "max_context_length": 12800,
@@ -133,33 +133,33 @@
       "last_tested_at": "2026-08-08T04:10:52Z"
     },
     "qwen3.5-2b": {
-      "max_context_length": 12800,
-      "recommended_context_length": 12800,
+      "max_context_length": 2048,
+      "recommended_context_length": 2048,
       "binary_search_steps": [
         {
           "step": 1,
-          "tested_n_ctx": 98304,
+          "tested_n_ctx": 92160,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 61296MB (KV Cache: 55296MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 2,
-          "tested_n_ctx": 50176,
+          "tested_n_ctx": 47104,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 34224MB (KV Cache: 28224MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 3,
-          "tested_n_ctx": 26112,
+          "tested_n_ctx": 24576,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
-          "reason": "CUDA OOM Risk: Estimated VRAM 20688MB (KV Cache: 14688MB) exceeds GPU capacity limit 11264MB"
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 4,
-          "tested_n_ctx": 13824,
+          "tested_n_ctx": 13312,
           "real_vram_mb": 0,
           "status": "OOM/FAIL",
           "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
@@ -167,38 +167,38 @@
         {
           "step": 5,
           "tested_n_ctx": 7680,
-          "real_vram_mb": 4220,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 6,
-          "tested_n_ctx": 10752,
-          "real_vram_mb": 5756,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "tested_n_ctx": 4608,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 7,
-          "tested_n_ctx": 12288,
-          "real_vram_mb": 6524,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "tested_n_ctx": 3072,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         },
         {
           "step": 8,
-          "tested_n_ctx": 12800,
-          "real_vram_mb": 6780,
-          "status": "PASS",
-          "reason": "SUCCESS"
+          "tested_n_ctx": 2560,
+          "real_vram_mb": 0,
+          "status": "OOM/FAIL",
+          "reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)"
         }
       ],
-      "peak_vram_mb": 6780,
-      "tpot_tok_per_sec": 30.0,
+      "peak_vram_mb": 0,
+      "tpot_tok_per_sec": 0.0,
       "scaling_tested": true,
-      "is_supported": true,
-      "failure_reason": "SUCCESS",
-      "last_tested_at": "2026-08-08T04:11:26Z"
+      "is_supported": false,
+      "failure_reason": "CUDA_OOM_KILLED (Process terminated by SIGKILL/OOM Killer)",
+      "last_tested_at": "2026-08-08T04:35:39Z"
     },
     "qwen3.5-4b": {
       "max_context_length": 12800,
