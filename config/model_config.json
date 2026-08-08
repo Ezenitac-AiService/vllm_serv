@@ -1,6 +1,6 @@
 {
-    "current_model": "qwen3.5-4b",
-    "current_n_ctx": 4096,
+    "current_model": "gemma4-e2b",
+    "current_n_ctx": 2048,
     "available_presets": [
         "gemma4-e2b",
         "gemma4-e4b",

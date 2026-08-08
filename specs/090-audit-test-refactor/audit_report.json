@@ -1,6 +1,6 @@
 {
-  "total_files_scanned": 360,
-  "preserved_files": 360,
+  "total_files_scanned": 364,
+  "preserved_files": 364,
   "archived_files": 0,
   "inventory": [
     {
@@ -886,6 +886,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/integration/test_multimodal_image_payload_proxy.py",
+      "name": "test_multimodal_image_payload_proxy.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/integration/test_build_pipeline.py",
       "name": "test_build_pipeline.py",
       "status": "ACTIVE",
@@ -1384,6 +1390,12 @@
       "action": "PRESERVE"
     },
     {
+      "file_path": "tests/unit/test_process_manager_multimodal.py",
+      "name": "test_process_manager_multimodal.py",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
       "file_path": "tests/unit/test_client_access_logger.py",
       "name": "test_client_access_logger.py",
       "status": "ACTIVE",
@@ -1536,6 +1548,12 @@
     {
       "file_path": "tests/integration/__pycache__/test_chat_completions_connection.cpython-312-pytest-9.1.1.pyc",
       "name": "test_chat_completions_connection.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/integration/__pycache__/test_multimodal_image_payload_proxy.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_multimodal_image_payload_proxy.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },
@@ -1758,6 +1776,12 @@
     {
       "file_path": "tests/unit/__pycache__/test_auxiliary_embedding.cpython-312-pytest-9.1.1.pyc",
       "name": "test_auxiliary_embedding.cpython-312-pytest-9.1.1.pyc",
+      "status": "ACTIVE",
+      "action": "PRESERVE"
+    },
+    {
+      "file_path": "tests/unit/__pycache__/test_process_manager_multimodal.cpython-312-pytest-9.1.1.pyc",
+      "name": "test_process_manager_multimodal.cpython-312-pytest-9.1.1.pyc",
       "status": "ACTIVE",
       "action": "PRESERVE"
     },

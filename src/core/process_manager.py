@@ -1000,36 +1000,35 @@ class ProcessManager:
         for i in range(max_retries):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                result = sock.connect_ex(('127.0.0.1', self.port))
-                if result != 0:  # Port is free
-                    consecutive_free_count += 1
-                    if consecutive_free_count >= 2:
-                        return True
+                if sock.connect_ex(('127.0.0.1', self.port)) != 0:
+                    try:
+                        sock.bind(('0.0.0.0', self.port))
+                        consecutive_free_count += 1
+                        if consecutive_free_count >= 2:
+                            return True
+                    except OSError:
+                        consecutive_free_count = 0
                 else:
                     consecutive_free_count = 0
 
             # Q1 / FR-001: 3회 이상 포트 점유 지속 시 외부/잔여 프로세스 자율 복구 (SIGTERM -> SIGKILL)
             if i >= 2:
                 try:
-                    cmd = f"fuser {self.port}/tcp 2>/dev/null"
-                    output = subprocess.check_output(cmd, shell=True, text=True).strip()
-                    pids = [int(p) for p in output.split() if p.isdigit() and int(p) != os.getpid()]
-                    for p in pids:
-                        try:
-                            sig = signal.SIGTERM if i < 6 else signal.SIGKILL
-                            os.kill(p, sig)
-                            print(f"[ProcessManager] Q1: 포트 {self.port} 점유 잔여 PID {p} 정리 시도 (Signal: {sig.name})")
-                        except OSError:
-                            pass
+                    cmd = f"fuser -k -9 {self.port}/tcp 2>/dev/null"
+                    subprocess.run(cmd, shell=True)
                 except Exception:
                     pass
 
             await asyncio.sleep(interval)
 
         # 최종 확인
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            return sock.connect_ex(('127.0.0.1', self.port)) != 0
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                sock.bind(('0.0.0.0', self.port))
+                return True
+        except OSError:
+            return False
 
     @staticmethod
     def force_kill_zombie_llama_servers(target_ports: Any = (8081, 8089, 8090, 8091)) -> None:
