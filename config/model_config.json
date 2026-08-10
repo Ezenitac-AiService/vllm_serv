@@ -1,5 +1,5 @@
 {
-    "current_model": "qwen3.5-9b-vision",
+    "current_model": "gemma4-e2b",
     "current_n_ctx": 4096,
     "available_presets": [
         "gemma4-e2b",
